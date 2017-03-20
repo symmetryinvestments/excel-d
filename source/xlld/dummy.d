@@ -6,7 +6,7 @@ module xlld.dummy;
 
 version(unittest)
     enum useDummy = true;
-else version(main)
+else version(exceldDef)
     enum useDummy = true;
 else
     enum useDummy = false;

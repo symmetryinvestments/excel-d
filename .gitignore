@@ -1,2 +1,7 @@
 .dub
 bin
+*.def
+*.exe
+*.dll
+*.xll
+*.lib

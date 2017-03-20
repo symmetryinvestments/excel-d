@@ -7,7 +7,7 @@
 	with Excel.
 */
 
-version(main) {}
+version(exceldDef) {}
 else {
 
 import xlld;
@@ -18,23 +18,6 @@ import core.sys.windows.windows;
 // It's extern(C) so that it can be defined in any module
 extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow;
 
-
-extern(Windows)
-{
-	pragma(lib, "gdi32");
-	pragma(lib, "kernel32");
-	pragma(lib, "user32");
-	pragma(lib, "gdi32");
-	pragma(lib, "winspool");
-	pragma(lib, "comdlg32");
-	pragma(lib, "advapi32");
-	pragma(lib, "shell32");
-	pragma(lib, "ole32");
-	pragma(lib, "oleaut32");
-	pragma(lib, "uuid");
-	pragma(lib, "odbc32");
-	pragma(lib, "xlcall32d");
-}
 
 extern(Windows) BOOL DllMain( HANDLE hDLL, DWORD dwReason, LPVOID lpReserved )
 {

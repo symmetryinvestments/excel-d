@@ -405,7 +405,7 @@ unittest {
 
 
 mixin template GenerateDllDef(string module_ = __MODULE__) {
-    version(main) {
+    version(exceldDef) {
         void main(string[] args) nothrow {
             try {
                 import std.stdio: File;
