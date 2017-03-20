@@ -8,26 +8,6 @@ targetType "sourceLibrary"
 configuration "library" {
 }
 
-configuration "example" {
-    targetType "dynamicLibrary"
-    targetName "myxll32"
-    libs "xlcall32"  # must have the Excel SDK xlcall32.lib in the path
-    sourcePaths "source" "test"
-    sourceFiles "example/myxll.d" "myxll32.def"
-    excludedSourceFiles "source/xlld/test_xl_funcs.d" "test/ut.d"
-    preBuildCommands "dub run -q -c def --nodeps -- myxll32.def"
-    postBuildCommands "copy myxll32.dll myxll32.xll"
-}
-
-configuration "def" {
-    targetType "executable"
-    targetName "write_def"
-    versions "exceldDef"
-    mainSourceFile "example/myxll.d"
-    sourcePaths "source" "test"
-    excludedSourceFiles "test/ut.d"
-}
-
 configuration "unittest" {
     targetType "executable"
     targetName "ut"
