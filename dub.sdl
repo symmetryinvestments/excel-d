@@ -3,7 +3,7 @@ description "Excel bindings for D"
 authors "Laeeth Isharc" "Stefan Koch" "Atila Neves"
 copyright "Copyright © 2016, Kaleidic Associates Ltd"
 license "proprietary"
-targetType "library"
+targetType "sourceLibrary"
 
 configuration "library" {
 }
@@ -11,7 +11,7 @@ configuration "library" {
 configuration "example" {
     targetType "dynamicLibrary"
     targetName "myxll32"
-    libs "xlcall32"  # must have the Excel SDK xlcall32.lib installed
+    libs "xlcall32"  # must have the Excel SDK xlcall32.lib in the path
     sourcePaths "source" "test"
     sourceFiles "example/myxll.d" "myxll32.def"
     excludedSourceFiles "source/xlld/test_xl_funcs.d" "test/ut.d"

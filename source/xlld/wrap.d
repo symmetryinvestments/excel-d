@@ -716,7 +716,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
     // e.g. arg0, arg1, ...
     const argsCall = argsLength.iota.map!(a => `arg` ~ a.to!string).join(", ");
     const nogc = functionAttributes!(mixin(funcName)) & FunctionAttribute.nogc
-        ? "@nogc"
+        ? "@nogc "
         : "";
 
     alias registerAttrs = getUDAs!(mixin(funcName), Register);
