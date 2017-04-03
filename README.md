@@ -18,7 +18,7 @@ Copying it to the build directory should be sufficient
 (i.e. when building the example, to the `example` directory).
 The library file should be useable as-is, as long as `dub build` is run with `--arch=x86_mscoff`
 to use Microsoft's binary format. If linking with optlink, the file must be converted first.
-We recommed using `link.exe` to not need the conversion.
+We recommend using `link.exe` to not need the conversion.
 
 Excel won't load the XLL automatically: this must be done manually in File->Tools->Add-Ins.
 Click on "Go" for "Excel Add-Ins" (the default) and select your XLL there after clicking on
