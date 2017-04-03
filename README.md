@@ -55,6 +55,7 @@ double FuncAddEverything(double[][] args) nothrow @nogc {
 `
 
 and then in Excel:
-=FuncAddEverything(A1:D20)
+
+`=FuncAddEverything(A1:D20)`
 
 Future functionality will include creating menu items and dialogue boxes.  Pull requests welcomed.
