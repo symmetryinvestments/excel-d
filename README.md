@@ -34,25 +34,25 @@ to generate is determined at compile-time by a version switch.
 
 Sample code:
 
-`
-module xlld.test_d_funcs;
 
-import xlld.worksheet;
+	module xlld.test_d_funcs;
 
-@Register(ArgumentText("Array to add"),
-          HelpTopic("Adds all cells in an array"),
-          FunctionHelp("Adds all cells in an array"),
-          ArgumentHelp(["The array to add"]))
-double FuncAddEverything(double[][] args) nothrow @nogc {
-    import std.algorithm: fold;
-    import std.math: isNaN;
+	import xlld.worksheet;
 
-    double ret = 0;
-    foreach(row; args)
-        ret += row.fold!((a, b) => b.isNaN ? 0.0 : a + b)(0.0);
-    return ret;
-}
-`
+	@Register(ArgumentText("Array to add"),
+	          HelpTopic("Adds all cells in an array"),
+	          FunctionHelp("Adds all cells in an array"),
+	          ArgumentHelp(["The array to add"]))
+	double FuncAddEverything(double[][] args) nothrow @nogc {
+	    import std.algorithm: fold;
+	    import std.math: isNaN;
+
+	    double ret = 0;
+	    foreach(row; args)
+	        ret += row.fold!((a, b) => b.isNaN ? 0.0 : a + b)(0.0);
+	    return ret;
+	}
+
 
 and then in Excel:
 
