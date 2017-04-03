@@ -24,4 +24,5 @@ Excel won't load the XLL automatically: this must be done manually in File->Tool
 Click on "Go" for "Excel Add-Ins" (the default) and select your XLL there after clicking on
 "Browse".
 
-Currently only tested with 32-bit Excel 2013 on 64-bit Windows.
+Currently only tested with 32-bit Excel 2013 on 64-bit Windows.  See add64bit branch for untested 64 bit
+compatible version.
