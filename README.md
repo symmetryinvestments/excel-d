@@ -16,7 +16,6 @@ For this package to build you will need the Excel SDK `xlcall32.lib`
 that can be downloaded [from Microsoft](http://go.microsoft.com/fwlink/?LinkID=251082&clcid=0x409).
 Copying it to the build directory should be sufficient
 (i.e. when building the example, to the `example` directory).
-
 The library file should be useable as-is, as long as on 32-bit Excel `dub build` is run with
 `--arch=x86_mscoff` to use Microsoft's binary format. If linking with optlink, the file must
 be converted first.  We recommend using `link.exe` to not need the conversion.  On 64 bit Excel
