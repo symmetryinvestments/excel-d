@@ -348,9 +348,29 @@ struct Statement {
         import std.algorithm: map;
 
         if(name == "EXPORTS")
-            return name ~ "\n" ~ args.map!(a => "\t\t" ~ a).join("\n");
+        {
+            version(X86)
+            {
+                return name ~ "\n" ~ args.map!(a => "\t\t" ~ a).join("\n");
+            }
+            else version(X86_64)
+            {
+                import std.array:Appender;
+                import std.conv:to;
+                Appender!string ret;
+                ret.put(name ~ "\n");
+                foreach(i,arg;args)
+                {
+                    ret.put("\t\t" ~ arg ~ "\t@" ~ i.to!string~"\n");
+                }
+                return ret.data;
+            }
+            else static assert("unsupported version");
+        }
         else
+        {
             return name ~ "\t\t" ~ args.map!(a => stringify(name, a)).join(" ");
+        }
     }
 
     static private string stringify(in string name, in string arg) @safe pure {
@@ -371,13 +391,23 @@ if(allSatisfy!(isSomeString, typeof(Modules)))
 {
     import std.conv: to;
 
-    auto statements = [
-        Statement("LIBRARY", libName),
-        Statement("DESCRIPTION", description),
-        Statement("EXETYPE", "NT"),
-        Statement("CODE", "PRELOAD DISCARDABLE"),
-        Statement("DATA", "PRELOAD MULTIPLE"),
-    ];
+    version(X86)
+    {
+        auto statements = [
+            Statement("LIBRARY", libName),
+            Statement("DESCRIPTION", description),
+            Statement("EXETYPE", "NT"),
+            Statement("CODE", "PRELOAD DISCARDABLE"),
+            Statement("DATA", "PRELOAD MULTIPLE"),
+        ];
+    }
+    else version(X86_64)
+    {
+        auto statements = [
+            Statement("LIBRARY", libName),
+        ];        
+    }
+    else static assert("unsupported target");
 
     string[] exports = ["xlAutoOpen", "xlAutoClose", "xlAutoFree12"];
     foreach(func; getAllWorksheetFunctions!Modules) {
@@ -389,18 +419,33 @@ if(allSatisfy!(isSomeString, typeof(Modules)))
 
 @("worksheet functions to .def file")
 unittest {
-    dllDefFile!"xlld.test_xl_funcs"("myxll32.dll", "Simple D add-in").shouldEqual(
-        DllDefFile(
-            [
-                Statement("LIBRARY", "myxll32.dll"),
-                Statement("DESCRIPTION", "Simple D add-in"),
-                Statement("EXETYPE", "NT"),
-                Statement("CODE", "PRELOAD DISCARDABLE"),
-                Statement("DATA", "PRELOAD MULTIPLE"),
-                Statement("EXPORTS", ["xlAutoOpen", "xlAutoClose", "xlAutoFree12", "FuncMulByTwo", "FuncFP12", "FuncFib"]),
-            ]
-        )
-    );
+    version(X86)
+    {
+        dllDefFile!"xlld.test_xl_funcs"("myxll32.dll", "Simple D add-in").shouldEqual(
+            DllDefFile(
+                [
+                    Statement("LIBRARY", "myxll32.dll"),
+                    Statement("DESCRIPTION", "Simple D add-in"),
+                    Statement("EXETYPE", "NT"),
+                    Statement("CODE", "PRELOAD DISCARDABLE"),
+                    Statement("DATA", "PRELOAD MULTIPLE"),
+                    Statement("EXPORTS", ["xlAutoOpen", "xlAutoClose", "xlAutoFree12", "FuncMulByTwo", "FuncFP12", "FuncFib"]),
+                ]
+            )
+        );
+    }
+    else version(X86_64)
+    {
+        dllDefFile!"xlld.test_xl_funcs"("myxll64.dll", "Simple D add-in").shouldEqual(
+            DllDefFile(
+                [
+                    Statement("LIBRARY", "myxll64.dll"),
+                    Statement("EXPORTS", ["xlAutoOpen", "xlAutoClose", "xlAutoFree12", "FuncMulByTwo", "FuncFP12", "FuncFib"]),
+                ]
+            )
+        );
+    }
+    else static assert("unsupported version");
 }
 
 
