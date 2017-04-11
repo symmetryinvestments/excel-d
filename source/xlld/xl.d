@@ -8,7 +8,7 @@ import xlld.xlcall: XLOPER12, LPXLOPER12;
 version(unittest) {
 
     // this version(unittest) block effectively "implements" the Excel12v function
-    // so that the code can be unit tested without needing to link the the Excel SDK
+    // so that the code can be unit tested without needing to link with the Excel SDK
     import xlld.xlcallcpp: EXCEL12PROC, SetExcel12EntryPt;
 
     static this() {
