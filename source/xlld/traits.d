@@ -373,10 +373,6 @@ if(allSatisfy!(isSomeString, typeof(Modules)))
 
     auto statements = [
         Statement("LIBRARY", libName),
-        Statement("DESCRIPTION", description),
-        Statement("EXETYPE", "NT"),
-        Statement("CODE", "PRELOAD DISCARDABLE"),
-        Statement("DATA", "PRELOAD MULTIPLE"),
     ];
 
     string[] exports = ["xlAutoOpen", "xlAutoClose", "xlAutoFree12"];
@@ -393,10 +389,6 @@ unittest {
         DllDefFile(
             [
                 Statement("LIBRARY", "myxll32.dll"),
-                Statement("DESCRIPTION", "Simple D add-in"),
-                Statement("EXETYPE", "NT"),
-                Statement("CODE", "PRELOAD DISCARDABLE"),
-                Statement("DATA", "PRELOAD MULTIPLE"),
                 Statement("EXPORTS", ["xlAutoOpen", "xlAutoClose", "xlAutoFree12", "FuncMulByTwo", "FuncFP12", "FuncFib"]),
             ]
         )
