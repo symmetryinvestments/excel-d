@@ -83,6 +83,10 @@ XLOPER12 coerce(LPXLOPER12 oper) nothrow @nogc {
     return coerced;
 }
 
+void free(ref XLOPER12 oper) nothrow @nogc {
+    free(&oper);
+}
+
 void free(LPXLOPER12 oper) nothrow @nogc {
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlFree;
