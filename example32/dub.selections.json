@@ -1,7 +1,0 @@
-{
-	"fileVersion": 1,
-	"versions": {
-		"excel-d": {"path":".."},
-		"unit-threaded": "0.7.7"
-	}
-}
