@@ -5,7 +5,7 @@ copyright "Copyright © 2016, Kaleidic Associates Ltd"
 license "proprietary"
 targetType "sourceLibrary"
 
-configuration "library" {
+configuration "sourceLibrary" {
 }
 
 configuration "unittest" {
