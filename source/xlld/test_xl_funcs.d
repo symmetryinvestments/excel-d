@@ -2,6 +2,7 @@
  Only exists to test the module reflection functionality
  Contains functions with types that the spreadsheet knows about
  */
+
 module xlld.test_xl_funcs;
 
 version(unittest):

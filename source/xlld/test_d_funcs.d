@@ -3,7 +3,11 @@
  with regular D types that will get wrapped so they can be called by
  the spreadsheet.
  */
+
 module xlld.test_d_funcs;
+
+version(unittest):
+
 
 import xlld.worksheet;
 

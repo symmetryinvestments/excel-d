@@ -5,3 +5,4 @@ bin
 *.dll
 *.xll
 *.lib
+test

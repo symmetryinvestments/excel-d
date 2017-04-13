@@ -12,7 +12,6 @@ configuration "unittest" {
     targetType "executable"
     targetName "ut"
     targetPath "bin"
-    sourcePaths "source" "test"
     mainSourceFile "test/ut.d"
     excludedSourceFiles "source/xlld/xll.d"
     dependency "unit-threaded" version="~>0.7.3"
