@@ -24,7 +24,7 @@ version(Windows) {
     } else {
         import core.sys.windows.winnt: LPSTR;
     }
-} else version(unittest) {
+} else {
     alias HANDLE = int;
     alias VOID = void;
     alias HWND = int;
