@@ -854,7 +854,7 @@ string wrapWorksheetFunctionsString(Modules...)() {
 }
 
 
-string wrapAll(string OriginalModule = __MODULE__, Modules...)() {
+string wrapAll(Modules...)(in string mainModule = __MODULE__) {
 
     if(!__ctfe) {
         return "";
@@ -864,16 +864,16 @@ string wrapAll(string OriginalModule = __MODULE__, Modules...)() {
     return
         wrapWorksheetFunctionsString!Modules ~
         "\n" ~
-        implGetWorksheetFunctionsString!OriginalModule ~
+        implGetWorksheetFunctionsString!(mainModule) ~
         "\n" ~
-        `mixin GenerateDllDef!"` ~ OriginalModule ~ `";` ~
+        `mixin GenerateDllDef!"` ~ mainModule ~ `";` ~
         "\n";
 }
 
 @("wrapAll")
 unittest  {
     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef;
-    mixin(wrapAll!(__MODULE__, "xlld.test_d_funcs"));
+    mixin(wrapAll!("xlld.test_d_funcs"));
     auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]]);
     FuncAddEverything(&arg).shouldEqualDlang(60.0);
 }
