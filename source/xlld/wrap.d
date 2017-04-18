@@ -826,7 +826,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     return &ret;
 }
 
-@("No memory allocation bugs in wrapModuleFunctionImpl for double return")
+@("No memory allocation bugs in wrapModuleFunctionImpl for double return Mallocator")
 @system unittest {
     import std.experimental.allocator.mallocator: Mallocator;
     import xlld.test_d_funcs: FuncAddEverything;
@@ -840,7 +840,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     autoFree(oper); // normally this is done by Excel
 }
 
-@("No memory allocation bugs in wrapModuleFunctionImp for double[][] return")
+@("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return Mallocator")
 @system unittest {
     import std.experimental.allocator.mallocator: Mallocator;
     import xlld.test_d_funcs: FuncTripleEverything;
@@ -854,6 +854,19 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     oper.shouldEqualDlang([[3.0, 6.0, 9.0]]);
     autoFree(oper); // normally this is done by Excel
 }
+
+@("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return pool")
+@system unittest {
+    import xlld.memorymanager: gMemoryPool;
+    import xlld.test_d_funcs: FuncTripleEverything;
+
+    auto arg = toSRef([1.0, 2.0, 3.0], gMemoryPool);
+    auto oper = wrapModuleFunctionImpl!FuncTripleEverything(gMemoryPool, &arg);
+    gMemoryPool.curPos.shouldEqual(0);
+    oper.shouldEqualDlang([[3.0, 6.0, 9.0]]);
+    autoFree(oper); // normally this is done by Excel
+}
+
 
 string wrapWorksheetFunctionsString(Modules...)() {
 
