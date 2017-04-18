@@ -9,57 +9,44 @@
 */
 module xlld.memorymanager;
 
-import std.typecons: Flag, Yes;
 import std.experimental.allocator.mallocator: Mallocator;
+import xlld.xlcall: LPXLOPER12;
 
-alias Allocator = Mallocator;
-alias allocator = Allocator.instance;
+alias allocator = Mallocator.instance;
+alias autoFreeAllocator = Mallocator.instance;
 
 enum StartingMemorySize = 10240;
 enum MaxMemorySize=100*1024*1024;
 
-private MemoryPool excelCallPool;
+alias MemoryPool = MemoryPoolImpl!Mallocator;
+private MemoryPool gMemoryPool;
 
 static this() {
-    excelCallPool = MemoryPool(StartingMemorySize);
+    gMemoryPool = MemoryPool(StartingMemorySize);
 }
 
+struct MemoryPoolImpl(T) {
 
-struct MemoryPool {
+    alias _allocator = T.instance;
 
     ubyte[] data;
-    size_t curPos=0;
+    size_t curPos;
 
-    this(size_t startingMemorySize) nothrow @nogc {
+    this(size_t startingMemorySize) {
         import std.experimental.allocator: makeArray;
-
-        if (data.length==0)
-            data=allocator.makeArray!(ubyte)(startingMemorySize);
-        curPos=0;
+        data = _allocator.makeArray!(ubyte)(startingMemorySize);
     }
 
-    ~this() nothrow @nogc {
-        dispose;
-    }
-
-    void dispose() nothrow @nogc {
+    ~this() nothrow {
         import std.experimental.allocator: dispose;
-
-        if(data.length>0)
-            allocator.dispose(data);
-        data = [];
-        curPos=0;
+        _allocator.dispose(data);
     }
 
-    void dispose(string) nothrow @nogc {
-        dispose;
-    }
-
-    ubyte[] allocate(size_t numBytes) nothrow @nogc {
+    ubyte[] allocate(size_t numBytes) {
         import std.algorithm: min;
         import std.experimental.allocator: expandArray;
 
-        if (numBytes<=0)
+        if (numBytes <= 0)
             return null;
 
         if (curPos + numBytes > data.length)
@@ -67,17 +54,24 @@ struct MemoryPool {
             auto newAllocationSize = min(MaxMemorySize, data.length * 2);
             if (newAllocationSize <= data.length)
                 return null;
-            allocator.expandArray(data, newAllocationSize, 0);
+            _allocator.expandArray(data, newAllocationSize, 0);
         }
 
-        auto lpMemory = data[curPos .. curPos+numBytes];
+        auto ret = data[curPos .. curPos + numBytes];
         curPos += numBytes;
 
-        return lpMemory;
+        return ret;
     }
 
     // Frees all the temporary memory by setting the index for available memory back to the beginning
-    void freeAll() nothrow @nogc {
+    bool deallocateAll() {
         curPos = 0;
+        return true;
     }
+}
+
+// the function called by the Excel callback
+void autoFree(LPXLOPER12 arg) {
+    import xlld.framework: freeXLOper;
+    freeXLOper(arg, autoFreeAllocator);
 }

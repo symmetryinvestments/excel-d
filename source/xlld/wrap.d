@@ -2,6 +2,7 @@ module xlld.wrap;
 
 import xlld.xlcall;
 import xlld.traits: isSupportedFunction;
+import xlld.memorymanager: autoFree;
 import xlld.framework: freeXLOper;
 import xlld.worksheet;
 import std.traits: isArray;
@@ -675,6 +676,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)() {
 @("FuncAddEverything wrapper is @nogc")
 @system @nogc unittest {
     import std.experimental.allocator.mallocator: Mallocator;
+    import xlld.framework: freeXLOper;
 
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
     auto arg = toXlOper(2.0, Mallocator.instance);
@@ -741,8 +743,9 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
         register,
         `extern(Windows) LPXLOPER12 ` ~ funcName ~ `(` ~ argsDecl ~ `) nothrow ` ~ nogc ~ `{`,
         `    static import ` ~ moduleName ~ `;`,
+        `    import xlld.memorymanager: allocator;`,
         `    alias wrappedFunc = ` ~ moduleName ~ `.` ~ funcName ~ `;`,
-        `    return wrapModuleFunctionImpl!wrappedFunc(` ~ argsCall ~  `);`,
+        `    return wrapModuleFunctionImpl!wrappedFunc(allocator, ` ~ argsCall ~  `);`,
         `}`,
     ].join("\n");
 }
@@ -759,13 +762,8 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
 /**
  Implement a wrapper for a regular D function
  */
-LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, T...)(T args) {
-    import xlld.memorymanager: allocator;
-    return wrapModuleFunctionImplAllocator!wrappedFunc(allocator, args);
-}
-
-LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)
-                                          (ref A allocator, T args) {
+LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
+                                  (ref A allocator, auto ref T args) {
     import xlld.xl: free;
     import std.traits: Parameters;
     import std.typecons: Tuple;
@@ -806,49 +804,49 @@ LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)
         }
     }
 
-    try
-        ret = toXlOper(wrappedFunc(dArgs.expand), allocator);
-    catch(Exception ex)
-        return null;
-
-    foreach(ref dArg; dArgs) {
-        import std.traits: isPointer;
-        static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg)))
-            allocator.dispose(dArg);
+    scope(exit) {
+        foreach(ref dArg; dArgs) {
+            import std.traits: isPointer;
+            static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg)))
+                allocator.dispose(dArg);
+        }
     }
 
-    ret.xltype |= xlbitDLLFree;
+    try
+        ret = toAutoFreeOper(wrappedFunc(dArgs.expand));
+    catch(Exception ex)
+        return null;
 
     return &ret;
 }
 
-@("No memory allocation bugs in wrapModuleFunctionImplAllocator for double return")
+@("No memory allocation bugs in wrapModuleFunctionImpl for double return")
 @system unittest {
     import std.experimental.allocator.mallocator: Mallocator;
     import xlld.test_d_funcs: FuncAddEverything;
 
     TestAllocator allocator;
     auto arg = toSRef([1.0, 2.0], Mallocator.instance);
-    auto oper = wrapModuleFunctionImplAllocator!FuncAddEverything(allocator, &arg);
+    auto oper = wrapModuleFunctionImpl!FuncAddEverything(allocator, &arg);
     (oper.xltype & xlbitDLLFree).shouldBeTrue;
     allocator.numAllocations.shouldEqual(2);
     oper.shouldEqualDlang(3.0);
-    freeXLOper(oper, allocator); // normally this is done by Excel
+    autoFree(oper); // normally this is done by Excel
 }
 
-@("No memory allocation bugs in wrapModuleFunctionImplAllocator for double[][] return")
+@("No memory allocation bugs in wrapModuleFunctionImp for double[][] return")
 @system unittest {
     import std.experimental.allocator.mallocator: Mallocator;
     import xlld.test_d_funcs: FuncTripleEverything;
 
     TestAllocator allocator;
     auto arg = toSRef([1.0, 2.0, 3.0], Mallocator.instance);
-    auto oper = wrapModuleFunctionImplAllocator!FuncTripleEverything(allocator, &arg);
+    auto oper = wrapModuleFunctionImpl!FuncTripleEverything(allocator, &arg);
     (oper.xltype & xlbitDLLFree).shouldBeTrue;
     (oper.xltype & ~xlbitDLLFree).shouldEqual(xltypeMulti);
-    allocator.numAllocations.shouldEqual(3);
+    allocator.numAllocations.shouldEqual(2);
     oper.shouldEqualDlang([[3.0, 6.0, 9.0]]);
-    freeXLOper(oper, allocator); // normally this is done by Excel
+    autoFree(oper); // normally this is done by Excel
 }
 
 string wrapWorksheetFunctionsString(Modules...)() {
@@ -916,7 +914,7 @@ XLOPER12 convertInput(T)(LPXLOPER12 arg) {
   will be freed by Excel itself
  */
 XLOPER12 toAutoFreeOper(T)(T value) {
-    import xlld.memorymanager: autoFreeAllocator = allocator;
+    import xlld.memorymanager: autoFreeAllocator;
     import xlld.xlcall: XlType;
 
     auto result = value.toXlOper(autoFreeAllocator);

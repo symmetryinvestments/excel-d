@@ -85,15 +85,14 @@ else {
     }
 
     extern(Windows) int xlAutoFree12(LPXLOPER12 arg) {
-        import xlld.memorymanager: allocator;
-        import xlld.framework: freeXLOper;
+        import xlld.memorymanager: autoFree;
+        import xlld.xlcall: xlbitDLLFree;
 
         assert(arg.xltype & xlbitDLLFree);
-        freeXLOper(arg, allocator);
 
+        autoFree(arg);
         return 1;
     }
-
 
     extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction)
     {
