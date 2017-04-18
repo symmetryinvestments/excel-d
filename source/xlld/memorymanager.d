@@ -24,20 +24,6 @@ static this() {
     excelCallPool = MemoryPool(StartingMemorySize);
 }
 
-ubyte* GetTempMemory(Flag!"autoFree" autoFree = Yes.autoFree)(size_t numBytes)
-{
-    static if(autoFree) {
-        return excelCallPool.allocate(numBytes).ptr;
-    } else {
-        return allocator.allocate(numBytes).ptr;
-    }
-}
-
-void FreeAllTempMemory() nothrow @nogc
-{
-    excelCallPool.freeAll;
-}
-
 
 struct MemoryPool {
 

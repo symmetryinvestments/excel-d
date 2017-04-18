@@ -15,9 +15,9 @@ else {
     import xlld;
     import core.sys.windows.windows;
 
-// this function must be define in a module compiled with
-// the current module
-// It's extern(C) so that it can be defined in any module
+    // this function must be define in a module compiled with
+    // the current module
+    // It's extern(C) so that it can be defined in any module
     extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow;
 
 
@@ -51,9 +51,11 @@ else {
 
     extern(Windows) int xlAutoOpen()
     {
-        import std.conv;
         import std.algorithm: map;
+        import std.array: array;
         import core.runtime:rt_init;
+        import xlld.memorymanager: allocator;
+        import xlld.framework: freeXLOper;
 
         rt_init(); // move to DllOpen?
 
@@ -61,8 +63,15 @@ else {
         static XLOPER12 dllName;
         Excel12f(xlGetName, &dllName, []);
 
-        foreach(functionParams; getWorksheetFunctions.map!(a => a.toStringArray))
-            Excel12f(xlfRegister, cast(LPXLOPER12)null, [cast(LPXLOPER12) &dllName] ~ TempStr12(functionParams[]));
+        foreach(strings; getWorksheetFunctions.map!(a => a.toStringArray)) {
+            auto opers = strings.map!(a => a.toXlOper(allocator)).array;
+            scope(exit) foreach(ref oper; opers) freeXLOper(&oper);
+
+            Excel12f(xlfRegister,
+                     cast(LPXLOPER12)null,
+                     [cast(LPXLOPER12)&dllName] ~
+                     opers.map!(a => &a).array);
+        }
 
         return 1;
     }
@@ -74,14 +83,16 @@ else {
     }
 
     extern(Windows) int xlAutoFree12(LPXLOPER12 arg) {
+        import xlld.memorymanager: allocator;
         assert(arg.xltype & xlbitDLLFree);
-        FreeXLOper(arg);
+        freeXLOper(arg, allocator);
         return 1;
     }
 
 
     extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction)
     {
+        import xlld.wrap: toAutoFreeOper;
         static XLOPER12 xInfo, xIntAction;
 
         //
@@ -91,22 +102,21 @@ else {
         // anything else, it returns a #VALUE! error.
         //
 
-        Excel12f(xlCoerce, &xIntAction,[xAction, TempInt12(xltypeInt)]);
+        //we need an XLOPER12 with a _value_ of xltypeInt
+        XLOPER12 arg;
+        arg.xltype = XlType.xltypeInt;
+        arg.val.w = xltypeInt;
 
-        if (xIntAction.val.w == 1)
-        {
-            xInfo.xltype = XlType.xltypeStr;
-            xInfo.val.str = TempStr12("My XLL"w).val.str;
-        }
-        else
-        {
+        Excel12f(xlCoerce, &xIntAction, [xAction, &arg]);
+
+        if (xIntAction.val.w == 1) {
+            xInfo = "My XLL".toAutoFreeOper;
+        } else {
             xInfo.xltype = XlType.xltypeErr;
             xInfo.val.err = xlerrValue;
         }
 
-        //Word of caution - returning static XLOPERs/XLOPER12s is not thread safe
-        //for UDFs declared as thread safe, use alternate memory allocation mechanisms
-        return cast(LPXLOPER12) &xInfo;
+        return &xInfo;
     }
 
     version(Windows) {

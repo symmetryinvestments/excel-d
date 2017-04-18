@@ -2,7 +2,7 @@ module xlld.wrap;
 
 import xlld.xlcall;
 import xlld.traits: isSupportedFunction;
-import xlld.framework: FreeXLOper;
+import xlld.framework: freeXLOper;
 import xlld.worksheet;
 import std.traits: isArray;
 
@@ -155,10 +155,11 @@ XLOPER12 toXlOper(T, A)(T val, ref A allocator) if(is(T == string)) {
 @("toXlOper!string ascii")
 @system unittest {
     import std.conv: to;
+    import xlld.memorymanager: allocator;
 
     const str = "foo";
     auto oper = str.toXlOper;
-    scope(exit)FreeXLOper(&oper);
+    scope(exit) freeXLOper(&oper, allocator);
 
     oper.xltype.shouldEqual(xltypeStr);
     (cast(int)oper.val.str[0]).shouldEqual(str.length);
@@ -171,7 +172,7 @@ XLOPER12 toXlOper(T, A)(T val, ref A allocator) if(is(T == string)) {
     TestAllocator allocator;
     auto oper = "foo".toXlOper(allocator);
     allocator.numAllocations.shouldEqual(1);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
 }
 
 XLOPER12 toXlOper(T)(T[][] values) if(is(T == double) || is(T == string))
@@ -214,8 +215,10 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
 
 @("toXlOper string[][]")
 @system unittest {
+    import xlld.memorymanager: allocator;
+
     auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper;
-    scope(exit) FreeXLOper(&oper);
+    scope(exit) freeXLOper(&oper, allocator);
 
     oper.xltype.shouldEqual(xltypeMulti);
     oper.val.array.rows.shouldEqual(2);
@@ -232,7 +235,7 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     TestAllocator allocator;
     auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper(allocator);
     allocator.numAllocations.shouldEqual(7);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
 }
 
 @("toXlOper double[][] allocator")
@@ -240,7 +243,7 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     TestAllocator allocator;
     auto oper = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]].toXlOper(allocator);
     allocator.numAllocations.shouldEqual(1);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
 }
 
 
@@ -260,7 +263,7 @@ XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(T == string[]) || is(T 
     TestAllocator allocator;
     auto oper = ["foo", "bar", "baz", "toto", "titi", "quux"].toXlOper(allocator);
     allocator.numAllocations.shouldEqual(7);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
 }
 
 auto fromXlOper(T)(ref XLOPER12 val) {
@@ -285,13 +288,14 @@ auto fromXlOper(T)(LPXLOPER12 val) if(is(T == double)) {
 
 @("fromXlOper double allocator")
 @system unittest {
+
     TestAllocator allocator;
     auto num = 4.0;
     auto oper = num.toXlOper(allocator);
     auto back = oper.fromXlOper!double(allocator);
     back.shouldEqual(num);
 
-    FreeXLOper(&oper);
+    freeXLOper(&oper, allocator);
 }
 
 
@@ -319,17 +323,21 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator)
 
 @("fromXlOper!string[][]")
 unittest {
+    import xlld.memorymanager: allocator;
+
     auto strings = [["foo", "bar", "baz"], ["toto", "titi", "quux"]];
     auto oper = strings.toXlOper;
-    scope(exit) FreeXLOper(&oper);
+    scope(exit) freeXLOper(&oper, allocator);
     oper.fromXlOper!(string[][]).shouldEqual(strings);
 }
 
 @("fromXlOper!double[][]")
 unittest {
+    import xlld.memorymanager: allocator;
+
     auto doubles = [[1.0, 2.0], [3.0, 4.0]];
     auto oper = doubles.toXlOper;
-    scope(exit) FreeXLOper(&oper);
+    scope(exit) freeXLOper(&oper, allocator);
     oper.fromXlOper!(double[][]).shouldEqual(doubles);
 }
 
@@ -342,7 +350,7 @@ unittest {
 
     allocator.numAllocations.shouldEqual(16);
 
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
     backAgain.shouldEqual(strings);
     allocator.dispose(backAgain);
 }
@@ -356,7 +364,7 @@ unittest {
 
     allocator.numAllocations.shouldEqual(4);
 
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
     backAgain.shouldEqual(doubles);
     allocator.dispose(backAgain);
 }
@@ -385,17 +393,21 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator)
 
 @("fromXlOper!string[]")
 unittest {
+    import xlld.memorymanager: allocator;
+
     auto strings = ["foo", "bar", "baz", "toto", "titi", "quux"];
-    auto oper = strings.toXlOper;
-    scope(exit) FreeXLOper(&oper);
+    auto oper = strings.toXlOper();
+    scope(exit) freeXLOper(&oper, allocator);
     oper.fromXlOper!(string[]).shouldEqual(strings);
 }
 
 @("fromXlOper!double[]")
 unittest {
+    import xlld.memorymanager: allocator;
+
     auto doubles = [1.0, 2.0, 3.0, 4.0];
     auto oper = doubles.toXlOper;
-    scope(exit) FreeXLOper(&oper);
+    scope(exit) freeXLOper(&oper, allocator);
     oper.fromXlOper!(double[]).shouldEqual(doubles);
 }
 
@@ -409,7 +421,7 @@ unittest {
     allocator.numAllocations.shouldEqual(14);
 
     backAgain.shouldEqual(strings);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
     allocator.dispose(backAgain);
 }
 
@@ -423,7 +435,7 @@ unittest {
     allocator.numAllocations.shouldEqual(2);
 
     backAgain.shouldEqual(doubles);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
     allocator.dispose(backAgain);
 }
 
@@ -507,7 +519,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     auto str = fromXlOper!string(&oper, allocator);
     allocator.numAllocations.shouldEqual(2);
 
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
     str.shouldEqual("foo");
     allocator.dispose(cast(void[])str);
 }
@@ -672,7 +684,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)() {
 
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
     auto arg = toXlOper(2.0, Mallocator.instance);
-    scope(exit) FreeXLOper(&arg, Mallocator.instance);
+    scope(exit) freeXLOper(&arg, Mallocator.instance);
     FuncAddEverything(&arg);
 }
 
@@ -826,7 +838,7 @@ LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)
     (oper.xltype & xlbitDLLFree).shouldBeTrue;
     allocator.numAllocations.shouldEqual(2);
     oper.shouldEqualDlang(3.0);
-    FreeXLOper(oper, allocator); // normally this is done by Excel
+    freeXLOper(oper, allocator); // normally this is done by Excel
 }
 
 @("No memory allocation bugs in wrapModuleFunctionImplAllocator for double[][] return")
@@ -840,7 +852,7 @@ LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)
     (oper.xltype & ~xlbitDLLFree).shouldEqual(xltypeMulti);
     allocator.numAllocations.shouldEqual(3);
     oper.shouldEqualDlang([[3.0, 6.0, 9.0]]);
-    FreeXLOper(oper, allocator); // normally this is done by Excel
+    freeXLOper(oper, allocator); // normally this is done by Excel
 }
 
 string wrapWorksheetFunctionsString(Modules...)() {
