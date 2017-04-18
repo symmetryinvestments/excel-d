@@ -912,6 +912,15 @@ ushort operStringLength(T)(T value) {
     return cast(ushort)value.val.str[0];
 }
 
+auto fromXlOperCoerce(T)(LPXLOPER12 val) {
+    return fromXlOperCoerce(*val);
+}
+
+auto fromXlOperCoerce(T, A)(LPXLOPER12 val, auto ref A allocator) {
+    return fromXlOperCoerce!T(*val, allocator);
+}
+
+
 auto fromXlOperCoerce(T)(ref XLOPER12 val) {
     import xlld.memorymanager: allocator;
     return fromXlOperCoerce!T(val, allocator);
