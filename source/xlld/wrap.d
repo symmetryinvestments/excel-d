@@ -131,7 +131,9 @@ XLOPER12 toXlOper(T)(T val) if(is(T == string)) {
     return toXlOper(val, allocator);
 }
 
-XLOPER12 toXlOper(T, A)(T val, ref A allocator) if(is(T == string)) {
+XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
+    if(is(T == string) || is(T == wstring))
+{
     import std.utf: byWchar;
     import std.stdio;
 
@@ -152,18 +154,31 @@ XLOPER12 toXlOper(T, A)(T val, ref A allocator) if(is(T == string)) {
 }
 
 
-@("toXlOper!string ascii")
+@("toXlOper!string utf8")
 @system unittest {
     import std.conv: to;
     import xlld.memorymanager: allocator;
 
     const str = "foo";
-    auto oper = str.toXlOper;
+    auto oper = str.toXlOper(allocator);
     scope(exit) freeXLOper(&oper, allocator);
 
     oper.xltype.shouldEqual(xltypeStr);
     (cast(int)oper.val.str[0]).shouldEqual(str.length);
-    (cast(wchar*)oper.val.str)[1 .. str.length + 1].to!string.shouldEqual("foo");
+    (cast(wchar*)oper.val.str)[1 .. str.length + 1].to!string.shouldEqual(str);
+}
+
+@("toXlOper!string utf16")
+@system unittest {
+    import xlld.memorymanager: allocator;
+
+    const str = "foo"w;
+    auto oper = str.toXlOper(allocator);
+    scope(exit) freeXLOper(&oper, allocator);
+
+    oper.xltype.shouldEqual(xltypeStr);
+    (cast(int)oper.val.str[0]).shouldEqual(str.length);
+    (cast(wchar*)oper.val.str)[1 .. str.length + 1].shouldEqual(str);
 }
 
 @("toXlOper!string allocator")

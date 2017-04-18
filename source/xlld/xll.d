@@ -65,12 +65,14 @@ else {
 
         foreach(strings; getWorksheetFunctions.map!(a => a.toStringArray)) {
             auto opers = strings.map!(a => a.toXlOper(allocator)).array;
-            scope(exit) foreach(ref oper; opers) freeXLOper(&oper);
+            scope(exit) foreach(ref oper; opers) freeXLOper(&oper, allocator);
 
-            Excel12f(xlfRegister,
-                     cast(LPXLOPER12)null,
-                     [cast(LPXLOPER12)&dllName] ~
-                     opers.map!(a => &a).array);
+            auto args = new LPXLOPER12[opers.length + 1];
+            args[0] = &dllName;
+            foreach(i; 0 .. opers.length)
+                args[i + 1] = &opers[i];
+
+            Excel12f(xlfRegister, cast(LPXLOPER12)null, args);
         }
 
         return 1;
