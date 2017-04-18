@@ -524,6 +524,10 @@ private enum isWorksheetFunction(alias F) =
     static assert(!isWorksheetFunction!FuncThrows);
 }
 
+/**
+   A string to mixin that wraps all eligible functions in the
+   given module.
+ */
 string wrapModuleWorksheetFunctionsString(string moduleName)() {
     if(!__ctfe) {
         return "";
@@ -754,9 +758,9 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, T...)(T args) {
     return wrapModuleFunctionImplAllocator!wrappedFunc(allocator, args);
 }
 
-LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)(ref A allocator, T args) {
+LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)
+                                          (ref A allocator, T args) {
     import xlld.xl: free;
-    import std.conv: text;
     import std.traits: Parameters;
     import std.typecons: Tuple;
 
