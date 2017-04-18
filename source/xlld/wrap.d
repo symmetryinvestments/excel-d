@@ -747,7 +747,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
 }
 
 /**
- Implemented a wrapper for a regular D function
+ Implement a wrapper for a regular D function
  */
 LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, T...)(T args) {
     import xlld.memorymanager: allocator;
@@ -868,6 +868,14 @@ string wrapAll(string OriginalModule = __MODULE__, Modules...)() {
         "\n" ~
         `mixin GenerateDllDef!"` ~ OriginalModule ~ `";` ~
         "\n";
+}
+
+@("wrapAll")
+unittest  {
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef;
+    mixin(wrapAll!(__MODULE__, "xlld.test_d_funcs"));
+    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]]);
+    FuncAddEverything(&arg).shouldEqualDlang(60.0);
 }
 
 
