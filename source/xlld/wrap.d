@@ -973,3 +973,38 @@ unittest {
     doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage("XL oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
 }
+
+struct TempMemoryPool {
+
+    import xlld.memorymanager: gMemoryPool;
+    alias _allocator = gMemoryPool;
+
+    static auto fromXlOper(T, U)(U oper) {
+        import xlld.wrap: wrapFromXlOper = fromXlOper;
+        return wrapFromXlOper!T(oper, _allocator);
+    }
+
+    static auto toXlOper(T)(T val) {
+        import xlld.wrap: wrapToXlOper = toXlOper;
+        return wrapToXlOper(val, _allocator);
+    }
+
+    ~this() @safe {
+        _allocator.deallocateAll;
+    }
+}
+
+
+@("TempMemoryPool")
+unittest {
+    import xlld.memorymanager: pool = gMemoryPool;
+
+    with(TempMemoryPool()) {
+        auto strOper = toXlOper("foo");
+        auto str = fromXlOper!string(strOper);
+        pool.curPos.shouldNotEqual(0);
+        str.shouldEqual("foo");
+    }
+
+    pool.curPos.shouldEqual(0);
+}

@@ -12,6 +12,8 @@ module xlld.memorymanager;
 import std.experimental.allocator.mallocator: Mallocator;
 import xlld.xlcall: LPXLOPER12;
 
+version(unittest) import unit_threaded;
+
 alias allocator = Mallocator.instance;
 alias autoFreeAllocator = Mallocator.instance;
 
