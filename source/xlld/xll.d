@@ -86,8 +86,11 @@ else {
 
     extern(Windows) int xlAutoFree12(LPXLOPER12 arg) {
         import xlld.memorymanager: allocator;
+        import xlld.framework: freeXLOper;
+
         assert(arg.xltype & xlbitDLLFree);
         freeXLOper(arg, allocator);
+
         return 1;
     }
 
