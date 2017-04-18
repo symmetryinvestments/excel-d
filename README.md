@@ -10,7 +10,7 @@ directory. Running `dub build` there will create an XLL
 (`myxll32.xll`) that can be loaded in Excel making all of the
 functions in `test/xlld/test_d_funcs.d` available to be used in Excel
 cells. The types are automatically converted between D native types
-and Excel ones.  To build the example: `dub build -c example`.
+and Excel ones.  To build the example: `dub build -c example [--arch=x86_mscoff|--arch=x86_64]`.
 
 For this package to build you will need the Excel SDK `xlcall32.lib`
 that can be downloaded [from Microsoft](http://go.microsoft.com/fwlink/?LinkID=251082&clcid=0x409).
