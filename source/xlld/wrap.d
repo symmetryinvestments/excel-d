@@ -114,22 +114,14 @@ void dispose(A, T)(auto ref A allocator, T value) if(!isArray!T) {
     std.experimental.allocator.dispose(allocator, value);
 }
 
-XLOPER12 toXlOper(T, A)(T val, ref A allocator) if(is(T == double)) {
-    return toXlOper(val);
-}
 
-XLOPER12 toXlOper(T)(T val) if(is(T == double)) {
+XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(T == double)) {
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeNum;
     ret.val.num = val;
     return ret;
 }
 
-
-XLOPER12 toXlOper(T)(T val) if(is(T == string)) {
-    import xlld.memorymanager: allocator;
-    return toXlOper(val, allocator);
-}
 
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     if(is(T == string) || is(T == wstring))
@@ -190,11 +182,6 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     freeXLOper(&oper, allocator);
 }
 
-XLOPER12 toXlOper(T)(T[][] values) if(is(T == double) || is(T == string))
-{
-    import xlld.memorymanager: allocator;
-    return toXlOper(values, allocator);
-}
 
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     if(is(T == double) || is(T == string))
@@ -232,7 +219,7 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
 @system unittest {
     import xlld.memorymanager: allocator;
 
-    auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper;
+    auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper(allocator);
     scope(exit) freeXLOper(&oper, allocator);
 
     oper.xltype.shouldEqual(xltypeMulti);
@@ -261,11 +248,6 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     freeXLOper(&oper, allocator);
 }
 
-
-XLOPER12 toXlOper(T)(T values) if(is(T == string[]) || is(T == double[])) {
-    import xlld.memorymanager: allocator;
-    return toXlOper(values, allocator);
-}
 
 XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(T == string[]) || is(T == double[])) {
     T[1] realValues = [values];
@@ -341,7 +323,7 @@ unittest {
     import xlld.memorymanager: allocator;
 
     auto strings = [["foo", "bar", "baz"], ["toto", "titi", "quux"]];
-    auto oper = strings.toXlOper;
+    auto oper = strings.toXlOper(allocator);
     scope(exit) freeXLOper(&oper, allocator);
     oper.fromXlOper!(string[][]).shouldEqual(strings);
 }
@@ -351,7 +333,7 @@ unittest {
     import xlld.memorymanager: allocator;
 
     auto doubles = [[1.0, 2.0], [3.0, 4.0]];
-    auto oper = doubles.toXlOper;
+    auto oper = doubles.toXlOper(allocator);
     scope(exit) freeXLOper(&oper, allocator);
     oper.fromXlOper!(double[][]).shouldEqual(doubles);
 }
@@ -411,7 +393,7 @@ unittest {
     import xlld.memorymanager: allocator;
 
     auto strings = ["foo", "bar", "baz", "toto", "titi", "quux"];
-    auto oper = strings.toXlOper();
+    auto oper = strings.toXlOper(allocator);
     scope(exit) freeXLOper(&oper, allocator);
     oper.fromXlOper!(string[]).shouldEqual(strings);
 }
@@ -421,7 +403,7 @@ unittest {
     import xlld.memorymanager: allocator;
 
     auto doubles = [1.0, 2.0, 3.0, 4.0];
-    auto oper = doubles.toXlOper;
+    auto oper = doubles.toXlOper(allocator);
     scope(exit) freeXLOper(&oper, allocator);
     oper.fromXlOper!(double[]).shouldEqual(doubles);
 }
@@ -691,24 +673,27 @@ string wrapModuleWorksheetFunctionsString(string moduleName)() {
 
 @("Wrap string -> string")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toXlOper("foo");
+    auto arg = toXlOper("foo", allocator);
     StringToString(&arg).shouldEqualDlang("foobar");
 }
 
 @("Wrap string, string, string -> string")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg0 = toXlOper("foo");
-    auto arg1 = toXlOper("bar");
-    auto arg2 = toXlOper("baz");
+    auto arg0 = toXlOper("foo", allocator);
+    auto arg1 = toXlOper("bar", allocator);
+    auto arg2 = toXlOper("baz", allocator);
     ManyToString(&arg0, &arg1, &arg2).shouldEqualDlang("foobarbaz");
 }
 
 @("Only look at nothrow functions")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toXlOper(2.0);
+    auto arg = toXlOper(2.0, allocator);
     static assert(!__traits(compiles, FuncThrows(&arg)));
 }
 
