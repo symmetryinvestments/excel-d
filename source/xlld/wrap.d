@@ -743,9 +743,9 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
         register,
         `extern(Windows) LPXLOPER12 ` ~ funcName ~ `(` ~ argsDecl ~ `) nothrow ` ~ nogc ~ `{`,
         `    static import ` ~ moduleName ~ `;`,
-        `    import xlld.memorymanager: allocator;`,
+        `    import xlld.memorymanager: gMemoryPool;`,
         `    alias wrappedFunc = ` ~ moduleName ~ `.` ~ funcName ~ `;`,
-        `    return wrapModuleFunctionImpl!wrappedFunc(allocator, ` ~ argsCall ~  `);`,
+        `    return wrapModuleFunctionImpl!wrappedFunc(gMemoryPool, ` ~ argsCall ~  `);`,
         `}`,
     ].join("\n");
 }
@@ -793,6 +793,20 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 
     Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
 
+    void freeAll() {
+        static if(__traits(compiles, allocator.deallocateAll))
+            allocator.deallocateAll;
+        else {
+            foreach(ref dArg; dArgs) {
+                import std.traits: isPointer;
+                static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg)))
+                    allocator.dispose(dArg);
+            }
+        }
+    }
+
+    scope(exit) freeAll;
+
     // next call the wrapped function with D types
     foreach(i, InputType; Parameters!wrappedFunc) {
         try {
@@ -801,14 +815,6 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
             ret.xltype = XlType.xltypeErr;
             ret.val.err = -1;
             return &ret;
-        }
-    }
-
-    scope(exit) {
-        foreach(ref dArg; dArgs) {
-            import std.traits: isPointer;
-            static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg)))
-                allocator.dispose(dArg);
         }
     }
 
