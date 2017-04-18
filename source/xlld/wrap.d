@@ -21,9 +21,10 @@ version(unittest) {
 
     // automatically converts from oper to compare with a D type
     void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) {
+        import xlld.memorymanager: allocator;
         if(actual.xltype == xltypeErr)
             fail("XLOPER is of error type", file, line);
-        actual.fromXlOper!U.shouldEqual(expected, file, line);
+        actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
     }
 
     // automatically converts from oper to compare with a D type
@@ -263,20 +264,11 @@ XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(T == string[]) || is(T 
     freeXLOper(&oper, allocator);
 }
 
-auto fromXlOper(T)(ref XLOPER12 val) {
-    return (&val).fromXlOper!T;
-}
-
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
     return (&val).fromXlOper!T(allocator);
 }
 
-
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
-    return fromXlOper!T(val);
-}
-
-auto fromXlOper(T)(LPXLOPER12 val) if(is(T == double)) {
     if(val.xltype == xltypeMissing)
         return double.init;
 
@@ -299,16 +291,10 @@ auto fromXlOper(T)(LPXLOPER12 val) if(is(T == double)) {
 @("isNan for fromXlOper!double")
 @system unittest {
     import std.math: isNaN;
+    import xlld.memorymanager: allocator;
     XLOPER12 oper;
     oper.xltype = XlType.xltypeMissing;
-    fromXlOper!double(&oper).isNaN.shouldBeTrue;
-}
-
-// 2D slices
-auto fromXlOper(T)(LPXLOPER12 val) if(is(T: E[][], E) && (is(E == string) || is(E == double)))
-{
-    import xlld.memorymanager: allocator;
-    return fromXlOper!T(val, allocator);
+    fromXlOper!double(&oper, allocator).isNaN.shouldBeTrue;
 }
 
 
@@ -325,7 +311,7 @@ unittest {
     auto strings = [["foo", "bar", "baz"], ["toto", "titi", "quux"]];
     auto oper = strings.toXlOper(allocator);
     scope(exit) freeXLOper(&oper, allocator);
-    oper.fromXlOper!(string[][]).shouldEqual(strings);
+    oper.fromXlOper!(string[][])(allocator).shouldEqual(strings);
 }
 
 @("fromXlOper!double[][]")
@@ -335,7 +321,7 @@ unittest {
     auto doubles = [[1.0, 2.0], [3.0, 4.0]];
     auto oper = doubles.toXlOper(allocator);
     scope(exit) freeXLOper(&oper, allocator);
-    oper.fromXlOper!(double[][]).shouldEqual(doubles);
+    oper.fromXlOper!(double[][])(allocator).shouldEqual(doubles);
 }
 
 @("fromXlOper!string[][] allocator")
@@ -372,13 +358,6 @@ private enum Dimensions {
     Two,
 }
 
-// 1D slices
-auto fromXlOper(T)(LPXLOPER12 val)
-    if(is(T: E[], E) && (is(E == string) || is(E == double)))
-{
-    import xlld.memorymanager: allocator;
-    return fromXlOper!T(val, allocator);
-}
 
 // 1D slices
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator)
@@ -395,7 +374,7 @@ unittest {
     auto strings = ["foo", "bar", "baz", "toto", "titi", "quux"];
     auto oper = strings.toXlOper(allocator);
     scope(exit) freeXLOper(&oper, allocator);
-    oper.fromXlOper!(string[]).shouldEqual(strings);
+    oper.fromXlOper!(string[])(allocator).shouldEqual(strings);
 }
 
 @("fromXlOper!double[]")
@@ -405,7 +384,7 @@ unittest {
     auto doubles = [1.0, 2.0, 3.0, 4.0];
     auto oper = doubles.toXlOper(allocator);
     scope(exit) freeXLOper(&oper, allocator);
-    oper.fromXlOper!(double[]).shouldEqual(doubles);
+    oper.fromXlOper!(double[])(allocator).shouldEqual(doubles);
 }
 
 @("fromXlOper!string[] allocator")
@@ -480,11 +459,6 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
 }
 
 
-auto fromXlOper(T)(LPXLOPER12 val) if(is(T == string)) {
-    import xlld.memorymanager: allocator;
-    return fromXlOper!T(val, allocator);
-}
-
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
     import std.experimental.allocator: makeArray;
@@ -504,9 +478,10 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
 @("fromXlOper missing")
 @system unittest {
+    import xlld.memorymanager: allocator;
     XLOPER12 oper;
     oper.xltype = XlType.xltypeMissing;
-    fromXlOper!string(&oper).shouldBeNull;
+    fromXlOper!string(&oper, allocator).shouldBeNull;
 }
 
 @("fromXlOper string allocator")
@@ -991,6 +966,6 @@ unittest {
 
     double[][] doubles = [[1, 2, 3, 4], [11, 12, 13, 14]];
     auto doublesOper = toSRef(doubles, allocator);
-    doublesOper.fromXlOper!(double[][]).shouldThrowWithMessage("XL oper not of multi type");
+    doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage("XL oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
 }
