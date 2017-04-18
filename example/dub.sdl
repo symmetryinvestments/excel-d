@@ -2,16 +2,17 @@ name "myxll"
 description "Example of how to use excel-d"
 license "BSD 3-clause"
 dependency "excel-d" path=".."  # normally this would be version="~>0.0.1" or similar
-sourceFiles "../test/xlld/test_d_funcs.d" "myxll.d"
+sourceFiles "myxll.d" "d_funcs.d"
 targetType "dynamicLibrary"
-# must have the appropriate 32/64 bit Excel SDK xlcall32.lib in the path of the app
-# unfortunately they're both called xlcall32.lib
-libs "xlcall32"
-postBuildCommands "copy myxll.dll myxll.xll"
 
 configuration "dynamicLibrary" {
     preBuildCommands "dub run -c def --nodeps -q -- myxll.def"
     sourceFiles "myxll.def"
+    # must have the appropriate 32/64 bit Excel SDK xlcall32.lib in the path of the app
+    # unfortunately they're both called xlcall32.lib
+
+    libs "xlcall32"
+    postBuildCommands "copy myxll.dll myxll.xll"
 }
 
 // This builds a binary that writes out the necessary .def file
