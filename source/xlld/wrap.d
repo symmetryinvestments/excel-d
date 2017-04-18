@@ -31,8 +31,8 @@ version(unittest) {
         shouldEqualDlang(&actual, expected, file, line);
     }
 
-    XLOPER12 toSRef(T)(T val) {
-        auto ret = toXlOper(val);
+    XLOPER12 toSRef(T, A)(T val, ref A allocator) {
+        auto ret = toXlOper(val, allocator);
         //hide real type somewhere to retrieve it
         gReferencedType = ret.xltype;
         ret.xltype = XlType.xltypeSRef;
@@ -583,90 +583,109 @@ string wrapModuleWorksheetFunctionsString(string moduleName)() {
 
 @("Wrap double[][] -> double")
 @system unittest {
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
-    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]]);
+    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncAddEverything(&arg).shouldEqualDlang(60.0);
 
-    arg = toSRef(cast(double[][])[[0, 1, 2, 3], [4, 5, 6, 7]]);
+    arg = toSRef(cast(double[][])[[0, 1, 2, 3], [4, 5, 6, 7]], allocator);
     FuncAddEverything(&arg).shouldEqualDlang(28.0);
 }
 
 @("Wrap double[][] -> double[][]")
 @system unittest {
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
-    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]]);
+    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncTripleEverything(&arg).shouldEqualDlang(cast(double[][])[[3, 6, 9, 12], [33, 36, 39, 42]]);
 
-    arg = toSRef(cast(double[][])[[0, 1, 2, 3], [4, 5, 6, 7]]);
+    arg = toSRef(cast(double[][])[[0, 1, 2, 3], [4, 5, 6, 7]], allocator);
     FuncTripleEverything(&arg).shouldEqualDlang(cast(double[][])[[0, 3, 6, 9], [12, 15, 18, 21]]);
 }
 
 
 @("Wrap string[][] -> double")
 @system unittest {
+
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
-    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]]);
+    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncAllLengths(&arg).shouldEqualDlang(29.0);
 
-    arg = toSRef([["", "", "", ""], ["", "", "", ""]]);
+    arg = toSRef([["", "", "", ""], ["", "", "", ""]], allocator);
     FuncAllLengths(&arg).shouldEqualDlang(0.0);
 }
 
 @("Wrap string[][] -> double[][]")
 @system unittest {
+
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
-    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]]);
+    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncLengths(&arg).shouldEqualDlang(cast(double[][])[[3, 3, 3, 4], [4, 4, 4, 4]]);
 
-    arg = toSRef([["", "", ""], ["", "", "huh"]]);
+    arg = toSRef([["", "", ""], ["", "", "huh"]], allocator);
     FuncLengths(&arg).shouldEqualDlang(cast(double[][])[[0, 0, 0], [0, 0, 3]]);
 }
 
 @("Wrap string[][] -> string[][]")
 @system unittest {
+
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
-    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]]);
+    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncBob(&arg).shouldEqualDlang([["foobob", "barbob", "bazbob", "quuxbob"],
                                     ["totobob", "titibob", "tutubob", "tetebob"]]);
 }
 
 @("Wrap string[] -> double")
 @system unittest {
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toSRef([["foo", "bar"], ["baz", "quux"]]);
+    auto arg = toSRef([["foo", "bar"], ["baz", "quux"]], allocator);
     FuncStringSlice(&arg).shouldEqualDlang(4.0);
 }
 
 @("Wrap double[] -> double")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]);
+    auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], allocator);
     FuncDoubleSlice(&arg).shouldEqualDlang(6.0);
 }
 
 @("Wrap double[] -> double[]")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]);
+    auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], allocator);
     FuncSliceTimes3(&arg).shouldEqualDlang([3.0, 6.0, 9.0, 12.0, 15.0, 18.0]);
 }
 
 @("Wrap string[] -> string[]")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toSRef(["quux", "toto"]);
+    auto arg = toSRef(["quux", "toto"], allocator);
     StringsToStrings(&arg).shouldEqualDlang(["quuxfoo", "totofoo"]);
 }
 
 @("Wrap string[] -> string")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toSRef(["quux", "toto"]);
+    auto arg = toSRef(["quux", "toto"], allocator);
     StringsToString(&arg).shouldEqualDlang("quux, toto");
 }
 
@@ -845,10 +864,11 @@ LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)
 
 @("No memory allocation bugs in wrapModuleFunctionImplAllocator for double return")
 @system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
     import xlld.test_d_funcs: FuncAddEverything;
 
     TestAllocator allocator;
-    auto arg = toSRef([1.0, 2.0]);
+    auto arg = toSRef([1.0, 2.0], Mallocator.instance);
     auto oper = wrapModuleFunctionImplAllocator!FuncAddEverything(allocator, &arg);
     (oper.xltype & xlbitDLLFree).shouldBeTrue;
     allocator.numAllocations.shouldEqual(2);
@@ -858,10 +878,11 @@ LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)
 
 @("No memory allocation bugs in wrapModuleFunctionImplAllocator for double[][] return")
 @system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
     import xlld.test_d_funcs: FuncTripleEverything;
 
     TestAllocator allocator;
-    auto arg = toSRef([1.0, 2.0, 3.0]);
+    auto arg = toSRef([1.0, 2.0, 3.0], Mallocator.instance);
     auto oper = wrapModuleFunctionImplAllocator!FuncTripleEverything(allocator, &arg);
     (oper.xltype & xlbitDLLFree).shouldBeTrue;
     (oper.xltype & ~xlbitDLLFree).shouldEqual(xltypeMulti);
@@ -903,9 +924,11 @@ string wrapAll(Modules...)(in string mainModule = __MODULE__) {
 
 @("wrapAll")
 unittest  {
+    import xlld.memorymanager: allocator;
+
     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef;
     mixin(wrapAll!("xlld.test_d_funcs"));
-    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]]);
+    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncAddEverything(&arg).shouldEqualDlang(60.0);
 }
 
@@ -979,8 +1002,10 @@ auto fromXlOperCoerce(T, A)(ref XLOPER12 val, auto ref A allocator) {
 
 @("fromXlOperCoerce")
 unittest {
+    import xlld.memorymanager: allocator;
+
     double[][] doubles = [[1, 2, 3, 4], [11, 12, 13, 14]];
-    auto doublesOper = toSRef(doubles);
+    auto doublesOper = toSRef(doubles, allocator);
     doublesOper.fromXlOper!(double[][]).shouldThrowWithMessage("XL oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
 }
