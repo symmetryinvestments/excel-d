@@ -911,3 +911,28 @@ ushort operStringLength(T)(T value) {
 
     return cast(ushort)value.val.str[0];
 }
+
+auto fromXlOperCoerce(T)(ref XLOPER12 val) {
+    import xlld.memorymanager: allocator;
+    return fromXlOperCoerce!T(val, allocator);
+}
+
+
+auto fromXlOperCoerce(T, A)(ref XLOPER12 val, auto ref A allocator) {
+    import std.experimental.allocator: dispose;
+    import xlld.xl: coerce, free;
+
+    auto coerced = coerce(&val);
+    scope(exit) free(&coerced);
+
+    return coerced.fromXlOper!T(allocator);
+}
+
+
+@("fromXlOperCoerce")
+unittest {
+    double[][] doubles = [[1, 2, 3, 4], [11, 12, 13, 14]];
+    auto doublesOper = toSRef(doubles);
+    doublesOper.fromXlOper!(double[][]).shouldThrowWithMessage("XL oper not of multi type");
+    doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
+}
