@@ -291,23 +291,7 @@ WorksheetFunction[] getAllWorksheetFunctions(Modules...)() pure @safe if(allSati
  fails to actually make it an extern(C) function.
  */
 string implGetWorksheetFunctionsString(Modules...)() if(allSatisfy!(isSomeString, typeof(Modules))) {
-    import std.array: join;
-
-    string modulesString() {
-
-        string[] modules;
-        foreach(module_; Modules) {
-            modules ~= `"` ~ module_ ~ `"`;
-        }
-        return modules.join(", ");
-    }
-
-    return
-        [
-            `extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow {`,
-            `    return getAllWorksheetFunctions!(` ~ modulesString ~ `);`,
-            `}`,
-        ].join("\n");
+    return implGetWorksheetFunctionsString(Modules);
 }
 
 @("template mixin for getWorkSheetFunctions for test_xl_funcs")
@@ -325,6 +309,48 @@ unittest {
         ]
     );
 }
+
+string implGetWorksheetFunctionsString(string[] modules...) {
+    import std.array: join;
+
+    if(!__ctfe) {
+        return "";
+    }
+
+    string modulesString() {
+
+        string[] ret;
+        foreach(module_; modules) {
+            ret ~= `"` ~ module_ ~ `"`;
+        }
+        return ret.join(", ");
+    }
+
+    return
+        [
+            `extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow {`,
+            `    return getAllWorksheetFunctions!(` ~ modulesString ~ `);`,
+            `}`,
+        ].join("\n");
+}
+
+@("implGetWorksheetFunctionsString runtime")
+unittest {
+    import xlld.traits;
+    import xlld.worksheet;
+
+    // mixin the function here then call it to see if it does what it's supposed to
+    mixin(implGetWorksheetFunctionsString("xlld.test_xl_funcs"));
+    getWorksheetFunctions.shouldEqual(
+        [
+            doubleToDoubleFunction("FuncMulByTwo"),
+            FP12ToDoubleFunction("FuncFP12"),
+            operToOperFunction("FuncFib"),
+        ]
+    );
+}
+
+
 
 struct DllDefFile {
     Statement[] statements;
