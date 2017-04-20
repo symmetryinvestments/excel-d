@@ -20,6 +20,29 @@ double FuncAddEverything(double[][] args) nothrow @nogc {
     return ret;
 }
 
+// @Dispose is used to tell the framework how to free memory that is dynamically
+// allocated by the D function. After returning, the value is converted to an
+// Excel type sand the D value is freed using the lambda defined here.
+@Dispose!((ret) {
+    import std.experimental.allocator.mallocator: Mallocator;
+    import std.experimental.allocator: dispose;
+    Mallocator.instance.dispose(ret);
+})
+double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
+    import std.experimental.allocator.mallocator: Mallocator;
+    import std.experimental.allocator: makeArray;
+    import std.algorithm: map;
+
+    try {
+        // Allocate memory here in order to return an array of doubles.
+        // The memory will be freed after the call by calling the
+        // function in `@Dispose` above
+        return Mallocator.instance.makeArray(numbers.map!(a => a * 2));
+    } catch(Exception _) {
+        return [];
+    }
+}
+
 double[][] FuncTripleEverything(double[][] args) nothrow {
     double[][] ret;
     ret.length = args.length;

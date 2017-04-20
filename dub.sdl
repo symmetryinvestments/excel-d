@@ -14,5 +14,6 @@ configuration "unittest" {
     targetPath "bin"
     mainSourceFile "test/ut.d"
     excludedSourceFiles "source/xlld/xll.d"
-    dependency "unit-threaded" version="~>0.7.3"
+    dependency "unit-threaded" version="~>0.7.0"
+    dependency "test_allocator" version="~>0.0.5"
 }

@@ -26,6 +26,7 @@ version(unittest) {
 
         import xlld.xlcall: XlType, xlretFailed, xlretSuccess, xlFree, xlCoerce;
         import xlld.wrap: gReferencedType, gNumXlFree, gNumXlCoerce, gCoerced, gFreed, toXlOper;
+        import xlld.memorymanager: allocator;
 
         switch(xlfn) {
 
@@ -39,7 +40,7 @@ version(unittest) {
             gFreed[gNumXlFree++] = oper.val.str;
 
             if(oper.xltype == XlType.xltypeStr)
-                *oper = "".toXlOper;
+                *oper = "".toXlOper(allocator);
 
             return xlretSuccess;
 

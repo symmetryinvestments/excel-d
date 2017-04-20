@@ -29,30 +29,67 @@ The only difference between building for 32-bit or 64-bit Excel is the `arch=` o
 to dub. A 32-bit XLL will only work on 32-bit Excel and similarly for 64-bit. You will also
 need the appropriate 32/64 xlcall32.lib from the Excel SDK to link.
 
-Sample code (also see the [example](example) directory):
+Sample code (see the [example](example) directory for more):
 
+```d
+    import xlld;
 
-	module xlld.test_d_funcs;
+    @Register(ArgumentText("Array to add"),
+              HelpTopic("Adds all cells in an array"),
+              FunctionHelp("Adds all cells in an array"),
+              ArgumentHelp(["The array to add"]))
+    double FuncAddEverything(double[][] args) nothrow @nogc { // must be nothrow, @nogc optional
+        import std.algorithm: fold;
+        import std.math: isNaN;
 
-	import xlld.worksheet;
-
-	@Register(ArgumentText("Array to add"),
-	          HelpTopic("Adds all cells in an array"),
-	          FunctionHelp("Adds all cells in an array"),
-	          ArgumentHelp(["The array to add"]))
-	double FuncAddEverything(double[][] args) nothrow @nogc {
-	    import std.algorithm: fold;
-	    import std.math: isNaN;
-
-	    double ret = 0;
-	    foreach(row; args)
-	        ret += row.fold!((a, b) => b.isNaN ? 0.0 : a + b)(0.0);
-	    return ret;
-	}
-
+        double ret = 0;
+        foreach(row; args)
+            ret += row.fold!((a, b) => b.isNaN ? 0.0 : a + b)(0.0);
+        return ret;
+    }
+```d
 
 and then in Excel:
 
 `=FuncAddEverything(A1:D20)`
 
 Future functionality will include creating menu items and dialogue boxes.  Pull requests welcomed.
+
+
+Memory allocation and `@nogc`
+-----------------------------
+
+excel-d uses a custom allocator for all allocations that are needed when doing the conversions
+between D and Excel types. It uses a different one for allocations of XLOPER12s that are
+returned to Excel, which are then freed in xlAutoFree12 with the same allocator. D functions
+that are `@nogc` are wrapped by `@nogc` Excel functions and similarly for `@safe`. However,
+if returning a value that is dynamically allocated from a D function and not using the GC
+(such as an array of doubles), it is necessary to specify how that memory is to be freed.
+An example:
+
+```d
+// @Dispose is used to tell the framework how to free memory that is dynamically
+// allocated by the D function. After returning, the value is converted to an
+// Excel type sand the D value is freed using the lambda defined here.
+@Dispose!((ret) {
+    import std.experimental.allocator.mallocator: Mallocator;
+    import std.experimental.allocator: dispose;
+    Mallocator.instance.dispose(ret);
+})
+double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
+    import std.experimental.allocator.mallocator: Mallocator;
+    import std.experimental.allocator: makeArray;
+    import std.algorithm: map;
+
+    try {
+        // Allocate memory here in order to return an array of doubles.
+        // The memory will be freed after the call by calling the
+        // function in `@Dispose` above
+        return Mallocator.instance.makeArray(numbers.map!(a => a * 2));
+    } catch(Exception _) {
+        return [];
+    }
+}
+```
+
+This allows for `@nogc` functions to be called from Excel without memory leaks.

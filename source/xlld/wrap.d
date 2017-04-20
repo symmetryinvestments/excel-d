@@ -2,95 +2,14 @@ module xlld.wrap;
 
 import xlld.xlcall;
 import xlld.traits: isSupportedFunction;
-import xlld.framework: FreeXLOper;
+import xlld.memorymanager: autoFree;
+import xlld.framework: freeXLOper;
 import xlld.worksheet;
 import std.traits: isArray;
 
 version(unittest) {
     import unit_threaded;
-
-    /// emulates SRef types by storing what the referenced type actually is
-    XlType gReferencedType;
-
-    // tracks calls to `coerce` and `free` to make sure memory allocations/deallocations match
-    int gNumXlCoerce;
-    int gNumXlFree;
-    enum maxCoerce = 1000;
-    void*[maxCoerce] gCoerced;
-    void*[maxCoerce] gFreed;
-
-    // automatically converts from oper to compare with a D type
-    void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) {
-        if(actual.xltype == xltypeErr)
-            fail("XLOPER is of error type", file, line);
-        actual.fromXlOper!U.shouldEqual(expected, file, line);
-    }
-
-    // automatically converts from oper to compare with a D type
-    void shouldEqualDlang(U)(ref XLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) {
-        shouldEqualDlang(&actual, expected, file, line);
-    }
-
-    XLOPER12 toSRef(T)(T val) {
-        auto ret = toXlOper(val);
-        //hide real type somewhere to retrieve it
-        gReferencedType = ret.xltype;
-        ret.xltype = XlType.xltypeSRef;
-        return ret;
-    }
-
-    // tracks allocations and throws in the destructor if there is a memory leak
-    // it also throws when there is an attempt to deallocate memory that wasn't
-    // allocated
-    struct TestAllocator {
-        import std.experimental.allocator.common: platformAlignment;
-        import std.experimental.allocator.mallocator: Mallocator;
-
-        alias allocator = Mallocator.instance;
-
-        private static struct ByteRange {
-            void* ptr;
-            size_t length;
-        }
-        private ByteRange[] _allocations;
-        private int _numAllocations;
-
-        enum uint alignment = platformAlignment;
-
-        void[] allocate(size_t numBytes) {
-            ++_numAllocations;
-            auto ret = allocator.allocate(numBytes);
-            writelnUt("+ Allocated  ptr ", ret.ptr, " of ", ret.length, " bytes length");
-            _allocations ~= ByteRange(ret.ptr, ret.length);
-            return ret;
-        }
-
-        bool deallocate(void[] bytes) {
-            import std.algorithm: remove, canFind;
-            import std.exception: enforce;
-            import std.conv: text;
-
-            writelnUt("- Deallocate ptr ", bytes.ptr, " of ", bytes.length, " bytes length");
-
-            bool pred(ByteRange other) { return other.ptr == bytes.ptr && other.length == bytes.length; }
-
-            enforce(_allocations.canFind!pred,
-                    text("Unknown deallocate byte range. Ptr: ", bytes.ptr, " length: ", bytes.length,
-                         " allocations: ", _allocations));
-            _allocations = _allocations.remove!pred;
-            return allocator.deallocate(bytes);
-        }
-
-        auto numAllocations() @safe pure nothrow const {
-            return _numAllocations;
-        }
-
-        ~this() {
-            import std.exception: enforce;
-            import std.conv: text;
-            enforce(!_allocations.length, text("Memory leak in TestAllocator. Allocations: ", _allocations));
-        }
-    }
+    import test_allocator;
 }
 
 // this shouldn't be needed IMHO and is a bug in std.experimental.allocator that dispose
@@ -114,11 +33,8 @@ void dispose(A, T)(auto ref A allocator, T value) if(!isArray!T) {
     std.experimental.allocator.dispose(allocator, value);
 }
 
-XLOPER12 toXlOper(T, A)(T val, ref A allocator) if(is(T == double)) {
-    return toXlOper(val);
-}
 
-XLOPER12 toXlOper(T)(T val) if(is(T == double)) {
+XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(T == double)) {
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeNum;
     ret.val.num = val;
@@ -126,12 +42,9 @@ XLOPER12 toXlOper(T)(T val) if(is(T == double)) {
 }
 
 
-XLOPER12 toXlOper(T)(T val) if(is(T == string)) {
-    import xlld.memorymanager: allocator;
-    return toXlOper(val, allocator);
-}
-
-XLOPER12 toXlOper(T, A)(T val, ref A allocator) if(is(T == string)) {
+XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
+    if(is(T == string) || is(T == wstring))
+{
     import std.utf: byWchar;
     import std.stdio;
 
@@ -152,17 +65,31 @@ XLOPER12 toXlOper(T, A)(T val, ref A allocator) if(is(T == string)) {
 }
 
 
-@("toXlOper!string ascii")
+@("toXlOper!string utf8")
 @system unittest {
     import std.conv: to;
+    import xlld.memorymanager: allocator;
 
     const str = "foo";
-    auto oper = str.toXlOper;
-    scope(exit)FreeXLOper(&oper);
+    auto oper = str.toXlOper(allocator);
+    scope(exit) freeXLOper(&oper, allocator);
 
     oper.xltype.shouldEqual(xltypeStr);
     (cast(int)oper.val.str[0]).shouldEqual(str.length);
-    (cast(wchar*)oper.val.str)[1 .. str.length + 1].to!string.shouldEqual("foo");
+    (cast(wchar*)oper.val.str)[1 .. str.length + 1].to!string.shouldEqual(str);
+}
+
+@("toXlOper!string utf16")
+@system unittest {
+    import xlld.memorymanager: allocator;
+
+    const str = "foo"w;
+    auto oper = str.toXlOper(allocator);
+    scope(exit) freeXLOper(&oper, allocator);
+
+    oper.xltype.shouldEqual(xltypeStr);
+    (cast(int)oper.val.str[0]).shouldEqual(str.length);
+    (cast(wchar*)oper.val.str)[1 .. str.length + 1].shouldEqual(str);
 }
 
 @("toXlOper!string allocator")
@@ -171,14 +98,9 @@ XLOPER12 toXlOper(T, A)(T val, ref A allocator) if(is(T == string)) {
     TestAllocator allocator;
     auto oper = "foo".toXlOper(allocator);
     allocator.numAllocations.shouldEqual(1);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
 }
 
-XLOPER12 toXlOper(T)(T[][] values) if(is(T == double) || is(T == string))
-{
-    import xlld.memorymanager: allocator;
-    return toXlOper(values, allocator);
-}
 
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     if(is(T == double) || is(T == string))
@@ -214,8 +136,10 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
 
 @("toXlOper string[][]")
 @system unittest {
-    auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper;
-    scope(exit) FreeXLOper(&oper);
+    import xlld.memorymanager: allocator;
+
+    auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper(allocator);
+    scope(exit) freeXLOper(&oper, allocator);
 
     oper.xltype.shouldEqual(xltypeMulti);
     oper.val.array.rows.shouldEqual(2);
@@ -232,7 +156,7 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     TestAllocator allocator;
     auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper(allocator);
     allocator.numAllocations.shouldEqual(7);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
 }
 
 @("toXlOper double[][] allocator")
@@ -240,14 +164,9 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     TestAllocator allocator;
     auto oper = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]].toXlOper(allocator);
     allocator.numAllocations.shouldEqual(1);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
 }
 
-
-XLOPER12 toXlOper(T)(T values) if(is(T == string[]) || is(T == double[])) {
-    import xlld.memorymanager: allocator;
-    return toXlOper(values, allocator);
-}
 
 XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(T == string[]) || is(T == double[])) {
     T[1] realValues = [values];
@@ -260,23 +179,14 @@ XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(T == string[]) || is(T 
     TestAllocator allocator;
     auto oper = ["foo", "bar", "baz", "toto", "titi", "quux"].toXlOper(allocator);
     allocator.numAllocations.shouldEqual(7);
-    FreeXLOper(&oper, allocator);
-}
-
-auto fromXlOper(T)(ref XLOPER12 val) {
-    return (&val).fromXlOper!T;
+    freeXLOper(&oper, allocator);
 }
 
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
     return (&val).fromXlOper!T(allocator);
 }
 
-
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
-    return fromXlOper!T(val);
-}
-
-auto fromXlOper(T)(LPXLOPER12 val) if(is(T == double)) {
     if(val.xltype == xltypeMissing)
         return double.init;
 
@@ -285,29 +195,24 @@ auto fromXlOper(T)(LPXLOPER12 val) if(is(T == double)) {
 
 @("fromXlOper double allocator")
 @system unittest {
+
     TestAllocator allocator;
     auto num = 4.0;
     auto oper = num.toXlOper(allocator);
     auto back = oper.fromXlOper!double(allocator);
     back.shouldEqual(num);
 
-    FreeXLOper(&oper);
+    freeXLOper(&oper, allocator);
 }
 
 
 @("isNan for fromXlOper!double")
 @system unittest {
     import std.math: isNaN;
+    import xlld.memorymanager: allocator;
     XLOPER12 oper;
     oper.xltype = XlType.xltypeMissing;
-    fromXlOper!double(&oper).isNaN.shouldBeTrue;
-}
-
-// 2D slices
-auto fromXlOper(T)(LPXLOPER12 val) if(is(T: E[][], E) && (is(E == string) || is(E == double)))
-{
-    import xlld.memorymanager: allocator;
-    return fromXlOper!T(val, allocator);
+    fromXlOper!double(&oper, allocator).isNaN.shouldBeTrue;
 }
 
 
@@ -319,18 +224,22 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator)
 
 @("fromXlOper!string[][]")
 unittest {
+    import xlld.memorymanager: allocator;
+
     auto strings = [["foo", "bar", "baz"], ["toto", "titi", "quux"]];
-    auto oper = strings.toXlOper;
-    scope(exit) FreeXLOper(&oper);
-    oper.fromXlOper!(string[][]).shouldEqual(strings);
+    auto oper = strings.toXlOper(allocator);
+    scope(exit) freeXLOper(&oper, allocator);
+    oper.fromXlOper!(string[][])(allocator).shouldEqual(strings);
 }
 
 @("fromXlOper!double[][]")
 unittest {
+    import xlld.memorymanager: allocator;
+
     auto doubles = [[1.0, 2.0], [3.0, 4.0]];
-    auto oper = doubles.toXlOper;
-    scope(exit) FreeXLOper(&oper);
-    oper.fromXlOper!(double[][]).shouldEqual(doubles);
+    auto oper = doubles.toXlOper(allocator);
+    scope(exit) freeXLOper(&oper, allocator);
+    oper.fromXlOper!(double[][])(allocator).shouldEqual(doubles);
 }
 
 @("fromXlOper!string[][] allocator")
@@ -342,7 +251,7 @@ unittest {
 
     allocator.numAllocations.shouldEqual(16);
 
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
     backAgain.shouldEqual(strings);
     allocator.dispose(backAgain);
 }
@@ -356,7 +265,7 @@ unittest {
 
     allocator.numAllocations.shouldEqual(4);
 
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
     backAgain.shouldEqual(doubles);
     allocator.dispose(backAgain);
 }
@@ -367,13 +276,6 @@ private enum Dimensions {
     Two,
 }
 
-// 1D slices
-auto fromXlOper(T)(LPXLOPER12 val)
-    if(is(T: E[], E) && (is(E == string) || is(E == double)))
-{
-    import xlld.memorymanager: allocator;
-    return fromXlOper!T(val, allocator);
-}
 
 // 1D slices
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator)
@@ -385,18 +287,22 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator)
 
 @("fromXlOper!string[]")
 unittest {
+    import xlld.memorymanager: allocator;
+
     auto strings = ["foo", "bar", "baz", "toto", "titi", "quux"];
-    auto oper = strings.toXlOper;
-    scope(exit) FreeXLOper(&oper);
-    oper.fromXlOper!(string[]).shouldEqual(strings);
+    auto oper = strings.toXlOper(allocator);
+    scope(exit) freeXLOper(&oper, allocator);
+    oper.fromXlOper!(string[])(allocator).shouldEqual(strings);
 }
 
 @("fromXlOper!double[]")
 unittest {
+    import xlld.memorymanager: allocator;
+
     auto doubles = [1.0, 2.0, 3.0, 4.0];
-    auto oper = doubles.toXlOper;
-    scope(exit) FreeXLOper(&oper);
-    oper.fromXlOper!(double[]).shouldEqual(doubles);
+    auto oper = doubles.toXlOper(allocator);
+    scope(exit) freeXLOper(&oper, allocator);
+    oper.fromXlOper!(double[])(allocator).shouldEqual(doubles);
 }
 
 @("fromXlOper!string[] allocator")
@@ -409,7 +315,7 @@ unittest {
     allocator.numAllocations.shouldEqual(14);
 
     backAgain.shouldEqual(strings);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
     allocator.dispose(backAgain);
 }
 
@@ -423,7 +329,7 @@ unittest {
     allocator.numAllocations.shouldEqual(2);
 
     backAgain.shouldEqual(doubles);
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
     allocator.dispose(backAgain);
 }
 
@@ -471,11 +377,6 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
 }
 
 
-auto fromXlOper(T)(LPXLOPER12 val) if(is(T == string)) {
-    import xlld.memorymanager: allocator;
-    return fromXlOper!T(val, allocator);
-}
-
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
     import std.experimental.allocator: makeArray;
@@ -495,9 +396,10 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
 @("fromXlOper missing")
 @system unittest {
+    import xlld.memorymanager: allocator;
     XLOPER12 oper;
     oper.xltype = XlType.xltypeMissing;
-    fromXlOper!string(&oper).shouldBeNull;
+    fromXlOper!string(&oper, allocator).shouldBeNull;
 }
 
 @("fromXlOper string allocator")
@@ -507,7 +409,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     auto str = fromXlOper!string(&oper, allocator);
     allocator.numAllocations.shouldEqual(2);
 
-    FreeXLOper(&oper, allocator);
+    freeXLOper(&oper, allocator);
     str.shouldEqual("foo");
     allocator.dispose(cast(void[])str);
 }
@@ -556,123 +458,146 @@ string wrapModuleWorksheetFunctionsString(string moduleName)() {
 
 @("Wrap double[][] -> double")
 @system unittest {
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
-    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]]);
+    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncAddEverything(&arg).shouldEqualDlang(60.0);
 
-    arg = toSRef(cast(double[][])[[0, 1, 2, 3], [4, 5, 6, 7]]);
+    arg = toSRef(cast(double[][])[[0, 1, 2, 3], [4, 5, 6, 7]], allocator);
     FuncAddEverything(&arg).shouldEqualDlang(28.0);
 }
 
 @("Wrap double[][] -> double[][]")
 @system unittest {
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
-    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]]);
+    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncTripleEverything(&arg).shouldEqualDlang(cast(double[][])[[3, 6, 9, 12], [33, 36, 39, 42]]);
 
-    arg = toSRef(cast(double[][])[[0, 1, 2, 3], [4, 5, 6, 7]]);
+    arg = toSRef(cast(double[][])[[0, 1, 2, 3], [4, 5, 6, 7]], allocator);
     FuncTripleEverything(&arg).shouldEqualDlang(cast(double[][])[[0, 3, 6, 9], [12, 15, 18, 21]]);
 }
 
 
 @("Wrap string[][] -> double")
 @system unittest {
+
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
-    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]]);
+    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncAllLengths(&arg).shouldEqualDlang(29.0);
 
-    arg = toSRef([["", "", "", ""], ["", "", "", ""]]);
+    arg = toSRef([["", "", "", ""], ["", "", "", ""]], allocator);
     FuncAllLengths(&arg).shouldEqualDlang(0.0);
 }
 
 @("Wrap string[][] -> double[][]")
 @system unittest {
+
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
-    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]]);
+    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncLengths(&arg).shouldEqualDlang(cast(double[][])[[3, 3, 3, 4], [4, 4, 4, 4]]);
 
-    arg = toSRef([["", "", ""], ["", "", "huh"]]);
+    arg = toSRef([["", "", ""], ["", "", "huh"]], allocator);
     FuncLengths(&arg).shouldEqualDlang(cast(double[][])[[0, 0, 0], [0, 0, 3]]);
 }
 
 @("Wrap string[][] -> string[][]")
 @system unittest {
+
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
-    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]]);
+    auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncBob(&arg).shouldEqualDlang([["foobob", "barbob", "bazbob", "quuxbob"],
                                     ["totobob", "titibob", "tutubob", "tetebob"]]);
 }
 
 @("Wrap string[] -> double")
 @system unittest {
+    import xlld.memorymanager: allocator;
+
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toSRef([["foo", "bar"], ["baz", "quux"]]);
+    auto arg = toSRef([["foo", "bar"], ["baz", "quux"]], allocator);
     FuncStringSlice(&arg).shouldEqualDlang(4.0);
 }
 
 @("Wrap double[] -> double")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]);
+    auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], allocator);
     FuncDoubleSlice(&arg).shouldEqualDlang(6.0);
 }
 
 @("Wrap double[] -> double[]")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]);
+    auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], allocator);
     FuncSliceTimes3(&arg).shouldEqualDlang([3.0, 6.0, 9.0, 12.0, 15.0, 18.0]);
 }
 
 @("Wrap string[] -> string[]")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toSRef(["quux", "toto"]);
+    auto arg = toSRef(["quux", "toto"], allocator);
     StringsToStrings(&arg).shouldEqualDlang(["quuxfoo", "totofoo"]);
 }
 
 @("Wrap string[] -> string")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toSRef(["quux", "toto"]);
+    auto arg = toSRef(["quux", "toto"], allocator);
     StringsToString(&arg).shouldEqualDlang("quux, toto");
 }
 
 @("Wrap string -> string")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toXlOper("foo");
+    auto arg = toXlOper("foo", allocator);
     StringToString(&arg).shouldEqualDlang("foobar");
 }
 
 @("Wrap string, string, string -> string")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg0 = toXlOper("foo");
-    auto arg1 = toXlOper("bar");
-    auto arg2 = toXlOper("baz");
+    auto arg0 = toXlOper("foo", allocator);
+    auto arg1 = toXlOper("bar", allocator);
+    auto arg2 = toXlOper("baz", allocator);
     ManyToString(&arg0, &arg1, &arg2).shouldEqualDlang("foobarbaz");
 }
 
 @("Only look at nothrow functions")
 @system unittest {
+    import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
-    auto arg = toXlOper(2.0);
+    auto arg = toXlOper(2.0, allocator);
     static assert(!__traits(compiles, FuncThrows(&arg)));
 }
 
 @("FuncAddEverything wrapper is @nogc")
 @system @nogc unittest {
     import std.experimental.allocator.mallocator: Mallocator;
+    import xlld.framework: freeXLOper;
 
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
     auto arg = toXlOper(2.0, Mallocator.instance);
-    scope(exit) FreeXLOper(&arg, Mallocator.instance);
+    scope(exit) freeXLOper(&arg, Mallocator.instance);
     FuncAddEverything(&arg);
 }
 
@@ -722,6 +647,9 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
     const nogc = functionAttributes!(mixin(funcName)) & FunctionAttribute.nogc
         ? "@nogc "
         : "";
+    const safe = functionAttributes!(mixin(funcName)) & FunctionAttribute.safe
+        ? "@trusted "
+        : "";
 
     alias registerAttrs = getUDAs!(mixin(funcName), Register);
     static assert(registerAttrs.length == 0 || registerAttrs.length == 1,
@@ -733,10 +661,11 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
 
     return [
         register,
-        `extern(Windows) LPXLOPER12 ` ~ funcName ~ `(` ~ argsDecl ~ `) nothrow ` ~ nogc ~ `{`,
+        `extern(Windows) LPXLOPER12 ` ~ funcName ~ `(` ~ argsDecl ~ `) nothrow ` ~ nogc ~ safe ~ `{`,
         `    static import ` ~ moduleName ~ `;`,
+        `    import xlld.memorymanager: gMemoryPool;`,
         `    alias wrappedFunc = ` ~ moduleName ~ `.` ~ funcName ~ `;`,
-        `    return wrapModuleFunctionImpl!wrappedFunc(` ~ argsCall ~  `);`,
+        `    return wrapModuleFunctionImpl!wrappedFunc(gMemoryPool, ` ~ argsCall ~  `);`,
         `}`,
     ].join("\n");
 }
@@ -753,16 +682,13 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
 /**
  Implement a wrapper for a regular D function
  */
-LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, T...)(T args) {
-    import xlld.memorymanager: allocator;
-    return wrapModuleFunctionImplAllocator!wrappedFunc(allocator, args);
-}
-
-LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)
-                                          (ref A allocator, T args) {
+LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
+                                  (ref A allocator, auto ref T args) {
     import xlld.xl: free;
+    import xlld.worksheet: Dispose;
     import std.traits: Parameters;
     import std.typecons: Tuple;
+    import std.traits: hasUDA, getUDAs;
 
     static XLOPER12 ret;
 
@@ -783,16 +709,32 @@ LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)
         }
     }
 
+    // free any coerced memory
     scope(exit)
         foreach(ref arg; realArgs)
-            free(&arg);
+            () @trusted { free(&arg); }();
 
     Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
 
-    // next call the wrapped function with D types
+    void freeAll() {
+        static if(__traits(compiles, allocator.deallocateAll))
+            allocator.deallocateAll;
+        else {
+            foreach(ref dArg; dArgs) {
+                import std.traits: isPointer;
+                static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg)))
+                    allocator.dispose(dArg);
+            }
+        }
+    }
+
+    // get rid of the temporary memory allocations for the conversions
+    scope(exit) freeAll;
+
+    // convert all Excel types to D types
     foreach(i, InputType; Parameters!wrappedFunc) {
         try {
-            dArgs[i] = fromXlOper!InputType(&realArgs[i], allocator);
+            dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], allocator); }();
         } catch(Exception ex) {
             ret.xltype = XlType.xltypeErr;
             ret.val.err = -1;
@@ -800,48 +742,78 @@ LPXLOPER12 wrapModuleFunctionImplAllocator(alias wrappedFunc, A, T...)
         }
     }
 
-    try
-        ret = toXlOper(wrappedFunc(dArgs.expand), allocator);
-    catch(Exception ex)
+    try {
+
+        // call the wrapped function with D types
+        auto wrappedRet = wrappedFunc(dArgs.expand);
+        // convert the return value to an Excel type, tell Excel to call
+        // us back to free it afterwards
+        ret = toAutoFreeOper(wrappedRet);
+
+        // dispose of the memory allocated in the wrapped function
+        static if(hasUDA!(wrappedFunc, Dispose)) {
+            alias disposes = getUDAs!(wrappedFunc, Dispose);
+            static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
+            disposes[0].dispose(wrappedRet);
+        }
+
+    } catch(Exception ex) {
+
+        version(unittest) {
+            import core.stdc.stdio: printf;
+            static char[1024] buffer;
+            buffer[0 .. ex.msg.length] = ex.msg[];
+            buffer[ex.msg.length + 1] = 0;
+            () @trusted { printf("Could not call wrapped function: %s\n", &buffer[0]); }();
+        }
+
         return null;
-
-    foreach(ref dArg; dArgs) {
-        import std.traits: isPointer;
-        static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg)))
-            allocator.dispose(dArg);
     }
-
-    ret.xltype |= xlbitDLLFree;
 
     return &ret;
 }
 
-@("No memory allocation bugs in wrapModuleFunctionImplAllocator for double return")
+@("No memory allocation bugs in wrapModuleFunctionImpl for double return Mallocator")
 @system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
     import xlld.test_d_funcs: FuncAddEverything;
 
     TestAllocator allocator;
-    auto arg = toSRef([1.0, 2.0]);
-    auto oper = wrapModuleFunctionImplAllocator!FuncAddEverything(allocator, &arg);
+    auto arg = toSRef([1.0, 2.0], Mallocator.instance);
+    auto oper = wrapModuleFunctionImpl!FuncAddEverything(allocator, &arg);
     (oper.xltype & xlbitDLLFree).shouldBeTrue;
     allocator.numAllocations.shouldEqual(2);
     oper.shouldEqualDlang(3.0);
-    FreeXLOper(oper, allocator); // normally this is done by Excel
+    autoFree(oper); // normally this is done by Excel
 }
 
-@("No memory allocation bugs in wrapModuleFunctionImplAllocator for double[][] return")
+@("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return Mallocator")
 @system unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
     import xlld.test_d_funcs: FuncTripleEverything;
 
     TestAllocator allocator;
-    auto arg = toSRef([1.0, 2.0, 3.0]);
-    auto oper = wrapModuleFunctionImplAllocator!FuncTripleEverything(allocator, &arg);
+    auto arg = toSRef([1.0, 2.0, 3.0], Mallocator.instance);
+    auto oper = wrapModuleFunctionImpl!FuncTripleEverything(allocator, &arg);
     (oper.xltype & xlbitDLLFree).shouldBeTrue;
     (oper.xltype & ~xlbitDLLFree).shouldEqual(xltypeMulti);
-    allocator.numAllocations.shouldEqual(3);
+    allocator.numAllocations.shouldEqual(2);
     oper.shouldEqualDlang([[3.0, 6.0, 9.0]]);
-    FreeXLOper(oper, allocator); // normally this is done by Excel
+    autoFree(oper); // normally this is done by Excel
 }
+
+@("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return pool")
+@system unittest {
+    import xlld.memorymanager: gMemoryPool;
+    import xlld.test_d_funcs: FuncTripleEverything;
+
+    auto arg = toSRef([1.0, 2.0, 3.0], gMemoryPool);
+    auto oper = wrapModuleFunctionImpl!FuncTripleEverything(gMemoryPool, &arg);
+    gMemoryPool.curPos.shouldEqual(0);
+    oper.shouldEqualDlang([[3.0, 6.0, 9.0]]);
+    autoFree(oper); // normally this is done by Excel
+}
+
 
 string wrapWorksheetFunctionsString(Modules...)() {
 
@@ -876,9 +848,11 @@ string wrapAll(Modules...)(in string mainModule = __MODULE__) {
 
 @("wrapAll")
 unittest  {
-    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef;
+    import xlld.memorymanager: allocator;
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+
     mixin(wrapAll!("xlld.test_d_funcs"));
-    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]]);
+    auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncAddEverything(&arg).shouldEqualDlang(60.0);
 }
 
@@ -891,7 +865,7 @@ XLOPER12 convertInput(T)(LPXLOPER12 arg) {
     if(arg.xltype != dlangToXlOperType!T.InputType)
         throw exception;
 
-    auto realArg = coerce(arg);
+    auto realArg = () @trusted { return coerce(arg); }();
 
     if(realArg.xltype != dlangToXlOperType!T.Type) {
         free(&realArg);
@@ -906,7 +880,7 @@ XLOPER12 convertInput(T)(LPXLOPER12 arg) {
   will be freed by Excel itself
  */
 XLOPER12 toAutoFreeOper(T)(T value) {
-    import xlld.memorymanager: autoFreeAllocator = allocator;
+    import xlld.memorymanager: autoFreeAllocator;
     import xlld.xlcall: XlType;
 
     auto result = value.toXlOper(autoFreeAllocator);
@@ -952,8 +926,98 @@ auto fromXlOperCoerce(T, A)(ref XLOPER12 val, auto ref A allocator) {
 
 @("fromXlOperCoerce")
 unittest {
+    import xlld.memorymanager: allocator;
+
     double[][] doubles = [[1, 2, 3, 4], [11, 12, 13, 14]];
-    auto doublesOper = toSRef(doubles);
-    doublesOper.fromXlOper!(double[][]).shouldThrowWithMessage("XL oper not of multi type");
+    auto doublesOper = toSRef(doubles, allocator);
+    doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage("XL oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
+}
+
+struct TempMemoryPool {
+
+    import xlld.memorymanager: gMemoryPool;
+    alias _allocator = gMemoryPool;
+
+    static auto fromXlOper(T, U)(U oper) {
+        import xlld.wrap: wrapFromXlOper = fromXlOper;
+        return wrapFromXlOper!T(oper, _allocator);
+    }
+
+    static auto toXlOper(T)(T val) {
+        import xlld.wrap: wrapToXlOper = toXlOper;
+        return wrapToXlOper(val, _allocator);
+    }
+
+    ~this() @safe {
+        _allocator.deallocateAll;
+    }
+}
+
+
+@("TempMemoryPool")
+unittest {
+    import xlld.memorymanager: pool = gMemoryPool;
+
+    with(TempMemoryPool()) {
+        auto strOper = toXlOper("foo");
+        auto str = fromXlOper!string(strOper);
+        pool.curPos.shouldNotEqual(0);
+        str.shouldEqual("foo");
+    }
+
+    pool.curPos.shouldEqual(0);
+}
+
+@("wrap function with @Dispose")
+@safe unittest {
+    import xlld.test_util: gTestAllocator;
+    import xlld.memorymanager: gMemoryPool;
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+
+    // this is needed since gTestAllocator is global, so we can't rely
+    // on its destructor
+    scope(exit) gTestAllocator.verify;
+
+    mixin(wrapAll!("xlld.test_d_funcs"));
+    double[4] args = [1.0, 2.0, 3.0, 4.0];
+    auto oper = args[].toSRef(gMemoryPool); // don't use TestAllocator
+    auto arg = () @trusted { return &oper; }();
+    auto ret = () @safe @nogc { return FuncReturnArrayNoGc(arg); }();
+    ret.shouldEqualDlang([2.0, 4.0, 6.0, 8.0]);
+}
+
+version(unittest) {
+
+    /// emulates SRef types by storing what the referenced type actually is
+    XlType gReferencedType;
+
+    // tracks calls to `coerce` and `free` to make sure memory allocations/deallocations match
+    int gNumXlCoerce;
+    int gNumXlFree;
+    enum maxCoerce = 1000;
+    void*[maxCoerce] gCoerced;
+    void*[maxCoerce] gFreed;
+
+    // automatically converts from oper to compare with a D type
+    void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
+        import xlld.memorymanager: allocator;
+        actual.shouldNotBeNull;
+        if(actual.xltype == xltypeErr)
+            fail("XLOPER is of error type", file, line);
+        actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
+    }
+
+    // automatically converts from oper to compare with a D type
+    void shouldEqualDlang(U)(ref XLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
+        shouldEqualDlang(&actual, expected, file, line);
+    }
+
+    XLOPER12 toSRef(T, A)(T val, ref A allocator) @trusted {
+        auto ret = toXlOper(val, allocator);
+        //hide real type somewhere to retrieve it
+        gReferencedType = ret.xltype;
+        ret.xltype = XlType.xltypeSRef;
+        return ret;
+    }
 }
