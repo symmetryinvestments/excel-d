@@ -122,7 +122,7 @@ double FuncThrows(double) {
     import std.experimental.allocator: dispose;
     gTestAllocator.dispose(ret);
 })
-double[] FuncReturnArrayNoGc(double[] numbers) @nogc nothrow {
+double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
     import xlld.test_util: gTestAllocator;
     import std.experimental.allocator: makeArray;
     import std.algorithm: map;

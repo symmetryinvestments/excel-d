@@ -647,6 +647,9 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
     const nogc = functionAttributes!(mixin(funcName)) & FunctionAttribute.nogc
         ? "@nogc "
         : "";
+    const safe = functionAttributes!(mixin(funcName)) & FunctionAttribute.safe
+        ? "@trusted "
+        : "";
 
     alias registerAttrs = getUDAs!(mixin(funcName), Register);
     static assert(registerAttrs.length == 0 || registerAttrs.length == 1,
@@ -658,7 +661,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
 
     return [
         register,
-        `extern(Windows) LPXLOPER12 ` ~ funcName ~ `(` ~ argsDecl ~ `) nothrow ` ~ nogc ~ `{`,
+        `extern(Windows) LPXLOPER12 ` ~ funcName ~ `(` ~ argsDecl ~ `) nothrow ` ~ nogc ~ safe ~ `{`,
         `    static import ` ~ moduleName ~ `;`,
         `    import xlld.memorymanager: gMemoryPool;`,
         `    alias wrappedFunc = ` ~ moduleName ~ `.` ~ funcName ~ `;`,
@@ -709,7 +712,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     // free any coerced memory
     scope(exit)
         foreach(ref arg; realArgs)
-            free(&arg);
+            () @trusted { free(&arg); }();
 
     Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
 
@@ -731,7 +734,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     // convert all Excel types to D types
     foreach(i, InputType; Parameters!wrappedFunc) {
         try {
-            dArgs[i] = fromXlOper!InputType(&realArgs[i], allocator);
+            dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], allocator); }();
         } catch(Exception ex) {
             ret.xltype = XlType.xltypeErr;
             ret.val.err = -1;
@@ -862,7 +865,7 @@ XLOPER12 convertInput(T)(LPXLOPER12 arg) {
     if(arg.xltype != dlangToXlOperType!T.InputType)
         throw exception;
 
-    auto realArg = coerce(arg);
+    auto realArg = () @trusted { return coerce(arg); }();
 
     if(realArg.xltype != dlangToXlOperType!T.Type) {
         free(&realArg);
@@ -978,10 +981,9 @@ unittest {
 
     mixin(wrapAll!("xlld.test_d_funcs"));
     double[4] args = [1.0, 2.0, 3.0, 4.0];
-    auto arg = args[].toSRef(gMemoryPool); // don't use TestAllocator
-    // FIXME: the wrapper function isn't @safe
-    auto ret = () @trusted @nogc { return FuncReturnArrayNoGc(&arg); }();
-    ret.shouldNotBeNull;
+    auto oper = args[].toSRef(gMemoryPool); // don't use TestAllocator
+    auto arg = () @trusted { return &oper; }();
+    auto ret = () @safe @nogc { return FuncReturnArrayNoGc(arg); }();
     ret.shouldEqualDlang([2.0, 4.0, 6.0, 8.0]);
 }
 
@@ -1000,6 +1002,7 @@ version(unittest) {
     // automatically converts from oper to compare with a D type
     void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
         import xlld.memorymanager: allocator;
+        actual.shouldNotBeNull;
         if(actual.xltype == xltypeErr)
             fail("XLOPER is of error type", file, line);
         actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
