@@ -9,90 +9,7 @@ import std.traits: isArray;
 
 version(unittest) {
     import unit_threaded;
-
-    /// emulates SRef types by storing what the referenced type actually is
-    XlType gReferencedType;
-
-    // tracks calls to `coerce` and `free` to make sure memory allocations/deallocations match
-    int gNumXlCoerce;
-    int gNumXlFree;
-    enum maxCoerce = 1000;
-    void*[maxCoerce] gCoerced;
-    void*[maxCoerce] gFreed;
-
-    // automatically converts from oper to compare with a D type
-    void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) {
-        import xlld.memorymanager: allocator;
-        if(actual.xltype == xltypeErr)
-            fail("XLOPER is of error type", file, line);
-        actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
-    }
-
-    // automatically converts from oper to compare with a D type
-    void shouldEqualDlang(U)(ref XLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) {
-        shouldEqualDlang(&actual, expected, file, line);
-    }
-
-    XLOPER12 toSRef(T, A)(T val, ref A allocator) {
-        auto ret = toXlOper(val, allocator);
-        //hide real type somewhere to retrieve it
-        gReferencedType = ret.xltype;
-        ret.xltype = XlType.xltypeSRef;
-        return ret;
-    }
-
-    // tracks allocations and throws in the destructor if there is a memory leak
-    // it also throws when there is an attempt to deallocate memory that wasn't
-    // allocated
-    struct TestAllocator {
-        import std.experimental.allocator.common: platformAlignment;
-        import std.experimental.allocator.mallocator: Mallocator;
-
-        alias allocator = Mallocator.instance;
-
-        private static struct ByteRange {
-            void* ptr;
-            size_t length;
-        }
-        private ByteRange[] _allocations;
-        private int _numAllocations;
-
-        enum uint alignment = platformAlignment;
-
-        void[] allocate(size_t numBytes) {
-            ++_numAllocations;
-            auto ret = allocator.allocate(numBytes);
-            writelnUt("+ Allocated  ptr ", ret.ptr, " of ", ret.length, " bytes length");
-            _allocations ~= ByteRange(ret.ptr, ret.length);
-            return ret;
-        }
-
-        bool deallocate(void[] bytes) {
-            import std.algorithm: remove, canFind;
-            import std.exception: enforce;
-            import std.conv: text;
-
-            writelnUt("- Deallocate ptr ", bytes.ptr, " of ", bytes.length, " bytes length");
-
-            bool pred(ByteRange other) { return other.ptr == bytes.ptr && other.length == bytes.length; }
-
-            enforce(_allocations.canFind!pred,
-                    text("Unknown deallocate byte range. Ptr: ", bytes.ptr, " length: ", bytes.length,
-                         " allocations: ", _allocations));
-            _allocations = _allocations.remove!pred;
-            return allocator.deallocate(bytes);
-        }
-
-        auto numAllocations() @safe pure nothrow const {
-            return _numAllocations;
-        }
-
-        ~this() {
-            import std.exception: enforce;
-            import std.conv: text;
-            enforce(!_allocations.length, text("Memory leak in TestAllocator. Allocations: ", _allocations));
-        }
-    }
+    import test_allocator;
 }
 
 // this shouldn't be needed IMHO and is a bug in std.experimental.allocator that dispose
@@ -1020,4 +937,39 @@ unittest {
     }
 
     pool.curPos.shouldEqual(0);
+}
+
+
+version(unittest) {
+
+    /// emulates SRef types by storing what the referenced type actually is
+    XlType gReferencedType;
+
+    // tracks calls to `coerce` and `free` to make sure memory allocations/deallocations match
+    int gNumXlCoerce;
+    int gNumXlFree;
+    enum maxCoerce = 1000;
+    void*[maxCoerce] gCoerced;
+    void*[maxCoerce] gFreed;
+
+    // automatically converts from oper to compare with a D type
+    void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) {
+        import xlld.memorymanager: allocator;
+        if(actual.xltype == xltypeErr)
+            fail("XLOPER is of error type", file, line);
+        actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
+    }
+
+    // automatically converts from oper to compare with a D type
+    void shouldEqualDlang(U)(ref XLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) {
+        shouldEqualDlang(&actual, expected, file, line);
+    }
+
+    XLOPER12 toSRef(T, A)(T val, ref A allocator) {
+        auto ret = toXlOper(val, allocator);
+        //hide real type somewhere to retrieve it
+        gReferencedType = ret.xltype;
+        ret.xltype = XlType.xltypeSRef;
+        return ret;
+    }
 }
