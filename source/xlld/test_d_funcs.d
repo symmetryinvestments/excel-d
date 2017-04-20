@@ -117,6 +117,11 @@ double FuncThrows(double) {
 }
 
 
+// @Dispose is used to tell the framework how to free memory that is dynamically
+// allocated by the D function. After returning, the value is converted to an
+// Excel type sand the D value is freed using the lambda defined here.
+// In this example we're using TestAllocator to make sure that there are no
+// memory leaks.
 @Dispose!((ret) {
     import xlld.test_util: gTestAllocator;
     import std.experimental.allocator: dispose;
