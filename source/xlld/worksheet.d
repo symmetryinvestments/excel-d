@@ -103,3 +103,8 @@ struct Optional {
     the function with the spreadsheet.
 */
 alias Register = Optional;
+
+
+struct Dispose(alias function_) {
+    alias dispose = function_;
+}
