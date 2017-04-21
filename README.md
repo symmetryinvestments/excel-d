@@ -5,7 +5,7 @@ Excel API bindings and wrapper API for D
 This dub package contains D declarations for the [Excel SDK](https://msdn.microsoft.com/en-us/library/office/bb687883.aspx)
  as well as a D wrapper API. This allows programmers to write Excel worksheet functions in D.
 
-Generated documentation is available at [Kaleidic Open Source Documentation](http://code.kaleidic.io).
+Generated documentation is available at [Kaleidic Open Source Documentation for Excel-D](http://excel-d.code.kaleidic.io).
 
 A working XLL example can be found in the [`example`](example)
 directory. Running `dub build` there will create an XLL
