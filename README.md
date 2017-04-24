@@ -72,7 +72,7 @@ An example:
 ```d
 // @Dispose is used to tell the framework how to free memory that is dynamically
 // allocated by the D function. After returning, the value is converted to an
-// Excel type sand the D value is freed using the lambda defined here.
+// Excel type and the D value is freed using the lambda defined here.
 @Dispose!((ret) {
     import std.experimental.allocator.mallocator: Mallocator;
     import std.experimental.allocator: dispose;
