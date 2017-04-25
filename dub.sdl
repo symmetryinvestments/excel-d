@@ -1,7 +1,7 @@
 name "excel-d"
 description "Excel bindings for D"
 authors "Laeeth Isharc" "Stefan Koch" "Atila Neves"
-copyright "Copyright © 2016, Kaleidic Associates Ltd"
+copyright "Copyright © 2016, 2017 Kaleidic Associates Advisory Limited"
 license "proprietary"
 targetType "sourceLibrary"
 
