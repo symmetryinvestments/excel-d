@@ -22,6 +22,24 @@ int day(double date) @safe @nogc nothrow {
     return datePart(date, xlfDay);
 }
 
+// should be pure but can't due to calling Excel12
+int hour(double date) @safe @nogc nothrow {
+    import xlld.xlcall: xlfHour;
+    return datePart(date, xlfHour);
+}
+
+// should be pure but can't due to calling Excel12
+int minute(double date) @safe @nogc nothrow {
+    import xlld.xlcall: xlfMinute;
+    return datePart(date, xlfMinute);
+}
+
+// should be pure but can't due to calling Excel12
+int second(double date) @safe @nogc nothrow {
+    import xlld.xlcall: xlfSecond;
+    return datePart(date, xlfSecond);
+}
+
 private int datePart(double date, int xlfn) @safe @nogc nothrow {
     import xlld.framework: excel12;
 

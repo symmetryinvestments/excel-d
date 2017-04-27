@@ -133,7 +133,7 @@ double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
     import std.algorithm: map;
 
     try {
-        return gTestAllocator.makeArray(numbers.map!(a => a * 2));
+        return () @trusted { return gTestAllocator.makeArray(numbers.map!(a => a * 2)); }();
     } catch(Exception _) {
         return [];
     }

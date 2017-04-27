@@ -9,7 +9,7 @@ import std.traits: isArray;
 
 version(unittest) {
     import unit_threaded;
-    import test_allocator;
+    import xlld.test_util: TestAllocator;
 }
 
 // this shouldn't be needed IMHO and is a bug in std.experimental.allocator that dispose
@@ -94,8 +94,7 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
 
 @("toXlOper!string allocator")
 @system unittest {
-    // should throw unless allocations match deallocations
-    TestAllocator allocator;
+    auto allocator = TestAllocator();
     auto oper = "foo".toXlOper(allocator);
     allocator.numAllocations.shouldEqual(1);
     freeXLOper(&oper, allocator);
