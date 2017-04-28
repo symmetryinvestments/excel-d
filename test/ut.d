@@ -13,6 +13,7 @@ int main(string[] args)
                      "xlld.wrap",
                      "xlld.xl",
                      "xlld.exception",
+                     "xlld.conv",
                      )
                      (args);
 }
