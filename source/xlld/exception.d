@@ -249,6 +249,27 @@ class NoGcException: Exception {
         exception.line.shouldEqual(__LINE__ - 3);
         exception.file.shouldEqual(__FILE__);
     }
+
+    @("adjust with class with toString")
+    @safe unittest {
+        auto exception = new NoGcException();
+        class Class {
+            int i;
+            string s;
+            this(int i, string s) { this.i = i; this.s = s; }
+            override string toString() @safe @nogc pure const nothrow {
+                return "always the same";
+            }
+        }
+        auto obj = new Class(42, "foobar");
+
+        () @nogc { exception.adjust(obj); }();
+
+        exception.msg.shouldEqual(`always the same`);
+        exception.line.shouldEqual(__LINE__ - 3);
+        exception.file.shouldEqual(__FILE__);
+    }
+
 }
 
 
@@ -376,22 +397,37 @@ private auto value(T)(ref const(T) arg) if(isAssociativeArray!T) {
     return &buffer[0];
 }
 
-private auto value(T)(ref const(T) arg) if(isAggregateType!T) {
+private auto value(T)(ref const(T) arg) @nogc if(isAggregateType!T) {
     import core.stdc.string: strlen;
     import core.stdc.stdio: snprintf;
+    import std.traits: hasMember;
 
     static char[BUFFER_SIZE] buffer;
 
-    int index;
-    index += snprintf(&buffer[index], buffer.length - index, T.stringof);
-    buffer[index++] = '(';
-    foreach(i, ref const elt; arg.tupleof) {
-        index += snprintf(&buffer[index], buffer.length - index, format(elt), value(elt));
-        if(i != arg.tupleof.length - 1) index += snprintf(&buffer[index], buffer.length - index, ", ");
+    static if(__traits(compiles, callToString(arg))) {
+        const repr = arg.toString;
+        if(repr.length > buffer.length - 1) return null;
+        buffer[0 .. repr.length] = repr[];
+        buffer[repr.length] = 0;
+        return &buffer[0];
+    } else {
+
+        int index;
+        index += snprintf(&buffer[index], buffer.length - index, T.stringof);
+        buffer[index++] = '(';
+        foreach(i, ref const elt; arg.tupleof) {
+            index += snprintf(&buffer[index], buffer.length - index, format(elt), value(elt));
+            if(i != arg.tupleof.length - 1) index += snprintf(&buffer[index], buffer.length - index, ", ");
+        }
+
+        buffer[index++] = ')';
+        buffer[index++] = 0;
+
+        return &buffer[0];
     }
+}
 
-    buffer[index++] = ')';
-    buffer[index++] = 0;
-
-    return &buffer[0];
+// helper function to avoid a closure
+private string callToString(T)(ref const(T) arg) @nogc {
+    return arg.toString;
 }
