@@ -145,6 +145,24 @@ class NoGcException: Exception {
         exception.file.shouldEqual(__FILE__);
     }
 
+    @("adjust with float")
+    @safe unittest {
+        auto exception = new NoGcException();
+        () @nogc { exception.adjust("it is ", 3.0f); }();
+        exception.msg.shouldEqual("it is 3.000000");
+        exception.line.shouldEqual(__LINE__ - 2);
+        exception.file.shouldEqual(__FILE__);
+    }
+
+    @("adjust with double")
+    @safe unittest {
+        auto exception = new NoGcException();
+        () @nogc { exception.adjust("it is ", 3.0); }();
+        exception.msg.shouldEqual("it is 3.000000");
+        exception.line.shouldEqual(__LINE__ - 2);
+        exception.file.shouldEqual(__FILE__);
+    }
+
 
     @("adjust with enums")
     @safe unittest {
@@ -186,6 +204,14 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == char)) {
     return &"%c"[0];
 }
 
+private const(char)* format(T)(ref const(T) arg) if(is(T == float)) {
+    return &"%f"[0];
+}
+
+private const(char)* format(T)(ref const(T) arg) if(is(T == double)) {
+    return &"%lf"[0];
+}
+
 private const(char)* format(T)(ref const(T) arg) if(is(T == enum) || is(T == bool)) {
     return &"%s"[0];
 }
@@ -217,6 +243,7 @@ private auto value(T)(ref const(T) arg) if(is(T == bool)) {
         ? &"true"[0]
         : &"false"[0];
 }
+
 
 private auto value(T)(ref const(T) arg) if(is(T == string)) {
     static char[BUFFER_SIZE] buffer;
