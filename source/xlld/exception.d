@@ -5,6 +5,7 @@ module xlld.exception;
 
 version(unittest) import unit_threaded;
 import std.traits: isScalarType, isPointer;
+import std.range: isInputRange;
 
 enum BUFFER_SIZE = 1024;
 
@@ -192,6 +193,20 @@ class NoGcException: Exception {
         exception.file.shouldEqual(__FILE__);
     }
 
+    @("adjust with int[]")
+    @safe unittest {
+        import std.conv: to;
+
+        auto exception = new NoGcException();
+        const arr = [1, 2, 3];
+        const expected = arr.to!string;
+
+        () @nogc { exception.adjust(arr); }();
+
+        exception.msg.shouldEqual(expected);
+        exception.line.shouldEqual(__LINE__ - 3);
+        exception.file.shouldEqual(__FILE__);
+    }
 }
 
 
@@ -227,7 +242,7 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == double)) {
     return &"%lf"[0];
 }
 
-private const(char)* format(T)(ref const(T) arg) if(is(T == enum) || is(T == bool)) {
+private const(char)* format(T)(ref const(T) arg) if(is(T == enum) || is(T == bool) || (isInputRange!T && !is(T == string))) {
     return &"%s"[0];
 }
 
@@ -270,5 +285,26 @@ private auto value(T)(ref const(T) arg) if(is(T == string)) {
     if(arg.length > buffer.length - 1) return null;
     buffer[0 .. arg.length] = arg[];
     buffer[arg.length] = 0;
+    return &buffer[0];
+}
+
+private auto value(T)(ref const(T) arg) if(isInputRange!T && !is(T == string)) {
+    import core.stdc.string: strlen;
+    import core.stdc.stdio: snprintf;
+
+    static char[BUFFER_SIZE] buffer;
+
+    if(arg.length > buffer.length - 1) return null;
+
+    int index;
+    buffer[index++] = '[';
+    foreach(i, ref const elt; arg) {
+        index += snprintf(&buffer[index], buffer.length - index, format(elt), value(elt));
+        if(i != arg.length - 1) index += snprintf(&buffer[index], buffer.length - index, ", ");
+    }
+
+    buffer[index++] = ']';
+    buffer[index++] = 0;
+
     return &buffer[0];
 }
