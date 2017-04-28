@@ -106,29 +106,32 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
 {
     import std.algorithm: map, all;
     import std.array: array;
-    import std.exception: enforce;
-    import std.conv: text;
 
     static const exception = new Exception("# of columns must all be the same and aren't");
     if(!values.all!(a => a.length == values[0].length))
        throw exception;
 
-    auto ret = XLOPER12();
-    ret.xltype = XlType.xltypeMulti;
     const rows = cast(int)values.length;
-    ret.val.array.rows = rows;
     const cols = cast(int)values[0].length;
-    ret.val.array.columns = cols;
-
-    ret.val.array.lparray = cast(XLOPER12*)allocator.allocate(rows * cols * ret.sizeof).ptr;
+    auto ret = multi(cast(int)values.length, cast(int)values[0].length, allocator);
     auto opers = ret.val.array.lparray[0 .. rows*cols];
 
     int i;
-    foreach(ref row; values)
+    foreach(ref row; values) {
         foreach(ref val; row) {
             opers[i++] = val.toXlOper(allocator);
         }
+    }
 
+    return ret;
+}
+
+XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
+    auto ret = XLOPER12();
+    ret.xltype = XlType.xltypeMulti;
+    ret.val.array.rows = rows;
+    ret.val.array.columns = cols;
+    ret.val.array.lparray = cast(XLOPER12*)allocator.allocate(rows * cols * ret.sizeof).ptr;
     return ret;
 }
 
@@ -255,6 +258,38 @@ unittest {
     allocator.dispose(backAgain);
 }
 
+@("fromXlOper!string[][] when not all opers are strings")
+unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    alias allocator = Mallocator.instance;
+
+    const rows = 2;
+    const cols = 3;
+    auto array = multi(rows, cols, allocator);
+    auto opers = array.val.array.lparray[0 .. rows*cols];
+    const strings = ["foo", "bar", "baz"];
+    const numbers = [1.0, 2.0, 3.0];
+
+    int i;
+    foreach(r; 0 .. rows) {
+        foreach(c; 0 .. cols) {
+            if(r == 0)
+                opers[i++] = strings[c].toXlOper(allocator);
+            else
+                opers[i++] = numbers[c].toXlOper(allocator);
+        }
+    }
+
+    opers[3].fromXlOper!string(allocator).shouldEqual("1.000000");
+    // sanity checks
+    opers[0].fromXlOper!string(allocator).shouldEqual("foo");
+    opers[3].fromXlOper!double(allocator).shouldEqual(1.0);
+    // the actual assertion
+    array.fromXlOper!(string[][])(allocator).shouldEqual([["foo", "bar", "baz"],
+                                                          ["1.000000", "2.000000", "3.000000"]]);
+}
+
+
 @("fromXlOper!double[][] allocator")
 unittest {
     TestAllocator allocator;
@@ -338,7 +373,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     import std.exception: enforce;
     import std.experimental.allocator: makeArray;
 
-    static const exception = new Exception("XL oper not of multi type");
+    static const exception = new Exception("fromXlOperMulti failed - oper not of multi type");
 
     const realType = val.xltype & ~xlbitDLLFree;
     if(realType != xltypeMulti)
@@ -352,7 +387,6 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
         foreach(ref row; ret)
             row = allocator.makeArray!T(cols);
     } else static if(dim == Dimensions.One) {
-
         auto ret = allocator.makeArray!T(rows * cols);
     } else
         static assert(0);
@@ -364,7 +398,11 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
             auto cellVal = coerce(&values[row * cols + col]);
             scope(exit) free(&cellVal);
 
-            auto value = cellVal.xltype == dlangToXlOperType!T.Type ? cellVal.fromXlOper!T(allocator) : T.init;
+            const shouldConvert = (cellVal.xltype == dlangToXlOperType!T.Type) ||
+                (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr);
+
+            auto value = shouldConvert ? cellVal.fromXlOper!T(allocator) : T.init;
+
             static if(dim == Dimensions.Two)
                 ret[row][col] = value;
             else
@@ -382,15 +420,29 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     import std.utf;
 
     const stripType = val.xltype & ~(xlbitXLFree | xlbitDLLFree);
-    if(stripType != xltypeStr)
+    if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
         return null;
 
-    auto ret = allocator.makeArray!char(val.val.str[0]);
-    int i;
-    foreach(ch; val.val.str[1 .. ret.length + 1].byChar)
-        ret[i++] = ch;
+    if(stripType == XlType.xltypeStr) {
 
-    return cast(string)ret;
+        auto ret = allocator.makeArray!char(val.val.str[0]);
+        int i;
+        foreach(ch; val.val.str[1 .. ret.length + 1].byChar)
+            ret[i++] = ch;
+
+        return cast(string)ret;
+    } else {
+        // if a double, try to convert it to a string
+        import core.stdc.stdio: snprintf;
+        char[1024] buffer;
+        static const exception = new Exception("Could not convert double to string");
+        const numChars = snprintf(&buffer[0], buffer.length, "%lf", val.val.num);
+        if(numChars > buffer.length - 1)
+            throw exception;
+        auto ret = allocator.makeArray!char(numChars);
+        ret[] = buffer[0 .. numChars];
+        return cast(string)ret;
+    }
 }
 
 @("fromXlOper missing")
@@ -609,14 +661,14 @@ private enum invalidXlOperType = 0xdeadbeef;
  */
 template dlangToXlOperType(T) {
     static if(is(T == double[][]) || is(T == string[][]) || is(T == double[]) || is(T == string[])) {
-        enum InputType = xltypeSRef;
-        enum Type= xltypeMulti;
+        enum InputType = XlType.xltypeSRef;
+        enum Type= XlType.xltypeMulti;
     } else static if(is(T == double)) {
-        enum InputType = xltypeNum;
-        enum Type = xltypeNum;
+        enum InputType = XlType.xltypeNum;
+        enum Type = XlType.xltypeNum;
     } else static if(is(T == string)) {
-        enum InputType = xltypeStr;
-        enum Type = xltypeStr;
+        enum InputType = XlType.xltypeStr;
+        enum Type = XlType.xltypeStr;
     } else {
         enum InputType = invalidXlOperType;
         enum Type = invalidXlOperType;
@@ -929,7 +981,7 @@ unittest {
 
     double[][] doubles = [[1, 2, 3, 4], [11, 12, 13, 14]];
     auto doublesOper = toSRef(doubles, allocator);
-    doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage("XL oper not of multi type");
+    doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage("fromXlOperMulti failed - oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
 }
 
