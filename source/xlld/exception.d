@@ -125,6 +125,15 @@ class NoGcException: Exception {
         exception.file.shouldEqual(__FILE__);
     }
 
+    @("adjust with char")
+    @safe unittest {
+        auto exception = new NoGcException();
+        () @nogc { exception.adjust("fo", 'o'); }();
+        exception.msg.shouldEqual("foo");
+        exception.line.shouldEqual(__LINE__ - 2);
+        exception.file.shouldEqual(__FILE__);
+    }
+
     @("adjust with enums")
     @safe unittest {
         enum Enum {
@@ -145,11 +154,11 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == string)) {
     return &"%s"[0];
 }
 
-private const(char)* format(T)(ref const(T) arg) if(is(T == int)) {
+private const(char)* format(T)(ref const(T) arg) if(is(T == int) || is(T == short) || is(T == byte)) {
     return &"%d"[0];
 }
 
-private const(char)* format(T)(ref const(T) arg) if(is(T == uint)) {
+private const(char)* format(T)(ref const(T) arg) if(is(T == uint) || is(T == ushort) || is(T == ubyte)) {
     return &"%u"[0];
 }
 
@@ -159,6 +168,10 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == long)) {
 
 private const(char)* format(T)(ref const(T) arg) if(is(T == ulong)) {
     return &"%lu"[0];
+}
+
+private const(char)* format(T)(ref const(T) arg) if(is(T == char)) {
+    return &"%c"[0];
 }
 
 private const(char)* format(T)(ref const(T) arg) if(is(T == enum)) {
