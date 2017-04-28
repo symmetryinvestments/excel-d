@@ -47,7 +47,7 @@ class NoGcException: Exception {
     @("adjust with only strings")
     @safe unittest {
         auto exception = new NoGcException();
-        () @nogc @safe { exception.adjust("foo", "bar"); }();
+        () @nogc { exception.adjust("foo", "bar"); }();
         exception.msg.shouldEqual("foobar");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -56,7 +56,7 @@ class NoGcException: Exception {
     @("adjust with string and integer")
     @safe unittest {
         auto exception = new NoGcException();
-        () @nogc @safe { exception.adjust(1, "bar"); }();
+        () @nogc { exception.adjust(1, "bar"); }();
         exception.msg.shouldEqual("1bar");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -65,7 +65,7 @@ class NoGcException: Exception {
     @("adjust with string and long")
     @safe unittest {
         auto exception = new NoGcException();
-        () @nogc @safe { exception.adjust("foo", 7L); }();
+        () @nogc { exception.adjust("foo", 7L); }();
         exception.msg.shouldEqual("foo7");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -78,7 +78,7 @@ class NoGcException: Exception {
             toto,
         }
         auto exception = new NoGcException();
-        () @nogc @safe { exception.adjust(Enum.quux, "_middle_", Enum.toto); }();
+        () @nogc { exception.adjust(Enum.quux, "_middle_", Enum.toto); }();
         exception.msg.shouldEqual("quux_middle_toto");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
