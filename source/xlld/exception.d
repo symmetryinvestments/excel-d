@@ -239,7 +239,7 @@ class NoGcException: Exception {
         class Class {
             int i;
             string s;
-            this(int i, string s) { this.i = i; this.s = s; }
+            this(int i, string s) @safe pure nothrow { this.i = i; this.s = s; }
         }
         auto obj = new Class(42, "foobar");
 
@@ -256,7 +256,7 @@ class NoGcException: Exception {
         class Class {
             int i;
             string s;
-            this(int i, string s) { this.i = i; this.s = s; }
+            this(int i, string s) @safe pure nothrow { this.i = i; this.s = s; }
             override string toString() @safe @nogc pure const nothrow {
                 return "always the same";
             }
