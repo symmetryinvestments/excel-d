@@ -8,7 +8,8 @@ import std.traits: isScalarType;
 
 enum BUFFER_SIZE = 1024;
 
-T enforce(string file = __FILE__, size_t line = __LINE__, T, Args...)(T value, Args args)
+
+T enforce(size_t bufferSize = BUFFER_SIZE, string file = __FILE__, size_t line = __LINE__, T, Args...)(T value, Args args)
 @trusted if (is(typeof({ if (!value) {} }))) {
 
     import std.conv: emplace;
@@ -17,12 +18,13 @@ T enforce(string file = __FILE__, size_t line = __LINE__, T, Args...)(T value, A
 
     if (!value) {
         auto exception = emplace!NoGcException(buffer);
-        exception.adjust!(file, line)(args);
+        exception.adjust!(bufferSize, file, line)(args);
         throw exception;
     }
     return value;
 }
 
+///
 @("enforce")
 @safe unittest {
     string msg, file;
@@ -55,10 +57,10 @@ class NoGcException: Exception {
         static const exception = new NoGcException();
     }
 
-    void adjust(string file = __FILE__, size_t line = __LINE__, A...)(auto ref A args) {
+    void adjust(size_t bufferSize = BUFFER_SIZE, string file = __FILE__, size_t line = __LINE__, A...)(auto ref A args) {
         import core.stdc.stdio: snprintf;
 
-        static char[BUFFER_SIZE] buffer;
+        static char[bufferSize] buffer;
 
         this.file = file;
         this.line = line;

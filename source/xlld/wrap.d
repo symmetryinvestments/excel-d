@@ -927,9 +927,6 @@ XLOPER12 toAutoFreeOper(T)(T value) {
 
 ushort operStringLength(T)(in T value) {
     import xlld.exception: enforce;
-    import xlld.exception: NoGcException;
-
-    static const exception = new NoGcException;
 
     enforce(value.xltype == XlType.xltypeStr,
             "Cannot calculate string length for oper of type ", value.xltype);
