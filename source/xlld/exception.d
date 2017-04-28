@@ -97,6 +97,16 @@ class NoGcException: Exception {
         exception.file.shouldEqual(__FILE__);
     }
 
+    @("adjust with string and uint")
+    @safe unittest {
+        auto exception = new NoGcException();
+        () @nogc { exception.adjust(1u, "bar"); }();
+        exception.msg.shouldEqual("1bar");
+        exception.line.shouldEqual(__LINE__ - 2);
+        exception.file.shouldEqual(__FILE__);
+    }
+
+
     @("adjust with string and long")
     @safe unittest {
         auto exception = new NoGcException();
@@ -137,6 +147,10 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == string)) {
 
 private const(char)* format(T)(ref const(T) arg) if(is(T == int)) {
     return &"%d"[0];
+}
+
+private const(char)* format(T)(ref const(T) arg) if(is(T == uint)) {
+    return &"%u"[0];
 }
 
 private const(char)* format(T)(ref const(T) arg) if(is(T == long)) {
