@@ -10,7 +10,7 @@ version(unittest) {
 
 }
 
-XLOPER12 coerce(LPXLOPER12 oper) nothrow @nogc {
+XLOPER12 coerce(LPXLOPER12 oper) nothrow @nogc @trusted {
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlCoerce;
 
@@ -20,11 +20,11 @@ XLOPER12 coerce(LPXLOPER12 oper) nothrow @nogc {
     return coerced;
 }
 
-void free(ref XLOPER12 oper) nothrow @nogc {
+void free(ref XLOPER12 oper) nothrow @nogc @trusted {
     free(&oper);
 }
 
-void free(LPXLOPER12 oper) nothrow @nogc {
+void free(LPXLOPER12 oper) nothrow @nogc @trusted {
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlFree;
 

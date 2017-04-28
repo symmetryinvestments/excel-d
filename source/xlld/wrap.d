@@ -735,7 +735,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
  */
 LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
                                   (ref A allocator, auto ref T args) {
-    import xlld.xl: free;
+    import xlld.xl: coerce, free;
     import xlld.worksheet: Dispose;
     import std.traits: Parameters;
     import std.typecons: Tuple;
@@ -751,13 +751,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
              realArgs[i] = *args[i];
              continue;
         }
-        try
-            realArgs[i] = convertInput!InputType(args[i]);
-        catch(Exception ex) {
-            ret.xltype = XlType.xltypeErr;
-            ret.val.err = -1;
-            return &ret;
-        }
+        realArgs[i] = coerce(args[i]);
     }
 
     // free any coerced memory
@@ -865,6 +859,17 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     autoFree(oper); // normally this is done by Excel
 }
 
+@("No memory allocation bugs in wrapModuleFunctionImpl for string")
+@system unittest {
+    import xlld.memorymanager: gMemoryPool;
+    import xlld.test_d_funcs: StringToString;
+
+    auto arg = "foo".toSRef(gMemoryPool);
+    auto oper = wrapModuleFunctionImpl!StringToString(gMemoryPool, &arg);
+    gMemoryPool.curPos.shouldEqual(0);
+    oper.shouldEqualDlang("foobar");
+}
+
 
 string wrapWorksheetFunctionsString(Modules...)() {
 
@@ -907,24 +912,6 @@ unittest  {
     FuncAddEverything(&arg).shouldEqualDlang(60.0);
 }
 
-
-XLOPER12 convertInput(T)(LPXLOPER12 arg) {
-    import xlld.xl: coerce, free;
-
-    static exception = new const Exception("Error converting input");
-
-    if(arg.xltype != dlangToXlOperType!T.InputType)
-        throw exception;
-
-    auto realArg = () @trusted { return coerce(arg); }();
-
-    if(realArg.xltype != dlangToXlOperType!T.Type) {
-        free(&realArg);
-        throw exception;
-    }
-
-    return realArg;
-}
 
 /**
   creates an XLOPER12 that can be returned to Excel which
