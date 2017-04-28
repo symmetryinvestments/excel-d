@@ -12,8 +12,6 @@ int main(string[] args)
                      "xlld.traits",
                      "xlld.wrap",
                      "xlld.xl",
-                     "xlld.exception",
-                     "xlld.conv",
                      )
                      (args);
 }

@@ -4,6 +4,7 @@ authors "Laeeth Isharc" "Stefan Koch" "Atila Neves"
 copyright "Copyright © 2016, 2017 Kaleidic Associates Advisory Limited"
 license "proprietary"
 targetType "sourceLibrary"
+dependency "nogc" version="~>0.0.1"
 
 configuration "sourceLibrary" {
 }
