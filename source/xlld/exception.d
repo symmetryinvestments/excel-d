@@ -61,11 +61,67 @@ class NoGcException: Exception {
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
     }
+
+    @("adjust with string and long")
+    @safe unittest {
+        auto exception = new NoGcException();
+        () @nogc @safe { exception.adjust("foo", 7L); }();
+        exception.msg.shouldEqual("foo7");
+        exception.line.shouldEqual(__LINE__ - 2);
+        exception.file.shouldEqual(__FILE__);
+    }
+
+    @("adjust with enums")
+    @safe unittest {
+        enum Enum {
+            quux,
+            toto,
+        }
+        auto exception = new NoGcException();
+        () @nogc @safe { exception.adjust(Enum.quux, "_middle_", Enum.toto); }();
+        exception.msg.shouldEqual("quux_middle_toto");
+        exception.line.shouldEqual(__LINE__ - 2);
+        exception.file.shouldEqual(__FILE__);
+    }
+
 }
 
 
 private const(char)* format(T)(ref const(T) arg) if(is(T == string)) {
     return &"%s"[0];
+}
+
+private const(char)* format(T)(ref const(T) arg) if(is(T == int)) {
+    return &"%d"[0];
+}
+
+private const(char)* format(T)(ref const(T) arg) if(is(T == long)) {
+    return &"%ld"[0];
+}
+
+private const(char)* format(T)(ref const(T) arg) if(is(T == enum)) {
+    return &"%s"[0];
+}
+
+
+private auto value(T)(ref const(T) arg) if(isScalarType!T && !is(T == enum)) {
+    return arg;
+}
+
+private auto value(T)(ref const(T) arg) if(is(T == enum)) {
+    import std.traits: EnumMembers;
+    final switch(arg) {
+        foreach(member; EnumMembers!T) {
+        case member:
+            mixin(`return &"` ~ enumToString(member) ~ `"[0];`);
+        }
+    }
+}
+
+private string enumToString(T)(in T arg) if(is(T == enum)) {
+    if(!__ctfe) return "";
+    import std.conv: to;
+    return arg.to!string;
 }
 
 private auto value(T)(ref const(T) arg) if(is(T == string)) {
@@ -74,12 +130,4 @@ private auto value(T)(ref const(T) arg) if(is(T == string)) {
     buffer[0 .. arg.length] = arg[];
     buffer[arg.length] = 0;
     return &buffer[0];
-}
-
-private const(char)* format(T)(ref const(T) arg) if(is(T == int)) {
-    return &"%d"[0];
-}
-
-private auto value(T)(ref const(T) arg) if(isScalarType!T) {
-    return arg;
 }
