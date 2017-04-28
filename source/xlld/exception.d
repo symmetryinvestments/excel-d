@@ -214,6 +214,21 @@ class NoGcException: Exception {
 
         // I hope the hash function doesn't change...
         exception.msg.shouldEqual(`[bar: 2, foo: 1]`);
+        exception.line.shouldEqual(__LINE__ - 4);
+        exception.file.shouldEqual(__FILE__);
+    }
+
+    @("adjust with struct")
+    @safe unittest {
+        auto exception = new NoGcException();
+        struct Struct {
+            int i;
+            string s;
+        }
+
+        () @nogc { exception.adjust(Struct(42, "foobar")); }();
+
+        exception.msg.shouldEqual(`Struct(42, foobar)`);
         exception.line.shouldEqual(__LINE__ - 3);
         exception.file.shouldEqual(__FILE__);
 
@@ -254,7 +269,7 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == double)) {
 }
 
 private const(char)* format(T)(ref const(T) arg)
-    if(is(T == enum) || is(T == bool) || (isInputRange!T && !is(T == string)) || isAssociativeArray!T) {
+    if(is(T == enum) || is(T == bool) || (isInputRange!T && !is(T == string)) || isAssociativeArray!T || is(T == struct)) {
     return &"%s"[0];
 }
 
@@ -340,6 +355,26 @@ private auto value(T)(ref const(T) arg) if(isAssociativeArray!T) {
     }
 
     buffer[index++] = ']';
+    buffer[index++] = 0;
+
+    return &buffer[0];
+}
+
+private auto value(T)(ref const(T) arg) if(is(T == struct)) {
+    import core.stdc.string: strlen;
+    import core.stdc.stdio: snprintf;
+
+    static char[BUFFER_SIZE] buffer;
+
+    int index;
+    index += snprintf(&buffer[index], buffer.length - index, T.stringof);
+    buffer[index++] = '(';
+    foreach(i, ref const elt; arg.tupleof) {
+        index += snprintf(&buffer[index], buffer.length - index, format(elt), value(elt));
+        if(i != arg.tupleof.length - 1) index += snprintf(&buffer[index], buffer.length - index, ", ");
+    }
+
+    buffer[index++] = ')';
     buffer[index++] = 0;
 
     return &buffer[0];
