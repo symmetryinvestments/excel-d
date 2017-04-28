@@ -4,7 +4,7 @@
 module xlld.exception;
 
 version(unittest) import unit_threaded;
-import std.traits: isScalarType;
+import std.traits: isScalarType, isPointer;
 
 enum BUFFER_SIZE = 1024;
 
@@ -163,7 +163,6 @@ class NoGcException: Exception {
         exception.file.shouldEqual(__FILE__);
     }
 
-
     @("adjust with enums")
     @safe unittest {
         enum Enum {
@@ -174,6 +173,22 @@ class NoGcException: Exception {
         () @nogc { exception.adjust(Enum.quux, "_middle_", Enum.toto); }();
         exception.msg.shouldEqual("quux_middle_toto");
         exception.line.shouldEqual(__LINE__ - 2);
+        exception.file.shouldEqual(__FILE__);
+    }
+
+    @("adjust with pointer")
+    @safe unittest {
+        import std.conv: to;
+        import std.string: toLower;
+
+        auto exception = new NoGcException();
+        const ptr = new int(42);
+        const expected = "0x" ~ ptr.to!string.toLower;
+
+        () @nogc { exception.adjust(ptr); }();
+
+        exception.msg.shouldEqual(expected);
+        exception.line.shouldEqual(__LINE__ - 3);
         exception.file.shouldEqual(__FILE__);
     }
 
@@ -216,8 +231,13 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == enum) || is(T == boo
     return &"%s"[0];
 }
 
+private const(char)* format(T)(ref const(T) arg) if(isPointer!T) {
+    return &"%p"[0];
+}
 
-private auto value(T)(ref const(T) arg) if(isScalarType!T && !is(T == enum) && !is(T == bool)) {
+
+
+private auto value(T)(ref const(T) arg) if((isScalarType!T || isPointer!T) && !is(T == enum) && !is(T == bool)) {
     return arg;
 }
 
