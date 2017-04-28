@@ -931,7 +931,6 @@ ushort operStringLength(T)(in T value) {
 
     static const exception = new NoGcException;
 
-
     enforce(value.xltype == XlType.xltypeStr,
             "Cannot calculate string length for oper of type ", value.xltype);
 

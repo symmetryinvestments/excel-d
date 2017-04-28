@@ -106,6 +106,15 @@ class NoGcException: Exception {
         exception.file.shouldEqual(__FILE__);
     }
 
+    @("adjust with string and ulong")
+    @safe unittest {
+        auto exception = new NoGcException();
+        () @nogc { exception.adjust("foo", 7UL); }();
+        exception.msg.shouldEqual("foo7");
+        exception.line.shouldEqual(__LINE__ - 2);
+        exception.file.shouldEqual(__FILE__);
+    }
+
     @("adjust with enums")
     @safe unittest {
         enum Enum {
@@ -132,6 +141,10 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == int)) {
 
 private const(char)* format(T)(ref const(T) arg) if(is(T == long)) {
     return &"%ld"[0];
+}
+
+private const(char)* format(T)(ref const(T) arg) if(is(T == ulong)) {
+    return &"%lu"[0];
 }
 
 private const(char)* format(T)(ref const(T) arg) if(is(T == enum)) {
