@@ -4,7 +4,7 @@
 module xlld.exception;
 
 version(unittest) import unit_threaded;
-import std.traits: isScalarType, isPointer;
+import std.traits: isScalarType, isPointer, isAssociativeArray;
 import std.range: isInputRange;
 
 enum BUFFER_SIZE = 1024;
@@ -195,17 +195,28 @@ class NoGcException: Exception {
 
     @("adjust with int[]")
     @safe unittest {
-        import std.conv: to;
-
         auto exception = new NoGcException();
-        const arr = [1, 2, 3];
-        const expected = arr.to!string;
+        const array = [1, 2, 3];
 
-        () @nogc { exception.adjust(arr); }();
+        () @nogc { exception.adjust(array); }();
 
-        exception.msg.shouldEqual(expected);
+        exception.msg.shouldEqual("[1, 2, 3]");
         exception.line.shouldEqual(__LINE__ - 3);
         exception.file.shouldEqual(__FILE__);
+    }
+
+    @("adjust with int[string]")
+    @safe unittest {
+        auto exception = new NoGcException();
+        const aa = ["foo": 1, "bar": 2];
+
+        () @nogc { exception.adjust(aa); }();
+
+        // I hope the hash function doesn't change...
+        exception.msg.shouldEqual(`[bar: 2, foo: 1]`);
+        exception.line.shouldEqual(__LINE__ - 3);
+        exception.file.shouldEqual(__FILE__);
+
     }
 }
 
@@ -242,7 +253,8 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == double)) {
     return &"%lf"[0];
 }
 
-private const(char)* format(T)(ref const(T) arg) if(is(T == enum) || is(T == bool) || (isInputRange!T && !is(T == string))) {
+private const(char)* format(T)(ref const(T) arg)
+    if(is(T == enum) || is(T == bool) || (isInputRange!T && !is(T == string)) || isAssociativeArray!T) {
     return &"%s"[0];
 }
 
@@ -301,6 +313,30 @@ private auto value(T)(ref const(T) arg) if(isInputRange!T && !is(T == string)) {
     foreach(i, ref const elt; arg) {
         index += snprintf(&buffer[index], buffer.length - index, format(elt), value(elt));
         if(i != arg.length - 1) index += snprintf(&buffer[index], buffer.length - index, ", ");
+    }
+
+    buffer[index++] = ']';
+    buffer[index++] = 0;
+
+    return &buffer[0];
+}
+
+private auto value(T)(ref const(T) arg) if(isAssociativeArray!T) {
+    import core.stdc.string: strlen;
+    import core.stdc.stdio: snprintf;
+
+    static char[BUFFER_SIZE] buffer;
+
+    if(arg.length > buffer.length - 1) return null;
+
+    int index;
+    buffer[index++] = '[';
+    int i;
+    foreach(ref const elt; arg.byKeyValue) {
+        index += snprintf(&buffer[index], buffer.length - index, format(elt.key), value(elt.key));
+        index += snprintf(&buffer[index], buffer.length - index, ": ");
+        index += snprintf(&buffer[index], buffer.length - index, format(elt.value), value(elt.value));
+        if(i++ != arg.length - 1) index += snprintf(&buffer[index], buffer.length - index, ", ");
     }
 
     buffer[index++] = ']';
