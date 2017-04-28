@@ -1,6 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
+		"nogc": "0.0.1",
 		"test_allocator": "0.0.5",
 		"unit-threaded": "0.7.17"
 	}

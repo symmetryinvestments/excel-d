@@ -370,7 +370,6 @@ unittest {
 
 private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocator) {
     import xlld.xl: coerce, free;
-    import std.exception: enforce;
     import std.experimental.allocator: makeArray;
 
     static const exception = new Exception("fromXlOperMulti failed - oper not of multi type");
@@ -926,14 +925,21 @@ XLOPER12 toAutoFreeOper(T)(T value) {
     return result;
 }
 
-ushort operStringLength(T)(T value) {
-    import std.exception: enforce;
-    import std.conv: text;
+ushort operStringLength(T)(in T value) {
+    import nogc.exception: enforce;
 
-    enforce(value.xltype == xltypeStr,
-            text("Cannot calculate string length for oper of type ", value.xltype));
+    enforce(value.xltype == XlType.xltypeStr,
+            "Cannot calculate string length for oper of type ", value.xltype);
 
     return cast(ushort)value.val.str[0];
+}
+
+@("operStringLength")
+unittest {
+    import std.experimental.allocator.mallocator: Mallocator;
+    auto oper = "foobar".toXlOper(Mallocator.instance);
+    const length = () @nogc { return operStringLength(oper); }();
+    length.shouldEqual(6);
 }
 
 auto fromXlOperCoerce(T)(LPXLOPER12 val) {
