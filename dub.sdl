@@ -16,3 +16,13 @@ configuration "unittest" {
     excludedSourceFiles "source/xlld/xll.d"
     dependency "unit-threaded" version="~>0.7.0"
 }
+
+configuration "ut" {
+    targetType "executable"
+    targetName "ut"
+    targetPath "bin"
+    mainSourceFile "test/ut.d"
+    excludedSourceFiles "source/xlld/xll.d"
+    dependency "unit-threaded" version="~>0.7.0"
+    versions "unitThreadedLight"
+}
