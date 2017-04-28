@@ -136,6 +136,16 @@ class NoGcException: Exception {
         exception.file.shouldEqual(__FILE__);
     }
 
+    @("adjust with bool")
+    @safe unittest {
+        auto exception = new NoGcException();
+        () @nogc { exception.adjust("it is ", false); }();
+        exception.msg.shouldEqual("it is false");
+        exception.line.shouldEqual(__LINE__ - 2);
+        exception.file.shouldEqual(__FILE__);
+    }
+
+
     @("adjust with enums")
     @safe unittest {
         enum Enum {
@@ -176,29 +186,36 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == char)) {
     return &"%c"[0];
 }
 
-private const(char)* format(T)(ref const(T) arg) if(is(T == enum)) {
+private const(char)* format(T)(ref const(T) arg) if(is(T == enum) || is(T == bool)) {
     return &"%s"[0];
 }
 
 
-private auto value(T)(ref const(T) arg) if(isScalarType!T && !is(T == enum)) {
+private auto value(T)(ref const(T) arg) if(isScalarType!T && !is(T == enum) && !is(T == bool)) {
     return arg;
 }
 
 private auto value(T)(ref const(T) arg) if(is(T == enum)) {
     import std.traits: EnumMembers;
+    import std.conv: to;
+
+    string enumToString(in T arg) {
+        return arg.to!string;
+    }
+
     final switch(arg) {
         foreach(member; EnumMembers!T) {
         case member:
-            mixin(`return &"` ~ enumToString(member) ~ `"[0];`);
+            mixin(`return &"` ~ member.to!string ~ `"[0];`);
         }
     }
 }
 
-private string enumToString(T)(in T arg) if(is(T == enum)) {
-    if(!__ctfe) return "";
-    import std.conv: to;
-    return arg.to!string;
+
+private auto value(T)(ref const(T) arg) if(is(T == bool)) {
+    return arg
+        ? &"true"[0]
+        : &"false"[0];
 }
 
 private auto value(T)(ref const(T) arg) if(is(T == string)) {
