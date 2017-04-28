@@ -9,7 +9,7 @@ import std.traits: isScalarType;
 enum BUFFER_SIZE = 1024;
 
 
-T enforce(size_t bufferSize = BUFFER_SIZE, string file = __FILE__, size_t line = __LINE__, T, Args...)(T value, Args args)
+T enforce(size_t bufferSize = BUFFER_SIZE, string file = __FILE__, size_t line = __LINE__, T, Args...)(T value, auto ref Args args)
 @trusted if (is(typeof({ if (!value) {} }))) {
 
     import std.conv: emplace;
