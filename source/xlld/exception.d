@@ -69,7 +69,7 @@ class NoGcException: Exception {
     @("adjust with only strings")
     @system unittest {
         auto exception = new NoGcException();
-        () @nogc { exception.adjust("foo", "bar"); }();
+        () @nogc nothrow { exception.adjust("foo", "bar"); }();
         exception.msg.shouldEqual("foobar");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -78,7 +78,7 @@ class NoGcException: Exception {
     @("adjust with string and integer")
     @system unittest {
         auto exception = new NoGcException();
-        () @nogc { exception.adjust(1, "bar"); }();
+        () @nogc nothrow { exception.adjust(1, "bar"); }();
         exception.msg.shouldEqual("1bar");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -87,7 +87,7 @@ class NoGcException: Exception {
     @("adjust with string and uint")
     @system unittest {
         auto exception = new NoGcException();
-        () @nogc { exception.adjust(1u, "bar"); }();
+        () @nogc nothrow { exception.adjust(1u, "bar"); }();
         exception.msg.shouldEqual("1bar");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -97,7 +97,7 @@ class NoGcException: Exception {
     @("adjust with string and long")
     @system unittest {
         auto exception = new NoGcException();
-        () @nogc { exception.adjust("foo", 7L); }();
+        () @nogc nothrow { exception.adjust("foo", 7L); }();
         exception.msg.shouldEqual("foo7");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -106,7 +106,7 @@ class NoGcException: Exception {
     @("adjust with string and ulong")
     @system unittest {
         auto exception = new NoGcException();
-        () @nogc { exception.adjust("foo", 7UL); }();
+        () @nogc nothrow { exception.adjust("foo", 7UL); }();
         exception.msg.shouldEqual("foo7");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -115,7 +115,7 @@ class NoGcException: Exception {
     @("adjust with char")
     @system unittest {
         auto exception = new NoGcException();
-        () @nogc { exception.adjust("fo", 'o'); }();
+        () @nogc nothrow { exception.adjust("fo", 'o'); }();
         exception.msg.shouldEqual("foo");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -124,7 +124,7 @@ class NoGcException: Exception {
     @("adjust with bool")
     @system unittest {
         auto exception = new NoGcException();
-        () @nogc { exception.adjust("it is ", false); }();
+        () @nogc nothrow { exception.adjust("it is ", false); }();
         exception.msg.shouldEqual("it is false");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -133,7 +133,7 @@ class NoGcException: Exception {
     @("adjust with float")
     @system unittest {
         auto exception = new NoGcException();
-        () @nogc { exception.adjust("it is ", 3.0f); }();
+        () @nogc nothrow { exception.adjust("it is ", 3.0f); }();
         exception.msg.shouldEqual("it is 3.000000");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -142,7 +142,7 @@ class NoGcException: Exception {
     @("adjust with double")
     @system unittest {
         auto exception = new NoGcException();
-        () @nogc { exception.adjust("it is ", 3.0); }();
+        () @nogc nothrow { exception.adjust("it is ", 3.0); }();
         exception.msg.shouldEqual("it is 3.000000");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -155,7 +155,7 @@ class NoGcException: Exception {
             toto,
         }
         auto exception = new NoGcException();
-        () @nogc { exception.adjust(Enum.quux, "_middle_", Enum.toto); }();
+        () @nogc nothrow { exception.adjust(Enum.quux, "_middle_", Enum.toto); }();
         exception.msg.shouldEqual("quux_middle_toto");
         exception.line.shouldEqual(__LINE__ - 2);
         exception.file.shouldEqual(__FILE__);
@@ -170,7 +170,7 @@ class NoGcException: Exception {
         const ptr = new int(42);
         const expected = "0x" ~ ptr.to!string.toLower;
 
-        () @nogc { exception.adjust(ptr); }();
+        () @nogc nothrow { exception.adjust(ptr); }();
 
         exception.msg.shouldEqual(expected);
         exception.line.shouldEqual(__LINE__ - 3);
@@ -182,7 +182,7 @@ class NoGcException: Exception {
         auto exception = new NoGcException();
         const array = [1, 2, 3];
 
-        () @nogc { exception.adjust(array); }();
+        () @nogc nothrow { exception.adjust(array); }();
 
         exception.msg.shouldEqual("[1, 2, 3]");
         exception.line.shouldEqual(__LINE__ - 3);
@@ -194,7 +194,7 @@ class NoGcException: Exception {
         auto exception = new NoGcException();
         const aa = ["foo": 1, "bar": 2];
 
-        () @nogc { exception.adjust(aa); }();
+        () @nogc nothrow { exception.adjust(aa); }();
 
         // I hope the hash function doesn't change...
         exception.msg.shouldEqual(`[bar: 2, foo: 1]`);
@@ -210,7 +210,7 @@ class NoGcException: Exception {
             string s;
         }
 
-        () @nogc { exception.adjust(Struct(42, "foobar")); }();
+        () @nogc nothrow { exception.adjust(Struct(42, "foobar")); }();
 
         exception.msg.shouldEqual(`Struct(42, foobar)`);
         exception.line.shouldEqual(__LINE__ - 3);
@@ -227,7 +227,7 @@ class NoGcException: Exception {
         }
         auto obj = new Class(42, "foobar");
 
-        () @nogc { exception.adjust(obj); }();
+        () @nogc nothrow { exception.adjust(obj); }();
 
         exception.msg.shouldEqual(`Class(42, foobar)`);
         exception.line.shouldEqual(__LINE__ - 3);
@@ -247,7 +247,7 @@ class NoGcException: Exception {
         }
         auto obj = new Class(42, "foobar");
 
-        () @nogc { exception.adjust(obj); }();
+        () @nogc nothrow { exception.adjust(obj); }();
 
         exception.msg.shouldEqual(`always the same`);
         exception.line.shouldEqual(__LINE__ - 3);
