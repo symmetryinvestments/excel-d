@@ -8,6 +8,41 @@ import std.traits: isScalarType;
 
 enum BUFFER_SIZE = 1024;
 
+T enforce(string file = __FILE__, size_t line = __LINE__, T, Args...)(T value, Args args)
+@trusted if (is(typeof({ if (!value) {} }))) {
+
+    import std.conv: emplace;
+
+    static void[__traits(classInstanceSize, NoGcException)] buffer = void;
+
+    if (!value) {
+        auto exception = emplace!NoGcException(buffer);
+        exception.adjust!(file, line)(args);
+        throw exception;
+    }
+    return value;
+}
+
+@("enforce")
+@safe unittest {
+    string msg, file;
+    size_t line, expectedLine;
+    () @nogc {
+        try {
+            expectedLine = __LINE__ + 1;
+            enforce(false, "foo", 5, "bar");
+        } catch(NoGcException ex) {
+            msg = ex.msg;
+            file = ex.file;
+            line = ex.line;
+        }
+    }();
+
+    msg.shouldEqual("foo5bar");
+    file.shouldEqual(__FILE__);
+    line.shouldEqual(expectedLine);
+}
+
 class NoGcException: Exception {
 
     this() @safe @nogc nothrow pure {

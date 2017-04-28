@@ -926,11 +926,14 @@ XLOPER12 toAutoFreeOper(T)(T value) {
 }
 
 ushort operStringLength(T)(in T value) {
-    import std.exception: enforce;
-    import std.conv: text;
+    import xlld.exception: enforce;
+    import xlld.exception: NoGcException;
+
+    static const exception = new NoGcException;
+
 
     enforce(value.xltype == XlType.xltypeStr,
-            text("Cannot calculate string length for oper of type ", value.xltype));
+            "Cannot calculate string length for oper of type ", value.xltype);
 
     return cast(ushort)value.val.str[0];
 }
@@ -939,7 +942,7 @@ ushort operStringLength(T)(in T value) {
 unittest {
     import std.experimental.allocator.mallocator: Mallocator;
     auto oper = "foobar".toXlOper(Mallocator.instance);
-    const length = () { return operStringLength(oper); }();
+    const length = () @nogc { return operStringLength(oper); }();
     length.shouldEqual(6);
 }
 
