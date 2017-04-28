@@ -4,7 +4,7 @@
 module xlld.exception;
 
 version(unittest) import unit_threaded;
-import std.traits: isScalarType, isPointer, isAssociativeArray;
+import std.traits: isScalarType, isPointer, isAssociativeArray, isAggregateType;
 import std.range: isInputRange;
 
 enum BUFFER_SIZE = 1024;
@@ -231,7 +231,23 @@ class NoGcException: Exception {
         exception.msg.shouldEqual(`Struct(42, foobar)`);
         exception.line.shouldEqual(__LINE__ - 3);
         exception.file.shouldEqual(__FILE__);
+    }
 
+    @("adjust with class")
+    @safe unittest {
+        auto exception = new NoGcException();
+        class Class {
+            int i;
+            string s;
+            this(int i, string s) { this.i = i; this.s = s; }
+        }
+        auto obj = new Class(42, "foobar");
+
+        () @nogc { exception.adjust(obj); }();
+
+        exception.msg.shouldEqual(`Class(42, foobar)`);
+        exception.line.shouldEqual(__LINE__ - 3);
+        exception.file.shouldEqual(__FILE__);
     }
 }
 
@@ -269,7 +285,7 @@ private const(char)* format(T)(ref const(T) arg) if(is(T == double)) {
 }
 
 private const(char)* format(T)(ref const(T) arg)
-    if(is(T == enum) || is(T == bool) || (isInputRange!T && !is(T == string)) || isAssociativeArray!T || is(T == struct)) {
+    if(is(T == enum) || is(T == bool) || (isInputRange!T && !is(T == string)) || isAssociativeArray!T || isAggregateType!T) {
     return &"%s"[0];
 }
 
@@ -360,7 +376,7 @@ private auto value(T)(ref const(T) arg) if(isAssociativeArray!T) {
     return &buffer[0];
 }
 
-private auto value(T)(ref const(T) arg) if(is(T == struct)) {
+private auto value(T)(ref const(T) arg) if(isAggregateType!T) {
     import core.stdc.string: strlen;
     import core.stdc.stdio: snprintf;
 
