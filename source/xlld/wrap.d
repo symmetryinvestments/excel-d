@@ -141,8 +141,8 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
        throw exception;
 
     const rows = cast(int)values.length;
-    const cols = cast(int)values[0].length;
-    auto ret = multi(cast(int)values.length, cast(int)values[0].length, allocator);
+    const cols = values.length ? cast(int)values[0].length : 0;
+    auto ret = multi(cast(int)values.length, cols, allocator);
     auto opers = ret.val.array.lparray[0 .. rows*cols];
 
     int i;

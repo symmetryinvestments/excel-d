@@ -4,7 +4,7 @@ module xlld.any;
 struct Any {
     import xlld.xlcall: XLOPER12;
 
-    package XLOPER12 _impl;
+    XLOPER12 _impl;
     alias _impl this;
 
     string toString() @trusted const {
@@ -25,6 +25,18 @@ struct Any {
             break;
         case XlType.xltypeNum:
             ret ~= _impl.fromXlOper!double(gMemoryPool).to!string;
+            break;
+        case XlType.xltypeMulti:
+            int i;
+            ret ~= `[`;
+            foreach(r; 0 .. _impl.val.array.rows) {
+                ret ~= `[`;
+                foreach(c; 0 .. _impl.val.array.columns) {
+                    ret ~= text(_impl.val.array.lparray[i++], `, `);
+                }
+                ret ~= `]`;
+            }
+            ret ~= `]`;
             break;
         }
         return ret ~ ")";
