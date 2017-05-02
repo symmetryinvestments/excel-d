@@ -1,36 +1,29 @@
 module xlld.test_util;
 
 
-static this() {
-    import xlld.memorymanager: gMemoryPool, MemoryPool, StartingMemorySize;
-    gMemoryPool = MemoryPool(StartingMemorySize);
-}
-
-
 version(unittest):
 
-import xlld.xlcall: LPXLOPER12;
+import unit_threaded;
+
+import xlld.xlcall: LPXLOPER12, XLOPER12, XlType;
 
 TestAllocator gTestAllocator;
+/// emulates SRef types by storing what the referenced type actually is
+XlType gReferencedType;
 
-static this() {
-    // this version(unittest) block effectively "implements" the Excel12v function
-    // so that the code can be unit tested without needing to link with the Excel SDK
-    import xlld.xlcallcpp: SetExcel12EntryPt;
-    SetExcel12EntryPt(&excel12UnitTest);
-}
+// tracks calls to `coerce` and `free` to make sure memory allocations/deallocations match
+int gNumXlCoerce;
+int gNumXlFree;
+enum maxCoerce = 1000;
+void*[maxCoerce] gCoerced;
+void*[maxCoerce] gFreed;
 
-    static ~this() {
-        import xlld.wrap: gNumXlFree, gNumXlCoerce, gCoerced, gFreed;
-        import unit_threaded;
-        gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
-    }
 
 
 extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, LPXLOPER12 result) nothrow @nogc {
 
     import xlld.xlcall: XlType, xlretFailed, xlretSuccess, xlFree, xlCoerce;
-    import xlld.wrap: gReferencedType, gNumXlFree, gNumXlCoerce, gCoerced, gFreed, toXlOper;
+    import xlld.wrap: toXlOper;
     import std.experimental.allocator.mallocator: Mallocator;
 
     switch(xlfn) {
@@ -76,6 +69,39 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
 
         return xlretSuccess;
     }
+}
+
+// automatically converts from oper to compare with a D type
+void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
+    import xlld.memorymanager: allocator;
+    import xlld.wrap: fromXlOper;
+    import xlld.xlcall: XlType;
+
+    actual.shouldNotBeNull;
+    if(actual.xltype == XlType.xltypeErr)
+        fail("XLOPER is of error type", file, line);
+    actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
+}
+
+// automatically converts from oper to compare with a D type
+void shouldEqualDlang(U)(ref XLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
+    shouldEqualDlang(&actual, expected, file, line);
+}
+
+// automatically converts from oper to compare with a D type
+void shouldEqualDlang(U)(XLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
+    shouldEqualDlang(actual, expected, file, line);
+}
+
+
+XLOPER12 toSRef(T, A)(T val, ref A allocator) @trusted {
+    import xlld.wrap: toXlOper;
+
+    auto ret = toXlOper(val, allocator);
+    //hide real type somewhere to retrieve it
+    gReferencedType = ret.xltype;
+    ret.xltype = XlType.xltypeSRef;
+    return ret;
 }
 
 

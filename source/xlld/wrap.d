@@ -5,11 +5,40 @@ import xlld.traits: isSupportedFunction;
 import xlld.memorymanager: autoFree;
 import xlld.framework: freeXLOper;
 import xlld.worksheet;
-import std.traits: isArray;
+import xlld.any: Any;
+import std.traits: isArray, Unqual;
+
+// here to prevent cyclic dependency
+static this() {
+    import xlld.memorymanager: gMemoryPool, MemoryPool, StartingMemorySize;
+    gMemoryPool = MemoryPool(StartingMemorySize);
+}
+
 
 version(unittest) {
     import unit_threaded;
-    import xlld.test_util: TestAllocator;
+    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef;
+    import std.experimental.allocator.mallocator: Mallocator;
+    import xlld.any: any;
+    alias theMallocator = Mallocator.instance;
+
+    // the static this is here to prevent a cyclic dependency
+
+    static this() {
+
+        // this version(unittest) block effectively "implements" the Excel12v function
+        // so that the code can be unit tested without needing to link with the Excel SDK
+        import xlld.xlcallcpp: SetExcel12EntryPt;
+        import xlld.test_util;
+        SetExcel12EntryPt(&excel12UnitTest);
+    }
+
+    static ~this() {
+        import xlld.test_util;
+        gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
+    }
+
+
 }
 
 // this shouldn't be needed IMHO and is a bug in std.experimental.allocator that dispose
@@ -184,8 +213,101 @@ XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(T == string[]) || is(T 
     freeXLOper(&oper, allocator);
 }
 
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any)) {
+    return value._impl;
+}
+
+@("toXlOper any double")
+unittest {
+    any(5.0, Mallocator.instance).toXlOper(theMallocator).shouldEqualDlang(5.0);
+}
+
+@("toXlOper any string")
+unittest {
+    any("foo", Mallocator.instance).toXlOper(theMallocator).shouldEqualDlang("foo");
+}
+
+@("toXlOper any double[][]")
+unittest {
+    any([[1.0, 2.0], [3.0, 4.0]], Mallocator.instance)
+        .toXlOper(theMallocator).shouldEqualDlang([[1.0, 2.0], [3.0, 4.0]]);
+}
+
+@("toXlOper any string[][]")
+unittest {
+    any([["foo", "bar"], ["quux", "toto"]], Mallocator.instance)
+        .toXlOper(theMallocator).shouldEqualDlang([["foo", "bar"], ["quux", "toto"]]);
+}
+
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any[])) {
+    return [value].toXlOper(allocator);
+}
+
+@("toXlOper mixed 1D array of any")
+unittest {
+    const a = any([any(1.0, theMallocator), any("foo", theMallocator)],
+                  theMallocator);
+    auto oper = a.toXlOper(theMallocator);
+    oper.xltype.shouldEqual(XlType.xltypeMulti);
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+    auto opers = oper.val.array.lparray[0 .. rows * cols];
+    opers[0].shouldEqualDlang(1.0);
+    opers[1].shouldEqualDlang("foo");
+    autoFree(&oper); // normally this is done by Excel
+}
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any[][])) {
+
+    import std.experimental.allocator: makeArray;
+
+    XLOPER12 ret;
+    ret.xltype = XlType.xltypeMulti;
+    ret.val.array.rows = cast(typeof(ret.val.array.rows)) value.length;
+    ret.val.array.columns = cast(typeof(ret.val.array.columns)) value[0].length;
+    const length = ret.val.array.rows * ret.val.array.columns;
+    ret.val.array.lparray = &allocator.makeArray!XLOPER12(length)[0];
+
+    int i;
+    foreach(ref row; value) {
+        foreach(ref cell; row) {
+            ret.val.array.lparray[i++] = cell;
+        }
+    }
+
+    return ret;
+}
+
+@("toXlOper mixed 2D array of any")
+unittest {
+    const a = any([
+                     [any(1.0, theMallocator), any(2.0, theMallocator)],
+                     [any("foo", theMallocator), any("bar", theMallocator)]
+                 ],
+                 theMallocator);
+    auto oper = a.toXlOper(theMallocator);
+    oper.xltype.shouldEqual(XlType.xltypeMulti);
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+    auto opers = oper.val.array.lparray[0 .. rows * cols];
+    opers[0].shouldEqualDlang(1.0);
+    opers[1].shouldEqualDlang(2.0);
+    opers[2].shouldEqualDlang("foo");
+    opers[3].shouldEqualDlang("bar");
+    autoFree(&oper); // normally this is done by Excel
+}
+
+
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
     return (&val).fromXlOper!T(allocator);
+}
+
+// RValue overload
+auto fromXlOper(T, A)(XLOPER12 val, ref A allocator) {
+    return fromXlOper!T(val, allocator);
 }
 
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
@@ -1029,39 +1151,4 @@ unittest {
     auto arg = () @trusted { return &oper; }();
     auto ret = () @safe @nogc { return FuncReturnArrayNoGc(arg); }();
     ret.shouldEqualDlang([2.0, 4.0, 6.0, 8.0]);
-}
-
-version(unittest) {
-
-    /// emulates SRef types by storing what the referenced type actually is
-    XlType gReferencedType;
-
-    // tracks calls to `coerce` and `free` to make sure memory allocations/deallocations match
-    int gNumXlCoerce;
-    int gNumXlFree;
-    enum maxCoerce = 1000;
-    void*[maxCoerce] gCoerced;
-    void*[maxCoerce] gFreed;
-
-    // automatically converts from oper to compare with a D type
-    void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
-        import xlld.memorymanager: allocator;
-        actual.shouldNotBeNull;
-        if(actual.xltype == xltypeErr)
-            fail("XLOPER is of error type", file, line);
-        actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
-    }
-
-    // automatically converts from oper to compare with a D type
-    void shouldEqualDlang(U)(ref XLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
-        shouldEqualDlang(&actual, expected, file, line);
-    }
-
-    XLOPER12 toSRef(T, A)(T val, ref A allocator) @trusted {
-        auto ret = toXlOper(val, allocator);
-        //hide real type somewhere to retrieve it
-        gReferencedType = ret.xltype;
-        ret.xltype = XlType.xltypeSRef;
-        return ret;
-    }
 }

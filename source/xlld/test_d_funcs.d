@@ -8,7 +8,7 @@ module xlld.test_d_funcs;
 
 version(unittest):
 
-import xlld.worksheet;
+import xlld;
 
 
 @Register(ArgumentText("Array to add"),
