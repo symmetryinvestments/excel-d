@@ -1,12 +1,5 @@
 module xlld.any;
 
-version(unittest) {
-    import unit_threaded;
-    import std.experimental.allocator.mallocator: Mallocator;
-    alias theMallocator = Mallocator.instance;
-    import xlld.wrap: toXlOper;
-    import xlld.test_util: shouldEqualDlang;
-}
 
 struct Any {
     import xlld.xlcall: XLOPER12;
