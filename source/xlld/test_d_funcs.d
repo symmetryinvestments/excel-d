@@ -140,8 +140,7 @@ double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
 }
 
 
-//Any[][] DoubleArrayToAnyArray(double[][] values) @safe nothrow {
-Any DoubleArrayToAnyArray(double[][] values) @safe nothrow {
+Any[][] DoubleArrayToAnyArray(double[][] values) @safe nothrow {
     import std.experimental.allocator.mallocator: Mallocator;
     import std.conv: to;
 
@@ -158,10 +157,10 @@ Any DoubleArrayToAnyArray(double[][] values) @safe nothrow {
 
     return () @trusted {
         with(allocatorContext(allocator)) {
-            return any([
-                           [any(values[0][0] * 2), any(values[0][1] * 3)],
-                           [any(third ~ "quux"),   any(fourth ~ "toto")],
-                       ]);
+            return [
+                       [any(values[0][0] * 2), any(values[0][1] * 3)],
+                       [any(third ~ "quux"),   any(fourth ~ "toto")],
+                   ];
         }
     }();
 }
