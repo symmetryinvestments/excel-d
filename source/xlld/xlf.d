@@ -3,6 +3,8 @@
  */
 module xlld.xlf;
 
+import xlld.framework: excel12;
+
 
 // should be pure but can't due to calling Excel12
 int year(double date) @safe @nogc nothrow {
@@ -41,10 +43,18 @@ int second(double date) @safe @nogc nothrow {
 }
 
 private int datePart(double date, int xlfn) @safe @nogc nothrow {
-    import xlld.framework: excel12;
-
     try
         return cast(int)excel12!double(xlfn, date);
     catch(Exception ex)
         return 0;
 }
+
+
+// double date(int year, int month, int day) @safe @nogc nothrow {
+//     import xlld.xlcall: xlfDate;
+//     try
+//         return cast(int)excel12!double(xlfDate, year, month, day);
+//     catch(Exception ex)
+//         return 0;
+
+// }
