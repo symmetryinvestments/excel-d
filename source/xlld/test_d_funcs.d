@@ -164,3 +164,9 @@ Any[][] DoubleArrayToAnyArray(double[][] values) @safe nothrow {
         }
     }();
 }
+
+
+double[] AnyArrayToDoubleArray(Any[][] values) nothrow {
+    import std.experimental.allocator.mallocator: Mallocator;
+    return [values.length, values.length ? values[0].length : 0];
+}

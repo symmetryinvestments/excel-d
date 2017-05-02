@@ -1240,21 +1240,21 @@ unittest {
     opers[3].shouldEqualDlang("4toto");
 }
 
-// @("wrapAll function that takes Any[][]")
-// unittest {
-//     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
-//     import xlld.memorymanager: allocatorContext;
+@("wrapAll function that takes Any[][]")
+unittest {
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.memorymanager: allocatorContext;
 
-//     mixin(wrapAll!("xlld.test_d_funcs"));
+    mixin(wrapAll!("xlld.test_d_funcs"));
 
-//     XLOPER12 ret;
-//     with(allocatorContext(theMallocator)) {
-//         auto oper = [[any(1.0), any(2.0)], [any(3.0), any(4.0)], [any("foo"), any("bar")]];
-//         auto arg = () @trusted { return &oper; }();
-//         ret = DoubleArrayToAnyArray(arg);
-//     }
+    LPXLOPER12 ret;
+    with(allocatorContext(theMallocator)) {
+        auto oper = [[any(1.0), any(2.0)], [any(3.0), any(4.0)], [any("foo"), any("bar")]].toXlOper(theMallocator);
+        auto arg = () @trusted { return &oper; }();
+        ret = AnyArrayToDoubleArray(arg);
+    }
 
-//     auto opers = () @trusted { return ret.val.array.lparray[0 .. 2]; }();
-//     opers[0].shouldEqualDlang(2.0); // number of rows
-//     opers[1].shouldEqualDlang(3.0); // number of columns
-// }
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. 2]; }();
+    opers[0].shouldEqualDlang(3.0); // number of rows
+    opers[1].shouldEqualDlang(2.0); // number of columns
+}
