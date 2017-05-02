@@ -155,10 +155,13 @@ Any DoubleArrayToAnyArray(double[][] values) @safe nothrow {
         third = "oops";
         fourth = "oops";
     }
-    return any(
-        [
-            [any(values[0][0] * 2, allocator), any(values[0][1] * 3, allocator)],
-            [any(third ~ "quux", allocator), any(fourth ~ "toto", allocator)]
-        ],
-        allocator);
+
+    return () @trusted {
+        with(allocatorContext(allocator)) {
+            return any([
+                           [any(values[0][0] * 2), any(values[0][1] * 3)],
+                           [any(third ~ "quux"),   any(fourth ~ "toto")],
+                       ]);
+        }
+    }();
 }

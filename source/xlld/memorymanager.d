@@ -74,3 +74,32 @@ void autoFree(LPXLOPER12 arg) {
     import xlld.framework: freeXLOper;
     freeXLOper(arg, autoFreeAllocator);
 }
+
+struct AllocatorContext(A) {
+
+    A* allocator;
+
+    this(ref A allocator) {
+        this.allocator = &allocator;
+    }
+
+    auto any(T)(auto ref T value) {
+        import xlld.any: _any = any;
+        return _any(value, *allocator);
+    }
+
+    auto fromXlOper(T, U)(U oper) {
+        import xlld.wrap: wrapFromXlOper = fromXlOper;
+        return wrapFromXlOper!T(oper, allocator);
+    }
+
+    auto toXlOper(T)(T val) {
+        import xlld.wrap: wrapToXlOper = toXlOper;
+        return wrapToXlOper(val, allocator);
+    }
+
+}
+
+auto allocatorContext(A)(ref A allocator) {
+    return AllocatorContext!A(allocator);
+}
