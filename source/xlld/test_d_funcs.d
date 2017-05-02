@@ -138,3 +138,27 @@ double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
         return [];
     }
 }
+
+
+//Any[][] DoubleArrayToAnyArray(double[][] values) @safe nothrow {
+Any DoubleArrayToAnyArray(double[][] values) @safe nothrow {
+    import std.experimental.allocator.mallocator: Mallocator;
+    import std.conv: to;
+
+    alias allocator = Mallocator.instance;
+
+    string third, fourth;
+    try {
+        third = values[1][0].to!string;
+        fourth = values[1][1].to!string;
+    } catch(Exception ex) {
+        third = "oops";
+        fourth = "oops";
+    }
+    return any(
+        [
+            [any(values[0][0] * 2, allocator), any(values[0][1] * 3, allocator)],
+            [any(third ~ "quux", allocator), any(fourth ~ "toto", allocator)]
+        ],
+        allocator);
+}

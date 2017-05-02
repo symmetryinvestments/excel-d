@@ -9,7 +9,7 @@ struct Any {
 }
 
 
-auto any(T, A)(auto ref T value, auto ref A allocator) {
+auto any(T, A)(auto ref T value, auto ref A allocator) @trusted {
     import xlld.wrap: toXlOper;
     return Any(value.toXlOper(allocator));
 }

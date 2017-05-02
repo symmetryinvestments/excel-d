@@ -587,7 +587,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 }
 
 private enum isWorksheetFunction(alias F) =
-    isSupportedFunction!(F, double, double[][], string[][], string[], double[], string);
+    isSupportedFunction!(F, double, double[][], string[][], string[], double[], string, Any);
 
 @safe pure unittest {
     import xlld.test_d_funcs;
@@ -596,6 +596,7 @@ private enum isWorksheetFunction(alias F) =
     // visibility kick in
     static assert(!isWorksheetFunction!shouldNotBeAProblem);
     static assert(!isWorksheetFunction!FuncThrows);
+    static assert(isWorksheetFunction!DoubleArrayToAnyArray);
 }
 
 /**
@@ -1151,4 +1152,37 @@ unittest {
     auto arg = () @trusted { return &oper; }();
     auto ret = () @safe @nogc { return FuncReturnArrayNoGc(arg); }();
     ret.shouldEqualDlang([2.0, 4.0, 6.0, 8.0]);
+}
+
+@("wrapModuleFunctionStr function that returns Any[][]")
+@safe unittest {
+    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "DoubleArrayToAnyArray"));
+
+    auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theMallocator);
+    auto arg = () @trusted { return &oper; }();
+    auto ret = DoubleArrayToAnyArray(arg);
+
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. 4]; }();
+    opers[0].shouldEqualDlang(2.0);
+    opers[1].shouldEqualDlang(6.0);
+    opers[2].shouldEqualDlang("3quux");
+    opers[3].shouldEqualDlang("4toto");
+}
+
+
+@("wrapAll function that returns Any[][]")
+@safe unittest {
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+
+    mixin(wrapAll!("xlld.test_d_funcs"));
+
+    auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theMallocator);
+    auto arg = () @trusted { return &oper; }();
+    auto ret = DoubleArrayToAnyArray(arg);
+
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. 4]; }();
+    opers[0].shouldEqualDlang(2.0);
+    opers[1].shouldEqualDlang(6.0);
+    opers[2].shouldEqualDlang("3quux");
+    opers[3].shouldEqualDlang("4toto");
 }
