@@ -129,7 +129,6 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     freeXLOper(&oper, allocator);
 }
 
-
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     if(is(T == double) || is(T == string))
 {
@@ -300,6 +299,19 @@ unittest {
     autoFree(&oper); // normally this is done by Excel
 }
 
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(T == int)) {
+    XLOPER12 ret;
+    ret.xltype = XlType.xltypeInt;
+    ret.val.w = value;
+    return ret;
+}
+
+@("toExcelOper!int")
+unittest {
+    auto oper = 42.toXlOper(theMallocator);
+    oper.xltype.shouldEqual(XlType.xltypeInt);
+    oper.val.w.shouldEqual(42);
+}
 
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
     return (&val).fromXlOper!T(allocator);
