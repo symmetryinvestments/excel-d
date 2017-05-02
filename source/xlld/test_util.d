@@ -17,14 +17,16 @@ int gNumXlFree;
 enum maxCoerce = 1000;
 void*[maxCoerce] gCoerced;
 void*[maxCoerce] gFreed;
-
+double[] gDates;
+double[] gTimes;
 
 
 extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, LPXLOPER12 result) nothrow @nogc {
 
-    import xlld.xlcall: XlType, xlretFailed, xlretSuccess, xlFree, xlCoerce;
+    import xlld.xlcall;
     import xlld.wrap: toXlOper;
     import std.experimental.allocator.mallocator: Mallocator;
+    import std.array: front, popFront, empty;
 
     switch(xlfn) {
 
@@ -65,8 +67,22 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
                 break;
 
             default:
-            }
+        }
 
+        return xlretSuccess;
+
+    case xlfDate:
+
+        const ret = gDates.empty ? 0.0 : gDates.front;
+        if(!gDates.empty) gDates.popFront;
+        *result = ret.toXlOper(Mallocator.instance);
+        return xlretSuccess;
+
+    case xlfTime:
+        const ret = gTimes.empty ? 0.0 : gTimes.front;
+        if(!gTimes.empty) gTimes.popFront;
+
+        *result = ret.toXlOper(Mallocator.instance);
         return xlretSuccess;
     }
 }
