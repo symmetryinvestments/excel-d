@@ -50,11 +50,18 @@ private int datePart(double date, int xlfn) @safe @nogc nothrow {
 }
 
 
-// double date(int year, int month, int day) @safe @nogc nothrow {
-//     import xlld.xlcall: xlfDate;
-//     try
-//         return cast(int)excel12!double(xlfDate, year, month, day);
-//     catch(Exception ex)
-//         return 0;
+double date(int year, int month, int day) @safe @nogc nothrow {
+    import xlld.xlcall: xlfDate;
+    try
+        return cast(int)excel12!double(xlfDate, year, month, day);
+    catch(Exception ex)
+        return 0;
+}
 
-// }
+double time(int year, int month, int day) @safe @nogc nothrow {
+    import xlld.xlcall: xlfTime;
+    try
+        return cast(int)excel12!double(xlfTime, year, month, day);
+    catch(Exception ex)
+        return 0;
+}
