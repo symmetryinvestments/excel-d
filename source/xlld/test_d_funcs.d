@@ -8,7 +8,7 @@ module xlld.test_d_funcs;
 
 version(unittest):
 
-import xlld.worksheet;
+import xlld;
 
 
 @Register(ArgumentText("Array to add"),
@@ -137,4 +137,36 @@ double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
     } catch(Exception _) {
         return [];
     }
+}
+
+
+Any[][] DoubleArrayToAnyArray(double[][] values) @safe nothrow {
+    import std.experimental.allocator.mallocator: Mallocator;
+    import std.conv: to;
+
+    alias allocator = Mallocator.instance;
+
+    string third, fourth;
+    try {
+        third = values[1][0].to!string;
+        fourth = values[1][1].to!string;
+    } catch(Exception ex) {
+        third = "oops";
+        fourth = "oops";
+    }
+
+    return () @trusted {
+        with(allocatorContext(allocator)) {
+            return [
+                       [any(values[0][0] * 2), any(values[0][1] * 3)],
+                       [any(third ~ "quux"),   any(fourth ~ "toto")],
+                   ];
+        }
+    }();
+}
+
+
+double[] AnyArrayToDoubleArray(Any[][] values) nothrow {
+    import std.experimental.allocator.mallocator: Mallocator;
+    return [values.length, values.length ? values[0].length : 0];
 }

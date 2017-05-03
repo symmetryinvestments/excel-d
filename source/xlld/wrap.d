@@ -5,11 +5,40 @@ import xlld.traits: isSupportedFunction;
 import xlld.memorymanager: autoFree;
 import xlld.framework: freeXLOper;
 import xlld.worksheet;
-import std.traits: isArray;
+import xlld.any: Any;
+import std.traits: isArray, Unqual;
+
+// here to prevent cyclic dependency
+static this() {
+    import xlld.memorymanager: gMemoryPool, MemoryPool, StartingMemorySize;
+    gMemoryPool = MemoryPool(StartingMemorySize);
+}
+
 
 version(unittest) {
     import unit_threaded;
-    import xlld.test_util: TestAllocator;
+    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef;
+    import std.experimental.allocator.mallocator: Mallocator;
+    import xlld.any: any;
+    alias theMallocator = Mallocator.instance;
+
+    // the static this is here to prevent a cyclic dependency
+
+    static this() {
+
+        // this version(unittest) block effectively "implements" the Excel12v function
+        // so that the code can be unit tested without needing to link with the Excel SDK
+        import xlld.xlcallcpp: SetExcel12EntryPt;
+        import xlld.test_util;
+        SetExcel12EntryPt(&excel12UnitTest);
+    }
+
+    static ~this() {
+        import xlld.test_util;
+        gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
+    }
+
+
 }
 
 // this shouldn't be needed IMHO and is a bug in std.experimental.allocator that dispose
@@ -100,7 +129,6 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     freeXLOper(&oper, allocator);
 }
 
-
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     if(is(T == double) || is(T == string))
 {
@@ -112,8 +140,8 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
        throw exception;
 
     const rows = cast(int)values.length;
-    const cols = cast(int)values[0].length;
-    auto ret = multi(cast(int)values.length, cast(int)values[0].length, allocator);
+    const cols = values.length ? cast(int)values[0].length : 0;
+    auto ret = multi(cast(int)values.length, cols, allocator);
     auto opers = ret.val.array.lparray[0 .. rows*cols];
 
     int i;
@@ -184,8 +212,114 @@ XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(T == string[]) || is(T 
     freeXLOper(&oper, allocator);
 }
 
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any)) {
+    return value._impl;
+}
+
+@("toXlOper any double")
+unittest {
+    any(5.0, Mallocator.instance).toXlOper(theMallocator).shouldEqualDlang(5.0);
+}
+
+@("toXlOper any string")
+unittest {
+    any("foo", Mallocator.instance).toXlOper(theMallocator).shouldEqualDlang("foo");
+}
+
+@("toXlOper any double[][]")
+unittest {
+    any([[1.0, 2.0], [3.0, 4.0]], Mallocator.instance)
+        .toXlOper(theMallocator).shouldEqualDlang([[1.0, 2.0], [3.0, 4.0]]);
+}
+
+@("toXlOper any string[][]")
+unittest {
+    any([["foo", "bar"], ["quux", "toto"]], Mallocator.instance)
+        .toXlOper(theMallocator).shouldEqualDlang([["foo", "bar"], ["quux", "toto"]]);
+}
+
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any[])) {
+    return [value].toXlOper(allocator);
+}
+
+@("toXlOper mixed 1D array of any")
+unittest {
+    const a = any([any(1.0, theMallocator), any("foo", theMallocator)],
+                  theMallocator);
+    auto oper = a.toXlOper(theMallocator);
+    oper.xltype.shouldEqual(XlType.xltypeMulti);
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+    auto opers = oper.val.array.lparray[0 .. rows * cols];
+    opers[0].shouldEqualDlang(1.0);
+    opers[1].shouldEqualDlang("foo");
+    autoFree(&oper); // normally this is done by Excel
+}
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any[][])) {
+
+    import std.experimental.allocator: makeArray;
+
+    XLOPER12 ret;
+    ret.xltype = XlType.xltypeMulti;
+    ret.val.array.rows = cast(typeof(ret.val.array.rows)) value.length;
+    ret.val.array.columns = cast(typeof(ret.val.array.columns)) value[0].length;
+    const length = ret.val.array.rows * ret.val.array.columns;
+    ret.val.array.lparray = &allocator.makeArray!XLOPER12(length)[0];
+
+    int i;
+    foreach(ref row; value) {
+        foreach(ref cell; row) {
+            ret.val.array.lparray[i++] = cell;
+        }
+    }
+
+    return ret;
+}
+
+@("toXlOper mixed 2D array of any")
+unittest {
+    const a = any([
+                     [any(1.0, theMallocator), any(2.0, theMallocator)],
+                     [any("foo", theMallocator), any("bar", theMallocator)]
+                 ],
+                 theMallocator);
+    auto oper = a.toXlOper(theMallocator);
+    oper.xltype.shouldEqual(XlType.xltypeMulti);
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+    auto opers = oper.val.array.lparray[0 .. rows * cols];
+    opers[0].shouldEqualDlang(1.0);
+    opers[1].shouldEqualDlang(2.0);
+    opers[2].shouldEqualDlang("foo");
+    opers[3].shouldEqualDlang("bar");
+    autoFree(&oper); // normally this is done by Excel
+}
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(T == int)) {
+    XLOPER12 ret;
+    ret.xltype = XlType.xltypeInt;
+    ret.val.w = value;
+    return ret;
+}
+
+@("toExcelOper!int")
+unittest {
+    auto oper = 42.toXlOper(theMallocator);
+    oper.xltype.shouldEqual(XlType.xltypeInt);
+    oper.val.w.shouldEqual(42);
+}
+
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
     return (&val).fromXlOper!T(allocator);
+}
+
+// RValue overload
+auto fromXlOper(T, A)(XLOPER12 val, ref A allocator) {
+    return fromXlOper!T(val, allocator);
 }
 
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
@@ -397,8 +531,11 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
             auto cellVal = coerce(&values[row * cols + col]);
             scope(exit) free(&cellVal);
 
+            // try to convert doubles to string if trying to convert everything to an
+            // array of strings
             const shouldConvert = (cellVal.xltype == dlangToXlOperType!T.Type) ||
-                (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr);
+                (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr)
+                || is(T == Any);
 
             auto value = shouldConvert ? cellVal.fromXlOper!T(allocator) : T.init;
 
@@ -464,8 +601,58 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     allocator.dispose(cast(void[])str);
 }
 
+T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any)) {
+    // FIXME: deep copy
+    return Any(*oper);
+}
+
+@("fromXlOper any double")
+@system unittest {
+    any(5.0, theMallocator).fromXlOper!Any(theMallocator).shouldEqual(any(5.0, theMallocator));
+}
+
+@("fromXlOper any string")
+@system unittest {
+    any("foo", theMallocator).fromXlOper!Any(theMallocator)._impl
+        .fromXlOper!string(theMallocator).shouldEqual("foo");
+}
+
+T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any[])) {
+    return oper.fromXlOperMulti!(Dimensions.One, Any)(allocator);
+}
+
+
+@("fromXlOper any 1D array")
+@system unittest {
+    import xlld.memorymanager: allocatorContext;
+    with(allocatorContext(theMallocator)) {
+        auto array = [any(1.0), any("foo")];
+        auto oper = toXlOper(array);
+        auto back = fromXlOper!(Any[])(oper);
+        back.shouldEqual(array);
+    }
+}
+
+
+T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any[][])) {
+    return oper.fromXlOperMulti!(Dimensions.Two, typeof(T.init[0][0]))(allocator);
+}
+
+
+@("fromXlOper Any 2D array")
+@system unittest {
+    import xlld.memorymanager: allocatorContext;
+    with(allocatorContext(theMallocator)) {
+        auto array = [[any(1.0), any(2.0)], [any("foo"), any("bar")]];
+        auto oper = toXlOper(array);
+        auto back = fromXlOper!(Any[][])(oper);
+        back.shouldEqual(array);
+    }
+}
+
+
 private enum isWorksheetFunction(alias F) =
-    isSupportedFunction!(F, double, double[][], string[][], string[], double[], string);
+    isSupportedFunction!(F, double, double[][], string[][], string[], double[], string, Any, Any[], Any[][]);
 
 @safe pure unittest {
     import xlld.test_d_funcs;
@@ -474,6 +661,7 @@ private enum isWorksheetFunction(alias F) =
     // visibility kick in
     static assert(!isWorksheetFunction!shouldNotBeAProblem);
     static assert(!isWorksheetFunction!FuncThrows);
+    static assert(isWorksheetFunction!DoubleArrayToAnyArray);
 }
 
 /**
@@ -661,7 +849,7 @@ private enum invalidXlOperType = 0xdeadbeef;
 template dlangToXlOperType(T) {
     static if(is(T == double[][]) || is(T == string[][]) || is(T == double[]) || is(T == string[])) {
         enum InputType = XlType.xltypeSRef;
-        enum Type= XlType.xltypeMulti;
+        enum Type = XlType.xltypeMulti;
     } else static if(is(T == double)) {
         enum InputType = XlType.xltypeNum;
         enum Type = XlType.xltypeNum;
@@ -1031,37 +1219,54 @@ unittest {
     ret.shouldEqualDlang([2.0, 4.0, 6.0, 8.0]);
 }
 
-version(unittest) {
+@("wrapModuleFunctionStr function that returns Any[][]")
+@safe unittest {
+    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "DoubleArrayToAnyArray"));
 
-    /// emulates SRef types by storing what the referenced type actually is
-    XlType gReferencedType;
+    auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theMallocator);
+    auto arg = () @trusted { return &oper; }();
+    auto ret = DoubleArrayToAnyArray(arg);
 
-    // tracks calls to `coerce` and `free` to make sure memory allocations/deallocations match
-    int gNumXlCoerce;
-    int gNumXlFree;
-    enum maxCoerce = 1000;
-    void*[maxCoerce] gCoerced;
-    void*[maxCoerce] gFreed;
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. 4]; }();
+    opers[0].shouldEqualDlang(2.0);
+    opers[1].shouldEqualDlang(6.0);
+    opers[2].shouldEqualDlang("3quux");
+    opers[3].shouldEqualDlang("4toto");
+}
 
-    // automatically converts from oper to compare with a D type
-    void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
-        import xlld.memorymanager: allocator;
-        actual.shouldNotBeNull;
-        if(actual.xltype == xltypeErr)
-            fail("XLOPER is of error type", file, line);
-        actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
+
+@("wrapAll function that returns Any[][]")
+@safe unittest {
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+
+    mixin(wrapAll!("xlld.test_d_funcs"));
+
+    auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theMallocator);
+    auto arg = () @trusted { return &oper; }();
+    auto ret = DoubleArrayToAnyArray(arg);
+
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. 4]; }();
+    opers[0].shouldEqualDlang(2.0);
+    opers[1].shouldEqualDlang(6.0);
+    opers[2].shouldEqualDlang("3quux");
+    opers[3].shouldEqualDlang("4toto");
+}
+
+@("wrapAll function that takes Any[][]")
+unittest {
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.memorymanager: allocatorContext;
+
+    mixin(wrapAll!("xlld.test_d_funcs"));
+
+    LPXLOPER12 ret;
+    with(allocatorContext(theMallocator)) {
+        auto oper = [[any(1.0), any(2.0)], [any(3.0), any(4.0)], [any("foo"), any("bar")]].toXlOper(theMallocator);
+        auto arg = () @trusted { return &oper; }();
+        ret = AnyArrayToDoubleArray(arg);
     }
 
-    // automatically converts from oper to compare with a D type
-    void shouldEqualDlang(U)(ref XLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
-        shouldEqualDlang(&actual, expected, file, line);
-    }
-
-    XLOPER12 toSRef(T, A)(T val, ref A allocator) @trusted {
-        auto ret = toXlOper(val, allocator);
-        //hide real type somewhere to retrieve it
-        gReferencedType = ret.xltype;
-        ret.xltype = XlType.xltypeSRef;
-        return ret;
-    }
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. 2]; }();
+    opers[0].shouldEqualDlang(3.0); // number of rows
+    opers[1].shouldEqualDlang(2.0); // number of columns
 }
