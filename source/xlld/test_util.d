@@ -1,6 +1,5 @@
 module xlld.test_util;
 
-
 version(unittest):
 
 import unit_threaded;

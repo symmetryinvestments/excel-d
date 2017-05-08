@@ -22,23 +22,6 @@ version(unittest) {
     import xlld.any: any;
     alias theMallocator = Mallocator.instance;
 
-    // the static this is here to prevent a cyclic dependency
-
-    static this() {
-
-        // this version(unittest) block effectively "implements" the Excel12v function
-        // so that the code can be unit tested without needing to link with the Excel SDK
-        import xlld.xlcallcpp: SetExcel12EntryPt;
-        import xlld.test_util;
-        SetExcel12EntryPt(&excel12UnitTest);
-    }
-
-    static ~this() {
-        import xlld.test_util;
-        gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
-    }
-
-
 }
 
 // this shouldn't be needed IMHO and is a bug in std.experimental.allocator that dispose
