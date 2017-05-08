@@ -10,8 +10,8 @@ import std.traits: isArray, Unqual;
 
 // here to prevent cyclic dependency
 static this() {
-    import xlld.memorymanager: gMemoryPool, MemoryPool, StartingMemorySize;
-    gMemoryPool = MemoryPool(StartingMemorySize);
+    import xlld.memorymanager: gTempAllocator, MemoryPool, StartingMemorySize;
+    gTempAllocator = MemoryPool(StartingMemorySize);
 }
 
 
@@ -884,9 +884,9 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
         register,
         `extern(Windows) LPXLOPER12 ` ~ funcName ~ `(` ~ argsDecl ~ `) nothrow ` ~ nogc ~ safe ~ `{`,
         `    static import ` ~ moduleName ~ `;`,
-        `    import xlld.memorymanager: gMemoryPool;`,
+        `    import xlld.memorymanager: gTempAllocator;`,
         `    alias wrappedFunc = ` ~ moduleName ~ `.` ~ funcName ~ `;`,
-        `    return wrapModuleFunctionImpl!wrappedFunc(gMemoryPool, ` ~ argsCall ~  `);`,
+        `    return wrapModuleFunctionImpl!wrappedFunc(gTempAllocator, ` ~ argsCall ~  `);`,
         `}`,
     ].join("\n");
 }
@@ -904,7 +904,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
  Implement a wrapper for a regular D function
  */
 LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
-                                  (ref A allocator, auto ref T args) {
+                                  (ref A tempAllocator, auto ref T args) {
     import xlld.xl: coerce, free;
     import xlld.worksheet: Dispose;
     import std.traits: Parameters;
@@ -932,13 +932,13 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
 
     void freeAll() {
-        static if(__traits(compiles, allocator.deallocateAll))
-            allocator.deallocateAll;
+        static if(__traits(compiles, tempAllocator.deallocateAll))
+            tempAllocator.deallocateAll;
         else {
             foreach(ref dArg; dArgs) {
                 import std.traits: isPointer;
                 static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg)))
-                    allocator.dispose(dArg);
+                    tempAllocator.dispose(dArg);
             }
         }
     }
@@ -949,7 +949,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     // convert all Excel types to D types
     foreach(i, InputType; Parameters!wrappedFunc) {
         try {
-            dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], allocator); }();
+            dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], tempAllocator); }();
         } catch(Exception ex) {
             ret.xltype = XlType.xltypeErr;
             ret.val.err = -1;
@@ -1019,24 +1019,24 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 
 @("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return pool")
 @system unittest {
-    import xlld.memorymanager: gMemoryPool;
+    import xlld.memorymanager: gTempAllocator;
     import xlld.test_d_funcs: FuncTripleEverything;
 
-    auto arg = toSRef([1.0, 2.0, 3.0], gMemoryPool);
-    auto oper = wrapModuleFunctionImpl!FuncTripleEverything(gMemoryPool, &arg);
-    gMemoryPool.curPos.shouldEqual(0);
+    auto arg = toSRef([1.0, 2.0, 3.0], gTempAllocator);
+    auto oper = wrapModuleFunctionImpl!FuncTripleEverything(gTempAllocator, &arg);
+    gTempAllocator.curPos.shouldEqual(0);
     oper.shouldEqualDlang([[3.0, 6.0, 9.0]]);
     autoFree(oper); // normally this is done by Excel
 }
 
 @("No memory allocation bugs in wrapModuleFunctionImpl for string")
 @system unittest {
-    import xlld.memorymanager: gMemoryPool;
+    import xlld.memorymanager: gTempAllocator;
     import xlld.test_d_funcs: StringToString;
 
-    auto arg = "foo".toSRef(gMemoryPool);
-    auto oper = wrapModuleFunctionImpl!StringToString(gMemoryPool, &arg);
-    gMemoryPool.curPos.shouldEqual(0);
+    auto arg = "foo".toSRef(gTempAllocator);
+    auto oper = wrapModuleFunctionImpl!StringToString(gTempAllocator, &arg);
+    gTempAllocator.curPos.shouldEqual(0);
     oper.shouldEqualDlang("foobar");
 }
 
@@ -1151,8 +1151,8 @@ unittest {
 
 struct TempMemoryPool {
 
-    import xlld.memorymanager: gMemoryPool;
-    alias _allocator = gMemoryPool;
+    import xlld.memorymanager: gTempAllocator;
+    alias _allocator = gTempAllocator;
 
     static auto fromXlOper(T, U)(U oper) {
         import xlld.wrap: wrapFromXlOper = fromXlOper;
@@ -1172,7 +1172,7 @@ struct TempMemoryPool {
 
 @("TempMemoryPool")
 unittest {
-    import xlld.memorymanager: pool = gMemoryPool;
+    import xlld.memorymanager: pool = gTempAllocator;
 
     with(TempMemoryPool()) {
         auto strOper = toXlOper("foo");
@@ -1187,7 +1187,7 @@ unittest {
 @("wrap function with @Dispose")
 @safe unittest {
     import xlld.test_util: gTestAllocator;
-    import xlld.memorymanager: gMemoryPool;
+    import xlld.memorymanager: gTempAllocator;
     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
     // this is needed since gTestAllocator is global, so we can't rely
@@ -1196,7 +1196,7 @@ unittest {
 
     mixin(wrapAll!("xlld.test_d_funcs"));
     double[4] args = [1.0, 2.0, 3.0, 4.0];
-    auto oper = args[].toSRef(gMemoryPool); // don't use TestAllocator
+    auto oper = args[].toSRef(gTempAllocator); // don't use TestAllocator
     auto arg = () @trusted { return &oper; }();
     auto ret = () @safe @nogc { return FuncReturnArrayNoGc(arg); }();
     ret.shouldEqualDlang([2.0, 4.0, 6.0, 8.0]);
@@ -1227,6 +1227,7 @@ unittest {
     auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theMallocator);
     auto arg = () @trusted { return &oper; }();
     auto ret = DoubleArrayToAnyArray(arg);
+    scope(exit) () @trusted { autoFree(ret); }(); // usually done by Excel
 
     auto opers = () @trusted { return ret.val.array.lparray[0 .. 4]; }();
     opers[0].shouldEqualDlang(2.0);

@@ -49,9 +49,9 @@ struct Any {
         import std.conv: text, to;
         import xlld.xlcall: XlType;
         import xlld.wrap: fromXlOper;
-        import xlld.memorymanager: gMemoryPool;
+        import xlld.memorymanager: gTempAllocator;
 
-        scope(exit) gMemoryPool.deallocateAll;
+        scope(exit) gTempAllocator.deallocateAll;
 
         string ret = text("Any(", );
         switch(_impl.xltype) {
@@ -59,10 +59,10 @@ struct Any {
             ret ~= _impl.xltype.to!string;
             break;
         case XlType.xltypeStr:
-            ret ~= text(`"`, _impl.fromXlOper!string(gMemoryPool), `"`);
+            ret ~= text(`"`, _impl.fromXlOper!string(gTempAllocator), `"`);
             break;
         case XlType.xltypeNum:
-            ret ~= _impl.fromXlOper!double(gMemoryPool).to!string;
+            ret ~= _impl.fromXlOper!double(gTempAllocator).to!string;
             break;
         case XlType.xltypeMulti:
             int i;

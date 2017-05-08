@@ -126,7 +126,7 @@ int Excel12f(int xlfn, LPXLOPER12 pxResult, LPXLOPER12[] args...) nothrow @nogc 
    must be freed with xlld.memorymanager: autoFreeAllocator
  */
 T excel12(T, A...)(int xlfn, auto ref A args) @trusted {
-    import xlld.memorymanager: gMemoryPool, autoFreeAllocator;
+    import xlld.memorymanager: gTempAllocator, autoFreeAllocator;
     import xlld.wrap: toXlOper, fromXlOper;
     import xlld.xlcall: xlretSuccess;
 
@@ -134,10 +134,10 @@ T excel12(T, A...)(int xlfn, auto ref A args) @trusted {
     XLOPER12[A.length] operArgs;
     LPXLOPER12[A.length] operArgPtrs;
 
-    scope(exit) gMemoryPool.deallocateAll;
+    scope(exit) gTempAllocator.deallocateAll;
 
     foreach(i, _; A) {
-        operArgs[i] = args[i].toXlOper(gMemoryPool);
+        operArgs[i] = args[i].toXlOper(gTempAllocator);
         operArgPtrs[i] = &operArgs[i];
     }
 

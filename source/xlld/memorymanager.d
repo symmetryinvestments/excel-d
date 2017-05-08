@@ -21,7 +21,7 @@ enum StartingMemorySize = 10240;
 enum MaxMemorySize=100*1024*1024;
 
 alias MemoryPool = MemoryPoolImpl!Mallocator;
-private MemoryPool gMemoryPool;
+MemoryPool gTempAllocator;
 
 
 struct MemoryPoolImpl(T) {
