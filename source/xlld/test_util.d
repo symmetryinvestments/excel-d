@@ -119,6 +119,15 @@ XLOPER12 toSRef(T, A)(T val, ref A allocator) @trusted {
     return ret;
 }
 
+// Mimics Excel calling a particular D function, including freeing memory
+void fromExcel(alias F, A...)(auto ref A args) {
+    import xlld.wrap: wrapModuleFunctionImpl;
+    import xlld.memorymanager: gTempAllocator, autoFree;
+
+    auto oper = wrapModuleFunctionImpl!F(gTempAllocator, args);
+    autoFree(oper);
+}
+
 
 // tracks allocations and throws in the destructor if there is a memory leak
 // it also throws when there is an attempt to deallocate memory that wasn't
