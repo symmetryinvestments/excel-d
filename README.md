@@ -49,7 +49,7 @@ Sample code (see the [example](example) directory for more):
             ret += row.fold!((a, b) => b.isNaN ? 0.0 : a + b)(0.0);
         return ret;
     }
-```d
+```
 
 and then in Excel:
 
