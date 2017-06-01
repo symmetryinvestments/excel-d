@@ -5,7 +5,9 @@ Excel API bindings and wrapper API for D
 This dub package contains D declarations for the [Excel SDK](https://msdn.microsoft.com/en-us/library/office/bb687883.aspx)
  as well as a D wrapper API. This allows programmers to write Excel worksheet functions in D.
 
-Generated documentation is available at [Kaleidic Open Source Documentation for Excel-D](http://excel-d.code.kaleidic.io).
+Motivation and background for the project can be found [here](https://dlang.org/blog/2017/05/31/project-highlight-excel-d/).  And you can see the [lightning talk](https://youtu.be/xJy6ifCekCE?list=PL3jwVPmk_PRxo23yyoc0Ip_cP3-rCm7eB) by Atila Neves.
+
+Generated documentation - a work in progress - is available at [Kaleidic Open Source Documentation for Excel-D](http://excel-d.code.kaleidic.io).
 
 A working XLL example can be found in the [`example`](example)
 directory. Running `dub build` there will create an XLL
@@ -58,8 +60,14 @@ and then in Excel:
 Future functionality will include creating menu items and dialogue boxes.  Pull requests welcomed.
 
 
-Memory allocation and `@nogc`
------------------------------
+Optional custom memory allocation and `@nogc`
+---------------------------------------------
+
+If you are not familiar with questions of memory allocation, the below may seem intimidating.
+However it's entirely optional and unless performance and latency are critical to you (or
+possibly if you are interfacing with C or C++ code) then you do not need to worry about the
+extra complexity introduced by using allocators.  The code in the previous section will simply
+work.
 
 excel-d uses a custom allocator for all allocations that are needed when doing the conversions
 between D and Excel types. It uses a different one for allocations of XLOPER12s that are
@@ -95,3 +103,16 @@ double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
 ```
 
 This allows for `@nogc` functions to be called from Excel without memory leaks.
+
+
+About Kaleidic Associates
+-------------------------
+We are a boutique consultancy that advises a small number of hedge fund clients.  We are
+not accepting new clients currently, but if you are interested in working either remotely
+or locally in London or Hong Kong, and aspire to excellence then feel free to drop me a
+line: laeeth at kaleidic.io
+
+We work with our partner Symmetry Investments, and some background on the firm can be
+found here:
+
+http://symmetryinvestments.com/about-us/
