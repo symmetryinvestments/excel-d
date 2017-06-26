@@ -31,3 +31,26 @@ void free(LPXLOPER12 oper) nothrow @nogc @trusted {
     LPXLOPER12[1] arg = [oper];
     Excel12f(xlFree, null, arg);
 }
+
+
+struct Coerced {
+    XLOPER12 oper;
+
+    alias oper this;
+
+
+    this(LPXLOPER12 oper) {
+        this.oper = coerce(oper);
+    }
+
+    ~this() {
+        free(oper);
+    }
+}
+
+/**
+   Coerces an oper and returns an RAII struct that automatically frees memory
+ */
+auto scopedCoerce(LPXLOPER12 oper) {
+    return Coerced(oper);
+}
