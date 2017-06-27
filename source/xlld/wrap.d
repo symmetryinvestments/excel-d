@@ -226,6 +226,19 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any[])) {
     return [value].toXlOper(allocator);
 }
 
+@("toXlOper any[]")
+unittest {
+    import xlld.memorymanager: allocatorContext;
+
+    with(allocatorContext(Mallocator.instance)) {
+        auto oper = toXlOper([any(42.0), any("foo")]);
+        oper.xltype.shouldEqual(XlType.xltypeMulti);
+        oper.val.array.lparray[0].shouldEqualDlang(42.0);
+        oper.val.array.lparray[1].shouldEqualDlang("foo");
+    }
+}
+
+
 @("toXlOper mixed 1D array of any")
 unittest {
     const a = any([any(1.0, theMallocator), any("foo", theMallocator)],
@@ -261,6 +274,25 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any[][])) {
 
     return ret;
 }
+
+@("toXlOper any[]")
+unittest {
+    import xlld.memorymanager: allocatorContext;
+
+    with(allocatorContext(Mallocator.instance)) {
+        auto oper = toXlOper([[any(42.0), any("foo"), any("quux")], [any("bar"), any(7.0), any("toto")]]);
+        oper.xltype.shouldEqual(XlType.xltypeMulti);
+        oper.val.array.rows.shouldEqual(2);
+        oper.val.array.columns.shouldEqual(3);
+        oper.val.array.lparray[0].shouldEqualDlang(42.0);
+        oper.val.array.lparray[1].shouldEqualDlang("foo");
+        oper.val.array.lparray[2].shouldEqualDlang("quux");
+        oper.val.array.lparray[3].shouldEqualDlang("bar");
+        oper.val.array.lparray[4].shouldEqualDlang(7.0);
+        oper.val.array.lparray[5].shouldEqualDlang("toto");
+    }
+}
+
 
 @("toXlOper mixed 2D array of any")
 unittest {
