@@ -14,6 +14,8 @@ else {
 
     import xlld: WorksheetFunction, LPXLOPER12;
 
+    version(unittest) import unit_threaded;
+
     version(Windows) {
 
         import core.sys.windows.windows;
@@ -84,6 +86,9 @@ else {
 
     extern(Windows) int xlAutoClose() {
         import core.runtime: rt_term;
+
+        callRegisteredAutoCloses;
+
         rt_term;
         return 1;
     }
@@ -127,6 +132,26 @@ else {
         }
 
         return &xInfo;
+    }
+
+    alias AutoCloseFunc = void delegate();
+
+    private AutoCloseFunc[] gAutoCloseFuncs;
+
+    void registerAutoClose(AutoCloseFunc func) {
+        gAutoCloseFuncs ~= func;
+    }
+
+    void callRegisteredAutoCloses() {
+        foreach(func; gAutoCloseFuncs) func();
+    }
+
+    @("")
+    unittest {
+        int i;
+        registerAutoClose({ ++i; });
+        callRegisteredAutoCloses();
+        i.shouldEqual(1);
     }
 
     version(Windows) {
