@@ -9,5 +9,6 @@ int main(string[] args)
         "xlld.traits",
         "xlld.wrap",
         "xlld.xl",
+        "xlld.xll",
     );
 }

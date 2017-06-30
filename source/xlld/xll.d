@@ -7,55 +7,59 @@
 	with Excel.
 */
 
+module xlld.xll;
+
 version(exceldDef) {}
 else {
 
-    version(Windows):
+    import xlld: WorksheetFunction, LPXLOPER12;
 
-    import xlld;
-    import core.sys.windows.windows;
+    version(Windows) {
 
-    // this function must be define in a module compiled with
+        import core.sys.windows.windows;
+
+        extern(Windows) BOOL DllMain( HANDLE hDLL, DWORD dwReason, LPVOID lpReserved )
+        {
+            import core.runtime;
+            import std.c.windows.windows;
+            import core.sys.windows.dll;
+            switch (dwReason)
+            {
+            case DLL_PROCESS_ATTACH:
+                Runtime.initialize();
+                dll_process_attach( hDLL, true );
+                break;
+            case DLL_PROCESS_DETACH:
+                Runtime.terminate();
+                dll_process_detach( hDLL, true );
+                break;
+            case DLL_THREAD_ATTACH:
+                dll_thread_attach( true, true );
+                break;
+            case DLL_THREAD_DETACH:
+                dll_thread_detach( true, true );
+                break;
+            default:
+                break;
+            }
+            return true;
+        }
+    }
+
+    // this function must be defined in a module compiled with
     // the current module
     // It's extern(C) so that it can be defined in any module
     extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow;
 
+    extern(Windows) int xlAutoOpen() {
 
-    extern(Windows) BOOL DllMain( HANDLE hDLL, DWORD dwReason, LPVOID lpReserved )
-    {
-        import core.runtime;
-        import std.c.windows.windows;
-        import core.sys.windows.dll;
-        switch (dwReason)
-        {
-        case DLL_PROCESS_ATTACH:
-            Runtime.initialize();
-            dll_process_attach( hDLL, true );
-            break;
-        case DLL_PROCESS_DETACH:
-            Runtime.terminate();
-            dll_process_detach( hDLL, true );
-            break;
-        case DLL_THREAD_ATTACH:
-            dll_thread_attach( true, true );
-            break;
-        case DLL_THREAD_DETACH:
-            dll_thread_detach( true, true );
-            break;
-        default:
-            break;
-        }
-        return true;
-    }
-
-
-    extern(Windows) int xlAutoOpen()
-    {
+        import xlld.memorymanager: allocator;
+        import xlld.framework: Excel12f, freeXLOper;
+        import xlld.xlcall: xlGetName, xlfRegister, XLOPER12;
+        import xlld.wrap: toXlOper;
         import std.algorithm: map;
         import std.array: array;
         import core.runtime:rt_init;
-        import xlld.memorymanager: allocator;
-        import xlld.framework: freeXLOper;
 
         rt_init(); // move to DllOpen?
 
@@ -94,9 +98,11 @@ else {
         return 1;
     }
 
-    extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction)
-    {
+    extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction) {
+        import xlld.xlcall: XLOPER12, XlType, xltypeInt, xlCoerce, xlerrValue;
         import xlld.wrap: toAutoFreeOper;
+        import xlld.framework: Excel12f;
+
         static XLOPER12 xInfo, xIntAction;
 
         //
@@ -142,8 +148,14 @@ else {
         }
     } else {
         void log(T...)(T args) {
-            import std.experimental.logger;
+            import std.experimental.logger: trace;
             trace(args);
         }
+    }
+}
+
+version(unittest) {
+    extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow {
+        return [];
     }
 }
