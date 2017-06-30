@@ -54,16 +54,21 @@ else {
     extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow;
 
     extern(Windows) int xlAutoOpen() {
+        import core.runtime:rt_init;
 
+        rt_init(); // move to DllOpen?
+        registerAllWorkSheetFunctions;
+
+        return 1;
+    }
+
+    private void registerAllWorkSheetFunctions() {
         import xlld.memorymanager: allocator;
         import xlld.framework: Excel12f, freeXLOper;
         import xlld.xlcall: xlGetName, xlfRegister, XLOPER12;
         import xlld.wrap: toXlOper;
         import std.algorithm: map;
         import std.array: array;
-        import core.runtime:rt_init;
-
-        rt_init(); // move to DllOpen?
 
         // get name of this XLL, needed to pass to xlfRegister
         static XLOPER12 dllName;
@@ -80,8 +85,6 @@ else {
 
             Excel12f(xlfRegister, cast(LPXLOPER12)null, args);
         }
-
-        return 1;
     }
 
     extern(Windows) int xlAutoClose() {
