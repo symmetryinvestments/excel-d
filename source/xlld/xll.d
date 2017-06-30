@@ -87,7 +87,7 @@ else {
     extern(Windows) int xlAutoClose() {
         import core.runtime: rt_term;
 
-        callRegisteredAutoCloses;
+        callRegisteredAutoCloseFuncs;
 
         rt_term;
         return 1;
@@ -138,32 +138,38 @@ else {
 
     private AutoCloseFunc[] gAutoCloseFuncs;
 
-    void registerAutoClose(AutoCloseFunc func) {
+    /**
+       Registers a delegate to be called when the XLL is unloaded
+     */
+    void registerAutoCloseFunc(AutoCloseFunc func) {
         gAutoCloseFuncs ~= func;
     }
 
-    void registerAutoClose(void function() func) {
+    /**
+       Registers a function to be called when the XLL is unloaded
+     */
+    void registerAutoCloseFunc(void function() func) {
         import std.functional: toDelegate;
         gAutoCloseFuncs ~= toDelegate(func);
     }
 
-    void callRegisteredAutoCloses() {
+    private void callRegisteredAutoCloseFuncs() {
         foreach(func; gAutoCloseFuncs) func();
     }
 
     @("registerAutoClose delegate")
     unittest {
         int i;
-        registerAutoClose({ ++i; });
-        callRegisteredAutoCloses();
+        registerAutoCloseFunc({ ++i; });
+        callRegisteredAutoCloseFuncs();
         i.shouldEqual(1);
     }
 
     @("registerAutoClose function")
     unittest {
         const old = gAutoCloseCounter;
-        registerAutoClose(&testAutoCloseFunc);
-        callRegisteredAutoCloses();
+        registerAutoCloseFunc(&testAutoCloseFunc);
+        callRegisteredAutoCloseFuncs();
         (gAutoCloseCounter - old).shouldEqual(1);
     }
 
