@@ -142,17 +142,31 @@ else {
         gAutoCloseFuncs ~= func;
     }
 
+    void registerAutoClose(void function() func) {
+        import std.functional: toDelegate;
+        gAutoCloseFuncs ~= toDelegate(func);
+    }
+
     void callRegisteredAutoCloses() {
         foreach(func; gAutoCloseFuncs) func();
     }
 
-    @("")
+    @("registerAutoClose delegate")
     unittest {
         int i;
         registerAutoClose({ ++i; });
         callRegisteredAutoCloses();
         i.shouldEqual(1);
     }
+
+    @("registerAutoClose function")
+    unittest {
+        const old = gAutoCloseCounter;
+        registerAutoClose(&testAutoCloseFunc);
+        callRegisteredAutoCloses();
+        (gAutoCloseCounter - old).shouldEqual(1);
+    }
+
 
     version(Windows) {
         extern(Windows) void OutputDebugStringW(const wchar* fmt) nothrow;
@@ -180,7 +194,15 @@ else {
 }
 
 version(unittest) {
+    // to link
     extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow {
         return [];
+    }
+
+    int gAutoCloseCounter;
+
+    @DontTest
+    void testAutoCloseFunc() {
+        ++gAutoCloseCounter;
     }
 }
