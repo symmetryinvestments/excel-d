@@ -13,26 +13,25 @@ import xlld: WorksheetFunction, LPXLOPER12;
 version(unittest) import unit_threaded;
 
 
-alias AutoCloseFunc = void delegate();
+alias AutoCloseFunc = void delegate() nothrow;
 
 private AutoCloseFunc[] gAutoCloseFuncs;
 
 /**
    Registers a delegate to be called when the XLL is unloaded
 */
-void registerAutoCloseFunc(AutoCloseFunc func) {
+void registerAutoCloseFunc(AutoCloseFunc func) nothrow {
     gAutoCloseFuncs ~= func;
 }
 
 /**
    Registers a function to be called when the XLL is unloaded
 */
-void registerAutoCloseFunc(void function() func) {
-    import std.functional: toDelegate;
-    gAutoCloseFuncs ~= toDelegate(func);
+void registerAutoCloseFunc(void function() nothrow func) nothrow {
+    gAutoCloseFuncs ~= { func(); };
 }
 
-private void callRegisteredAutoCloseFuncs() {
+private void callRegisteredAutoCloseFuncs() nothrow {
     foreach(func; gAutoCloseFuncs) func();
 }
 
@@ -57,6 +56,8 @@ version(Windows) {
         enum dllMain = false;
     else version(unittest)
         enum dllMain = false;
+    else
+        enum dllMain = true;
 } else
       enum dllMain = false;
 
@@ -215,7 +216,7 @@ version(unittest) {
     int gAutoCloseCounter;
 
     @DontTest
-        void testAutoCloseFunc() {
+        void testAutoCloseFunc() nothrow {
         ++gAutoCloseCounter;
     }
 }
