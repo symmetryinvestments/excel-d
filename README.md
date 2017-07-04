@@ -105,6 +105,15 @@ double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
 This allows for `@nogc` functions to be called from Excel without memory leaks.
 
 
+Registering code to run when the XLL is unloaded
+------------------------------------------------
+
+Since this library automatically writes `xlAutoClose` it is not possible to use it to
+run custom code at XLL unloading. As an alternative XLL writers can use
+`xlld.xll.registerAutoCloseFunc` passing it a function or a delegate to be executed
+when `xlAutoClose` is called.
+
+
 About Kaleidic Associates
 -------------------------
 We are a boutique consultancy that advises a small number of hedge fund clients.  We are
