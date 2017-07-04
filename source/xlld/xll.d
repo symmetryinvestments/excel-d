@@ -7,19 +7,64 @@
 	with Excel.
 */
 
-version(exceldDef) {}
-else {
+module xlld.xll;
 
-    version(Windows):
+import xlld: WorksheetFunction, LPXLOPER12;
+version(unittest) import unit_threaded;
 
-    import xlld;
+
+alias AutoCloseFunc = void delegate() nothrow;
+
+private AutoCloseFunc[] gAutoCloseFuncs;
+
+/**
+   Registers a delegate to be called when the XLL is unloaded
+*/
+void registerAutoCloseFunc(AutoCloseFunc func) nothrow {
+    gAutoCloseFuncs ~= func;
+}
+
+/**
+   Registers a function to be called when the XLL is unloaded
+*/
+void registerAutoCloseFunc(void function() nothrow func) nothrow {
+    gAutoCloseFuncs ~= { func(); };
+}
+
+private void callRegisteredAutoCloseFuncs() nothrow {
+    foreach(func; gAutoCloseFuncs) func();
+}
+
+@("registerAutoClose delegate")
+unittest {
+    int i;
+    registerAutoCloseFunc({ ++i; });
+    callRegisteredAutoCloseFuncs();
+    i.shouldEqual(1);
+}
+
+@("registerAutoClose function")
+unittest {
+    const old = gAutoCloseCounter;
+    registerAutoCloseFunc(&testAutoCloseFunc);
+    callRegisteredAutoCloseFuncs();
+    (gAutoCloseCounter - old).shouldEqual(1);
+}
+
+version(Windows) {
+    version(exceldDef)
+        enum dllMain = false;
+    else version(unittest)
+        enum dllMain = false;
+    else
+        enum dllMain = true;
+} else
+      enum dllMain = false;
+
+
+static if(dllMain) {
+
     import core.sys.windows.windows;
-
-    // this function must be define in a module compiled with
-    // the current module
-    // It's extern(C) so that it can be defined in any module
-    extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow;
-
 
     extern(Windows) BOOL DllMain( HANDLE hDLL, DWORD dwReason, LPVOID lpReserved )
     {
@@ -47,103 +92,131 @@ else {
         }
         return true;
     }
+}
 
+// this function must be defined in a module compiled with
+// the current module
+// It's extern(C) so that it can be defined in any module
+extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow;
 
-    extern(Windows) int xlAutoOpen()
-    {
-        import std.algorithm: map;
-        import std.array: array;
-        import core.runtime:rt_init;
-        import xlld.memorymanager: allocator;
-        import xlld.framework: freeXLOper;
+extern(Windows) int xlAutoOpen() {
+    import core.runtime:rt_init;
 
-        rt_init(); // move to DllOpen?
+    rt_init(); // move to DllOpen?
+    registerAllWorkSheetFunctions;
 
-        // get name of this XLL, needed to pass to xlfRegister
-        static XLOPER12 dllName;
-        Excel12f(xlGetName, &dllName, []);
+    return 1;
+}
 
-        foreach(strings; getWorksheetFunctions.map!(a => a.toStringArray)) {
-            auto opers = strings.map!(a => a.toXlOper(allocator)).array;
-            scope(exit) foreach(ref oper; opers) freeXLOper(&oper, allocator);
+private void registerAllWorkSheetFunctions() {
+    import xlld.memorymanager: allocator;
+    import xlld.framework: Excel12f, freeXLOper;
+    import xlld.xlcall: xlGetName, xlfRegister, XLOPER12;
+    import xlld.wrap: toXlOper;
+    import std.algorithm: map;
+    import std.array: array;
 
-            auto args = new LPXLOPER12[opers.length + 1];
-            args[0] = &dllName;
-            foreach(i; 0 .. opers.length)
-                args[i + 1] = &opers[i];
+    // get name of this XLL, needed to pass to xlfRegister
+    static XLOPER12 dllName;
+    Excel12f(xlGetName, &dllName, []);
 
-            Excel12f(xlfRegister, cast(LPXLOPER12)null, args);
-        }
+    foreach(strings; getWorksheetFunctions.map!(a => a.toStringArray)) {
+        auto opers = strings.map!(a => a.toXlOper(allocator)).array;
+        scope(exit) foreach(ref oper; opers) freeXLOper(&oper, allocator);
 
-        return 1;
+        auto args = new LPXLOPER12[opers.length + 1];
+        args[0] = &dllName;
+        foreach(i; 0 .. opers.length)
+            args[i + 1] = &opers[i];
+
+        Excel12f(xlfRegister, cast(LPXLOPER12)null, args);
     }
+}
 
-    extern(Windows) int xlAutoClose() {
-        import core.runtime: rt_term;
-        rt_term;
-        return 1;
-    }
+extern(Windows) int xlAutoClose() {
+    import core.runtime: rt_term;
 
-    extern(Windows) int xlAutoFree12(LPXLOPER12 arg) {
-        import xlld.memorymanager: autoFree;
-        import xlld.xlcall: xlbitDLLFree;
+    callRegisteredAutoCloseFuncs;
 
-        assert(arg.xltype & xlbitDLLFree);
+    rt_term;
+    return 1;
+}
 
-        autoFree(arg);
-        return 1;
-    }
+extern(Windows) int xlAutoFree12(LPXLOPER12 arg) {
+    import xlld.memorymanager: autoFree;
+    import xlld.xlcall: xlbitDLLFree;
 
-    extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction)
-    {
-        import xlld.wrap: toAutoFreeOper;
-        static XLOPER12 xInfo, xIntAction;
+    assert(arg.xltype & xlbitDLLFree);
 
-        //
-        // This code coerces the passed-in value to an integer. This is how the
-        // code determines what is being requested. If it receives a 1,
-        // it returns a string representing the long name. If it receives
-        // anything else, it returns a #VALUE! error.
-        //
+    autoFree(arg);
+    return 1;
+}
 
-        //we need an XLOPER12 with a _value_ of xltypeInt
-        XLOPER12 arg;
-        arg.xltype = XlType.xltypeInt;
-        arg.val.w = xltypeInt;
+extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction) {
+    import xlld.xlcall: XLOPER12, XlType, xltypeInt, xlCoerce, xlerrValue;
+    import xlld.wrap: toAutoFreeOper;
+    import xlld.framework: Excel12f;
 
-        Excel12f(xlCoerce, &xIntAction, [xAction, &arg]);
+    static XLOPER12 xInfo, xIntAction;
 
-        if (xIntAction.val.w == 1) {
-            xInfo = "My XLL".toAutoFreeOper;
-        } else {
-            xInfo.xltype = XlType.xltypeErr;
-            xInfo.val.err = xlerrValue;
-        }
+    //
+    // This code coerces the passed-in value to an integer. This is how the
+    // code determines what is being requested. If it receives a 1,
+    // it returns a string representing the long name. If it receives
+    // anything else, it returns a #VALUE! error.
+    //
 
-        return &xInfo;
-    }
+    //we need an XLOPER12 with a _value_ of xltypeInt
+    XLOPER12 arg;
+    arg.xltype = XlType.xltypeInt;
+    arg.val.w = xltypeInt;
 
-    version(Windows) {
-        extern(Windows) void OutputDebugStringW(const wchar* fmt) nothrow;
+    Excel12f(xlCoerce, &xIntAction, [xAction, &arg]);
 
-        const(wchar)* toWStringz(in wstring str) nothrow {
-            return (str ~ '\0').ptr;
-        }
-
-        void log(T...)(T args) {
-            import std.conv: text, to;
-            try
-                OutputDebugStringW(text(args).to!wstring.toWStringz);
-            catch(Exception)
-                OutputDebugStringW("[DataServer] outputDebug itself failed"w.toWStringz);
-        }
-    } else version(unittest) {
-        void log(T...)(T args) {
-        }
+    if (xIntAction.val.w == 1) {
+        xInfo = "My XLL".toAutoFreeOper;
     } else {
-        void log(T...)(T args) {
-            import std.experimental.logger;
-            trace(args);
-        }
+        xInfo.xltype = XlType.xltypeErr;
+        xInfo.val.err = xlerrValue;
+    }
+
+    return &xInfo;
+}
+
+version(Windows) {
+    extern(Windows) void OutputDebugStringW(const wchar* fmt) nothrow;
+
+    const(wchar)* toWStringz(in wstring str) nothrow {
+        return (str ~ '\0').ptr;
+    }
+
+    void log(T...)(T args) {
+        import std.conv: text, to;
+        try
+            OutputDebugStringW(text(args).to!wstring.toWStringz);
+        catch(Exception)
+            OutputDebugStringW("[DataServer] outputDebug itself failed"w.toWStringz);
+    }
+} else version(unittest) {
+    void log(T...)(T args) {
+    }
+  } else {
+    void log(T...)(T args) {
+        import std.experimental.logger: trace;
+        trace(args);
+    }
+}
+
+version(unittest) {
+    // to link
+    extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow {
+        return [];
+    }
+
+    int gAutoCloseCounter;
+
+    @DontTest
+        void testAutoCloseFunc() nothrow {
+        ++gAutoCloseCounter;
     }
 }
