@@ -47,15 +47,16 @@ struct MemoryPoolImpl(T) {
     }
 
     ubyte[] allocate(size_t numBytes) {
-        import std.algorithm: min;
+
+        import std.algorithm: min, max;
         import std.experimental.allocator: expandArray;
 
-        if (numBytes <= 0)
+        if (numBytes == 0)
             return null;
 
         if (curPos + numBytes > data.length)
         {
-            auto newAllocationSize = min(MaxMemorySize, data.length * 2);
+            auto newAllocationSize = min(MaxMemorySize, max(data.length * 2, numBytes));
             if (newAllocationSize <= data.length)
                 return null;
             _allocator.expandArray(data, newAllocationSize, 0);
