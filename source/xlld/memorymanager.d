@@ -90,6 +90,16 @@ struct MemoryPoolImpl(T) {
         pool.allocate(32_000);
     }
 
+    @("issue 22 - makeArray with 2D array causing relocations")
+    unittest {
+        import std.experimental.allocator: makeArray;
+        auto pool = memoryPool;
+        auto arr2d = pool.makeArray!(string[][])(4000);
+        enum eachSize = 37;
+        foreach(ref arr1d; arr2d) arr1d = pool.makeArray!(string[])(eachSize);
+        foreach(ref arr1d; arr2d) arr1d.length.shouldEqual(eachSize);
+    }
+
     // Frees all the temporary memory by setting the index for available memory back to the beginning
     bool deallocateAll() {
         curPos = 0;
