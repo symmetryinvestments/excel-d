@@ -10,5 +10,6 @@ int main(string[] args)
         "xlld.wrap",
         "xlld.xl",
         "xlld.xll",
+        "xlld.memorymanager",
     );
 }

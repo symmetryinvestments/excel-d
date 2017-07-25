@@ -67,11 +67,21 @@ struct MemoryPoolImpl(T) {
         return ret;
     }
 
+    @("issue 22 - expansion must cover the allocation request")
+    unittest {
+        auto pool = memoryPool;
+        pool.allocate(32_000);
+    }
+
     // Frees all the temporary memory by setting the index for available memory back to the beginning
     bool deallocateAll() {
         curPos = 0;
         return true;
     }
+}
+
+auto memoryPool() {
+    return MemoryPool(StartingMemorySize);
 }
 
 // the function called by the Excel callback
