@@ -56,10 +56,12 @@ struct MemoryPoolImpl(T) {
 
         if (curPos + numBytes > data.length)
         {
-            auto newAllocationSize = min(MaxMemorySize, max(data.length * 2, numBytes));
+            const newAllocationSize = min(MaxMemorySize, max(data.length * 2, curPos + numBytes));
+
             if (newAllocationSize <= data.length)
                 return null;
-            _allocator.expandArray(data, newAllocationSize, 0);
+            const delta = newAllocationSize - data.length;
+            _allocator.expandArray(data, delta, 0);
         }
 
         auto ret = data[curPos .. curPos + numBytes];
@@ -68,9 +70,23 @@ struct MemoryPoolImpl(T) {
         return ret;
     }
 
-    @("issue 22 - expansion must cover the allocation request")
+    @("ensure size of data after forced reallocation")
+    unittest {
+        auto pool = MemoryPool(4);
+        pool.allocate(10); // must reallocate to service request
+        pool.data.length.shouldEqual(10);
+    }
+
+    @("issue 22 - expansion must cover the allocation request itself")
     unittest {
         auto pool = memoryPool;
+        pool.allocate(32_000);
+    }
+
+    @("issue 22 - expansion must take into account number of bytes already allocated")
+    unittest {
+        auto pool = memoryPool;
+        pool.allocate(10);
         pool.allocate(32_000);
     }
 
