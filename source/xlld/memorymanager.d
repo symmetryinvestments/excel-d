@@ -192,7 +192,7 @@ private size_t numBytesForArray2D(T)(size_t rows, size_t cols) {
 private size_t numBytesForArray2D(T)(ref XLOPER12 oper) {
     import xlld.xlcall: XlType;
     import xlld.xl: coerce, free;
-    import xlld.wrap: dlangToXlOperType, isMulti;
+    import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes;
     import xlld.any: Any;
     version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
 
@@ -226,7 +226,7 @@ private size_t numBytesForArray2D(T)(ref XLOPER12 oper) {
                 || is(T == Any);
 
             if(shouldConvert && is(T == string))
-                elemAllocBytes += (cellVal.val.str[0] + 1) * wchar.sizeof;
+                elemAllocBytes += numOperStringBytes(cellVal);
         }
     }
 
@@ -247,7 +247,7 @@ unittest {
 
 @("numBytesForArray2D!string oper")
 unittest {
-    import xlld.wrap: toXlOper;
+    import xlld.wrap: toXlOper, numOperStringBytes;
     import std.array: join;
     import std.algorithm: fold;
 
@@ -256,13 +256,7 @@ unittest {
 
     auto oper = strings.toXlOper(Mallocator.instance);
 
-    size_t bytesPerString(in string str) {
-        // XLOPER12 strings are wide strings where the first "character"
-        // is the length, the real string is in [1.. $]
-        return (str.length + 1) * wchar.sizeof;
-    }
-
-    const bytesForStrings = strings.join.fold!((a, b) => a + bytesPerString(b))(0);
+    const bytesForStrings = strings.join.fold!((a, b) => a + numOperStringBytes(b))(0);
     bytesForStrings.shouldEqual(8 + 8 + 10 + 10 + 4 + 4);
 
     // no allocation for doubles so the memory requirements are just the array itself

@@ -61,7 +61,7 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     import std.stdio;
 
     // extra space for the length
-    auto wval = cast(wchar*)allocator.allocate((val.length + 1) * wchar.sizeof).ptr;
+    auto wval = cast(wchar*)allocator.allocate(numOperStringBytes(val)).ptr;
     wval[0] = cast(wchar)val.length;
 
     int i = 1;
@@ -74,6 +74,20 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     ret.val.str = cast(XCHAR*)wval;
 
     return ret;
+}
+
+// the number of bytes required to store `str` as an XLOPER12 string
+package size_t numOperStringBytes(T)(in T str) if(is(T == string) || is(T == wstring)) {
+    // XLOPER12 strings are wide strings where index 0 is the length
+    // and [1 .. $] is the actual string
+    return (str.length + 1) * wchar.sizeof;
+}
+
+package size_t numOperStringBytes(ref const(XLOPER12) oper) @trusted @nogc pure nothrow {
+    // XLOPER12 strings are wide strings where index 0 is the length
+    // and [1 .. $] is the actual string
+    assert(oper.xltype == XlType.xltypeStr);
+    return (oper.val.str[0] + 1) * wchar.sizeof;
 }
 
 
