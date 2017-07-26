@@ -190,48 +190,28 @@ private size_t numBytesForArray2D(T)(size_t rows, size_t cols) {
 
 // the number of bytes that need to be allocated to convert oper to T[][]
 private size_t numBytesForArray2D(T)(ref XLOPER12 oper) {
-    import xlld.xlcall: XlType;
-    import xlld.xl: coerce, free;
-    import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes;
-    import xlld.any: Any;
-    version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
+    import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes, apply;
 
     if(!isMulti(oper))
         return 0;
 
-    const rows = oper.val.array.rows;
-    const cols = oper.val.array.columns;
-    auto values = oper.val.array.lparray[0 .. (rows * cols)];
     size_t elemAllocBytes;
 
-    foreach(const row; 0 .. rows) {
-        foreach(const col; 0 .. cols) {
-
-            auto cellVal = coerce(&values[row * cols + col]);
-
-            // Issue 22's unittest ends up coercing more than test_util can handle
-            // so we undo the side-effect here
-            version(unittest) --gNumXlCoerce; // ignore this for testing
-
-            scope(exit) {
-                free(&cellVal);
-                // see comment above about gNumXlCoerce
-                version(unittest) --gNumXlFree;
-            }
-
-            // try to convert doubles to string if trying to convert everything to an
-            // array of strings
-            const shouldConvert = (cellVal.xltype == dlangToXlOperType!T.Type) ||
-                (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr)
-                || is(T == Any);
-
+    try
+        oper.apply!(T, (shouldConvert, row, col, cellVal) {
             if(shouldConvert && is(T == string))
                 elemAllocBytes += numOperStringBytes(cellVal);
-        }
+        });
+    catch(Exception ex) {
+        return 0;
     }
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
 
     return numBytesForArray2D!T(rows, cols) + elemAllocBytes;
 }
+
 
 @("numBytesForArray2D!double oper")
 unittest {

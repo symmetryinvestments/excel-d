@@ -536,11 +536,6 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     import xlld.memorymanager: makeArray2D;
     import std.experimental.allocator: makeArray;
 
-    static const exception = new Exception("fromXlOperMulti failed - oper not of multi type");
-
-    if(!isMulti(*val))
-        throw exception;
-
     const rows = val.val.array.rows;
     const cols = val.val.array.columns;
 
@@ -551,12 +546,51 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     } else
         static assert(0);
 
-    auto values = val.val.array.lparray[0 .. (rows * cols)];
+    (*val).apply!(T, (shouldConvert, row, col, cellVal) {
+        auto value = shouldConvert ? cellVal.fromXlOper!T(allocator) : T.init;
+
+        static if(dim == Dimensions.Two)
+            ret[row][col] = value;
+        else
+            ret[row * cols + col] = value;
+    });
+
+    return ret;
+}
+
+// apply a function to an oper of type xltypeMulti
+// the function must take a boolean value indicating if the cell value
+// is to be converted or not, and a reference to the cell value itself
+package void apply(T, alias F)(ref XLOPER12 oper) {
+    import xlld.xlcall: XlType;
+    import xlld.xl: coerce, free;
+    import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes;
+    import xlld.any: Any;
+    version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
+
+    static const exception = new Exception("apply failed - oper not of multi type");
+
+    if(!isMulti(oper))
+        throw exception;
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+    auto values = oper.val.array.lparray[0 .. (rows * cols)];
 
     foreach(const row; 0 .. rows) {
         foreach(const col; 0 .. cols) {
+
             auto cellVal = coerce(&values[row * cols + col]);
-            scope(exit) free(&cellVal);
+
+            // Issue 22's unittest ends up coercing more than test_util can handle
+            // so we undo the side-effect here
+            version(unittest) --gNumXlCoerce; // ignore this for testing
+
+            scope(exit) {
+                free(&cellVal);
+                // see comment above about gNumXlCoerce
+                version(unittest) --gNumXlFree;
+            }
 
             // try to convert doubles to string if trying to convert everything to an
             // array of strings
@@ -564,17 +598,11 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
                 (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr)
                 || is(T == Any);
 
-            auto value = shouldConvert ? cellVal.fromXlOper!T(allocator) : T.init;
-
-            static if(dim == Dimensions.Two)
-                ret[row][col] = value;
-            else
-                ret[row * cols + col] = value;
+            F(shouldConvert, row, col, cellVal);
         }
     }
-
-    return ret;
 }
+
 
 package bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
     const realType = stripMemoryBitmask(oper.xltype);
