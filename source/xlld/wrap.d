@@ -1031,8 +1031,10 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         try {
             dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], tempAllocator); }();
         } catch(Exception ex) {
-            ret.xltype = XlType.xltypeErr;
-            ret.val.err = -1;
+            ret = ("#ERROR converting argument to call " ~ __traits(identifier, wrappedFunc)).toAutoFreeOper;
+            return &ret;
+        } catch(Throwable t) {
+            ret = ("#FATAL ERROR converting argument to call " ~ __traits(identifier, wrappedFunc)).toAutoFreeOper;
             return &ret;
         }
     }
@@ -1062,7 +1064,11 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
             () @trusted { printf("Could not call wrapped function: %s\n", &buffer[0]); }();
         }
 
-        return null;
+        ret = ("#ERROR calling " ~ __traits(identifier, wrappedFunc)).toAutoFreeOper;
+        return &ret;
+    } catch(Throwable t) {
+        ret = ("#FATAL ERROR calling " ~ __traits(identifier, wrappedFunc)).toAutoFreeOper;
+        return &ret;
     }
 
     return &ret;
