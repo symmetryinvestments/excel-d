@@ -524,8 +524,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
 
     static const exception = new Exception("fromXlOperMulti failed - oper not of multi type");
 
-    const realType = stripMemoryBitmask(val.xltype);
-    if(realType != xltypeMulti)
+    if(!isMulti(*val))
         throw exception;
 
     const rows = val.val.array.rows;
@@ -563,6 +562,10 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     return ret;
 }
 
+package bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
+    const realType = stripMemoryBitmask(oper.xltype);
+    return realType == XlType.xltypeMulti;
+}
 
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
@@ -615,7 +618,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     allocator.dispose(cast(void[])str);
 }
 
-package XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
+private XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
     return cast(XlType)(type & ~(xlbitXLFree | xlbitDLLFree));
 }
 

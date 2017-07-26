@@ -139,15 +139,14 @@ auto memoryPool() {
 
 T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
     import xlld.xlcall: XlType;
-    import xlld.wrap: stripMemoryBitmask;
+    import xlld.wrap: isMulti;
     import std.experimental.allocator: makeArray;
 
     static if(__traits(compiles, allocator.reserve(5))) {
         allocator.reserve(numBytesForArray2D!T(oper));
     }
 
-    const realType = stripMemoryBitmask(oper.xltype);
-    if(realType != XlType.xltypeMulti)
+    if(!isMulti(oper))
         return T[][].init;
 
     const rows = oper.val.array.rows;
@@ -189,21 +188,20 @@ private size_t numBytesForArray2D(T)(size_t rows, size_t cols) {
 }
 
 
-// the number of bytes that need to be allocated to convert val to T[][]
-private size_t numBytesForArray2D(T)(ref XLOPER12 val) {
+// the number of bytes that need to be allocated to convert oper to T[][]
+private size_t numBytesForArray2D(T)(ref XLOPER12 oper) {
     import xlld.xlcall: XlType;
     import xlld.xl: coerce, free;
-    import xlld.wrap: dlangToXlOperType, stripMemoryBitmask;
+    import xlld.wrap: dlangToXlOperType, isMulti;
     import xlld.any: Any;
     version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
 
-    const realType = stripMemoryBitmask(val.xltype);
-    if(realType != XlType.xltypeMulti)
+    if(!isMulti(oper))
         return 0;
 
-    const rows = val.val.array.rows;
-    const cols = val.val.array.columns;
-    auto values = val.val.array.lparray[0 .. (rows * cols)];
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+    auto values = oper.val.array.lparray[0 .. (rows * cols)];
     size_t elemAllocBytes;
 
     foreach(const row; 0 .. rows) {
