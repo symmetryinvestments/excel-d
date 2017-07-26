@@ -524,7 +524,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
 
     static const exception = new Exception("fromXlOperMulti failed - oper not of multi type");
 
-    const realType = val.xltype & ~xlbitDLLFree;
+    const realType = stripMemoryBitmask(val.xltype);
     if(realType != xltypeMulti)
         throw exception;
 
@@ -569,7 +569,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     import std.experimental.allocator: makeArray;
     import std.utf;
 
-    const stripType = val.xltype & ~(xlbitXLFree | xlbitDLLFree);
+    const stripType = stripMemoryBitmask(val.xltype);
     if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
         return null;
 
@@ -613,6 +613,10 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     freeXLOper(&oper, allocator);
     str.shouldEqual("foo");
     allocator.dispose(cast(void[])str);
+}
+
+package XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
+    return cast(XlType)(type & ~(xlbitXLFree | xlbitDLLFree));
 }
 
 T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any)) {

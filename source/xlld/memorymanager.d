@@ -138,14 +138,15 @@ auto memoryPool() {
 }
 
 T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
-    import xlld.xlcall: xlbitDLLFree, XlType;
+    import xlld.xlcall: XlType;
+    import xlld.wrap: stripMemoryBitmask;
     import std.experimental.allocator: makeArray;
 
     static if(__traits(compiles, allocator.reserve(5))) {
         allocator.reserve(numBytesForArray2D!T(oper));
     }
 
-    const realType = oper.xltype & ~xlbitDLLFree;
+    const realType = stripMemoryBitmask(oper.xltype);
     if(realType != XlType.xltypeMulti)
         return T[][].init;
 
@@ -190,13 +191,13 @@ private size_t numBytesForArray2D(T)(size_t rows, size_t cols) {
 
 // the number of bytes that need to be allocated to convert val to T[][]
 private size_t numBytesForArray2D(T)(ref XLOPER12 val) {
-    import xlld.xlcall: xlbitDLLFree, XlType;
+    import xlld.xlcall: XlType;
     import xlld.xl: coerce, free;
-    import xlld.wrap: dlangToXlOperType;
+    import xlld.wrap: dlangToXlOperType, stripMemoryBitmask;
     import xlld.any: Any;
     version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
 
-    const realType = val.xltype & ~xlbitDLLFree;
+    const realType = stripMemoryBitmask(val.xltype);
     if(realType != XlType.xltypeMulti)
         return 0;
 
@@ -207,11 +208,17 @@ private size_t numBytesForArray2D(T)(ref XLOPER12 val) {
 
     foreach(const row; 0 .. rows) {
         foreach(const col; 0 .. cols) {
+
             auto cellVal = coerce(&values[row * cols + col]);
+
+            // Issue 22's unittest ends up coercing more than test_util can handle
+            // so we undo the side-effect here
             version(unittest) --gNumXlCoerce; // ignore this for testing
+
             scope(exit) {
                 free(&cellVal);
-                version(unittest) --gNumXlFree; // ignore this for testing
+                // see comment above about gNumXlCoerce
+                version(unittest) --gNumXlFree;
             }
 
             // try to convert doubles to string if trying to convert everything to an
@@ -219,6 +226,7 @@ private size_t numBytesForArray2D(T)(ref XLOPER12 val) {
             const shouldConvert = (cellVal.xltype == dlangToXlOperType!T.Type) ||
                 (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr)
                 || is(T == Any);
+
             if(shouldConvert && is(T == string))
                 elemAllocBytes += (cellVal.val.str[0] + 1) * wchar.sizeof;
         }
