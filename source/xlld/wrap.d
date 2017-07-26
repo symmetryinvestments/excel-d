@@ -50,21 +50,6 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     return ret;
 }
 
-// the number of bytes required to store `str` as an XLOPER12 string
-package size_t numOperStringBytes(T)(in T str) if(is(T == string) || is(T == wstring)) {
-    // XLOPER12 strings are wide strings where index 0 is the length
-    // and [1 .. $] is the actual string
-    return (str.length + 1) * wchar.sizeof;
-}
-
-package size_t numOperStringBytes(ref const(XLOPER12) oper) @trusted @nogc pure nothrow {
-    // XLOPER12 strings are wide strings where index 0 is the length
-    // and [1 .. $] is the actual string
-    assert(oper.xltype == XlType.xltypeStr);
-    return (oper.val.str[0] + 1) * wchar.sizeof;
-}
-
-
 @("toXlOper!string utf8")
 @system unittest {
     import std.conv: to;
@@ -92,13 +77,28 @@ package size_t numOperStringBytes(ref const(XLOPER12) oper) @trusted @nogc pure 
     (cast(wchar*)oper.val.str)[1 .. str.length + 1].shouldEqual(str);
 }
 
-@("toXlOper!string allocator")
+@("toXlOper!string TestAllocator")
 @system unittest {
     auto allocator = TestAllocator();
     auto oper = "foo".toXlOper(allocator);
     allocator.numAllocations.shouldEqual(1);
     freeXLOper(&oper, allocator);
 }
+
+// the number of bytes required to store `str` as an XLOPER12 string
+package size_t numOperStringBytes(T)(in T str) if(is(T == string) || is(T == wstring)) {
+    // XLOPER12 strings are wide strings where index 0 is the length
+    // and [1 .. $] is the actual string
+    return (str.length + 1) * wchar.sizeof;
+}
+
+package size_t numOperStringBytes(ref const(XLOPER12) oper) @trusted @nogc pure nothrow {
+    // XLOPER12 strings are wide strings where index 0 is the length
+    // and [1 .. $] is the actual string
+    assert(oper.xltype == XlType.xltypeStr);
+    return (oper.val.str[0] + 1) * wchar.sizeof;
+}
+
 
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     if(is(T == double) || is(T == string))
@@ -125,15 +125,6 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     return ret;
 }
 
-XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
-    auto ret = XLOPER12();
-    ret.xltype = XlType.xltypeMulti;
-    ret.val.array.rows = rows;
-    ret.val.array.columns = cols;
-    ret.val.array.lparray = cast(XLOPER12*)allocator.allocate(rows * cols * ret.sizeof).ptr;
-    return ret;
-}
-
 
 @("toXlOper string[][]")
 @system unittest {
@@ -152,7 +143,7 @@ XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
     opers[5].shouldEqualDlang("quux");
 }
 
-@("toXlOper string[][] allocator")
+@("toXlOper string[][]")
 @system unittest {
     TestAllocator allocator;
     auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper(allocator);
@@ -160,12 +151,21 @@ XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
     freeXLOper(&oper, allocator);
 }
 
-@("toXlOper double[][] allocator")
+@("toXlOper double[][]")
 @system unittest {
     TestAllocator allocator;
     auto oper = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]].toXlOper(allocator);
     allocator.numAllocations.shouldEqual(1);
     freeXLOper(&oper, allocator);
+}
+
+private XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
+    auto ret = XLOPER12();
+    ret.xltype = XlType.xltypeMulti;
+    ret.val.array.rows = rows;
+    ret.val.array.columns = cols;
+    ret.val.array.lparray = cast(XLOPER12*)allocator.allocate(rows * cols * ret.sizeof).ptr;
+    return ret;
 }
 
 
@@ -175,7 +175,7 @@ XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(T == string[]) || is(T 
 }
 
 
-@("toXlOper string[] allocator")
+@("toXlOper string[]")
 @system unittest {
     TestAllocator allocator;
     auto oper = ["foo", "bar", "baz", "toto", "titi", "quux"].toXlOper(allocator);
@@ -332,7 +332,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
     return val.val.num;
 }
 
-@("fromXlOper double allocator")
+@("fromXlOper!double")
 @system unittest {
 
     TestAllocator allocator;
@@ -354,6 +354,76 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
     fromXlOper!double(&oper, allocator).isNaN.shouldBeTrue;
 }
 
+auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
+
+    import std.experimental.allocator: makeArray;
+    import std.utf;
+
+    const stripType = stripMemoryBitmask(val.xltype);
+    if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
+        return null;
+
+    if(stripType == XlType.xltypeStr) {
+
+        auto ret = allocator.makeArray!char(val.val.str[0]);
+        int i;
+        foreach(ch; val.val.str[1 .. ret.length + 1].byChar)
+            ret[i++] = ch;
+
+        return cast(string)ret;
+    } else {
+        // if a double, try to convert it to a string
+        import core.stdc.stdio: snprintf;
+        char[1024] buffer;
+        static const exception = new Exception("Could not convert double to string");
+        const numChars = snprintf(&buffer[0], buffer.length, "%lf", val.val.num);
+        if(numChars > buffer.length - 1)
+            throw exception;
+        auto ret = allocator.makeArray!char(numChars);
+        ret[] = buffer[0 .. numChars];
+        return cast(string)ret;
+    }
+}
+
+@("fromXlOper!string missing")
+@system unittest {
+    import xlld.memorymanager: allocator;
+    XLOPER12 oper;
+    oper.xltype = XlType.xltypeMissing;
+    fromXlOper!string(&oper, allocator).shouldBeNull;
+}
+
+@("fromXlOper!string")
+@system unittest {
+    TestAllocator allocator;
+    auto oper = "foo".toXlOper(allocator);
+    auto str = fromXlOper!string(&oper, allocator);
+    allocator.numAllocations.shouldEqual(2);
+
+    freeXLOper(&oper, allocator);
+    str.shouldEqual("foo");
+    allocator.dispose(cast(void[])str);
+}
+
+private XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
+    return cast(XlType)(type & ~(xlbitXLFree | xlbitDLLFree));
+}
+
+T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any)) {
+    // FIXME: deep copy
+    return Any(*oper);
+}
+
+@("fromXlOper any double")
+@system unittest {
+    any(5.0, theMallocator).fromXlOper!Any(theMallocator).shouldEqual(any(5.0, theMallocator));
+}
+
+@("fromXlOper any string")
+@system unittest {
+    any("foo", theMallocator).fromXlOper!Any(theMallocator)._impl
+        .fromXlOper!string(theMallocator).shouldEqual("foo");
+}
 
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator)
     if(is(T: E[][], E) && (is(E == string) || is(E == double)))
@@ -381,7 +451,7 @@ unittest {
     oper.fromXlOper!(double[][])(allocator).shouldEqual(doubles);
 }
 
-@("fromXlOper!string[][] allocator")
+@("fromXlOper!string[][] TestAllocator")
 unittest {
     TestAllocator allocator;
     auto strings = [["foo", "bar", "baz"], ["toto", "titi", "quux"]];
@@ -427,7 +497,7 @@ unittest {
 }
 
 
-@("fromXlOper!double[][] allocator")
+@("fromXlOper!double[][] TestAllocator")
 unittest {
     TestAllocator allocator;
     auto doubles = [[1.0, 2.0], [3.0, 4.0]];
@@ -476,7 +546,7 @@ unittest {
     oper.fromXlOper!(double[])(allocator).shouldEqual(doubles);
 }
 
-@("fromXlOper!string[] allocator")
+@("fromXlOper!string[] TestAllocator")
 unittest {
     TestAllocator allocator;
     auto strings = ["foo", "bar", "baz", "toto", "titi", "quux"];
@@ -490,7 +560,7 @@ unittest {
     allocator.dispose(backAgain);
 }
 
-@("fromXlOper!double[] allocator")
+@("fromXlOper!double[] TestAllocator")
 unittest {
     TestAllocator allocator;
     auto doubles = [1.0, 2.0, 3.0, 4.0];
@@ -583,76 +653,6 @@ package bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
     return realType == XlType.xltypeMulti;
 }
 
-auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
-
-    import std.experimental.allocator: makeArray;
-    import std.utf;
-
-    const stripType = stripMemoryBitmask(val.xltype);
-    if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
-        return null;
-
-    if(stripType == XlType.xltypeStr) {
-
-        auto ret = allocator.makeArray!char(val.val.str[0]);
-        int i;
-        foreach(ch; val.val.str[1 .. ret.length + 1].byChar)
-            ret[i++] = ch;
-
-        return cast(string)ret;
-    } else {
-        // if a double, try to convert it to a string
-        import core.stdc.stdio: snprintf;
-        char[1024] buffer;
-        static const exception = new Exception("Could not convert double to string");
-        const numChars = snprintf(&buffer[0], buffer.length, "%lf", val.val.num);
-        if(numChars > buffer.length - 1)
-            throw exception;
-        auto ret = allocator.makeArray!char(numChars);
-        ret[] = buffer[0 .. numChars];
-        return cast(string)ret;
-    }
-}
-
-@("fromXlOper missing")
-@system unittest {
-    import xlld.memorymanager: allocator;
-    XLOPER12 oper;
-    oper.xltype = XlType.xltypeMissing;
-    fromXlOper!string(&oper, allocator).shouldBeNull;
-}
-
-@("fromXlOper string allocator")
-@system unittest {
-    TestAllocator allocator;
-    auto oper = "foo".toXlOper(allocator);
-    auto str = fromXlOper!string(&oper, allocator);
-    allocator.numAllocations.shouldEqual(2);
-
-    freeXLOper(&oper, allocator);
-    str.shouldEqual("foo");
-    allocator.dispose(cast(void[])str);
-}
-
-private XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
-    return cast(XlType)(type & ~(xlbitXLFree | xlbitDLLFree));
-}
-
-T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any)) {
-    // FIXME: deep copy
-    return Any(*oper);
-}
-
-@("fromXlOper any double")
-@system unittest {
-    any(5.0, theMallocator).fromXlOper!Any(theMallocator).shouldEqual(any(5.0, theMallocator));
-}
-
-@("fromXlOper any string")
-@system unittest {
-    any("foo", theMallocator).fromXlOper!Any(theMallocator)._impl
-        .fromXlOper!string(theMallocator).shouldEqual("foo");
-}
 
 T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any[])) {
     return oper.fromXlOperMulti!(Dimensions.One, Any)(allocator);
