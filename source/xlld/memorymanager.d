@@ -9,8 +9,9 @@
 */
 module xlld.memorymanager;
 
-import std.experimental.allocator.mallocator: Mallocator;
 import xlld.xlcall: XLOPER12, LPXLOPER12;
+import std.experimental.allocator.mallocator: Mallocator;
+import std.traits: isArray;
 
 version(unittest) import unit_threaded;
 
@@ -277,4 +278,26 @@ struct AllocatorContext(A) {
 
 auto allocatorContext(A)(ref A allocator) {
     return AllocatorContext!A(allocator);
+}
+
+
+// this shouldn't be needed IMHO and is a bug in std.experimental.allocator that dispose
+// doesn't handle 2D arrays correctly
+void dispose(A, T)(auto ref A allocator, T[] array) {
+    static import std.experimental.allocator;
+    import std.traits: Unqual;
+
+    static if(isArray!T) {
+        foreach(ref e; array) {
+            dispose(allocator, e);
+        }
+    }
+
+    alias U = Unqual!T;
+    std.experimental.allocator.dispose(allocator, cast(U[])array);
+}
+
+void dispose(A, T)(auto ref A allocator, T value) if(!isArray!T) {
+    static import std.experimental.allocator;
+    std.experimental.allocator.dispose(allocator, value);
 }

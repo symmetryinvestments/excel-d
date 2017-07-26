@@ -2,11 +2,11 @@ module xlld.wrap;
 
 import xlld.xlcall;
 import xlld.traits: isSupportedFunction;
-import xlld.memorymanager: autoFree;
+import xlld.memorymanager: autoFree, dispose;
 import xlld.framework: freeXLOper;
 import xlld.worksheet;
 import xlld.any: Any;
-import std.traits: isArray, Unqual;
+import std.traits: Unqual;
 
 
 
@@ -17,27 +17,6 @@ version(unittest) {
     import xlld.any: any;
     alias theMallocator = Mallocator.instance;
 
-}
-
-// this shouldn't be needed IMHO and is a bug in std.experimental.allocator that dispose
-// doesn't handle 2D arrays correctly
-void dispose(A, T)(auto ref A allocator, T[] array) {
-    static import std.experimental.allocator;
-    import std.traits: Unqual;
-
-    static if(isArray!T) {
-        foreach(ref e; array) {
-            dispose(allocator, e);
-        }
-    }
-
-    alias U = Unqual!T;
-    std.experimental.allocator.dispose(allocator, cast(U[])array);
-}
-
-void dispose(A, T)(auto ref A allocator, T value) if(!isArray!T) {
-    static import std.experimental.allocator;
-    std.experimental.allocator.dispose(allocator, value);
 }
 
 
@@ -1007,6 +986,9 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
 
     void freeAll() {
+
+        import std.traits: isArray;
+
         static if(__traits(compiles, tempAllocator.deallocateAll))
             tempAllocator.deallocateAll;
         else {
