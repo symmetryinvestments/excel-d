@@ -532,7 +532,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     const cols = val.val.array.columns;
 
     static if(dim == Dimensions.Two) {
-        auto ret = allocator.makeArray2D!T(rows, cols);
+        auto ret = allocator.makeArray2D!T(*val);
     } else static if(dim == Dimensions.One) {
         auto ret = allocator.makeArray!T(rows * cols);
     } else

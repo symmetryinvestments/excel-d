@@ -10,7 +10,7 @@
 module xlld.memorymanager;
 
 import std.experimental.allocator.mallocator: Mallocator;
-import xlld.xlcall: LPXLOPER12;
+import xlld.xlcall: XLOPER12, LPXLOPER12;
 
 version(unittest) import unit_threaded;
 
@@ -137,8 +137,20 @@ auto memoryPool() {
     return MemoryPool(StartingMemorySize);
 }
 
-auto makeArray2D(T, A)(ref A allocator, int rows, int cols) {
+T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
+    import xlld.xlcall: xlbitDLLFree, XlType;
     import std.experimental.allocator: makeArray;
+
+    static if(__traits(compiles, allocator.reserve(5))) {
+        allocator.reserve(numBytesForArray2D!T(oper));
+    }
+
+    const realType = oper.xltype & ~xlbitDLLFree;
+    if(realType != XlType.xltypeMulti)
+        return T[][].init;
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
 
     auto ret = allocator.makeArray!(T[])(rows);
     foreach(ref row; ret)
@@ -149,8 +161,106 @@ auto makeArray2D(T, A)(ref A allocator, int rows, int cols) {
 
 @("issue 22 - makeArray with 2D array causing relocations")
 unittest {
+    import xlld.wrap: toXlOper;
+
     auto pool = memoryPool;
-    auto arr2d = pool.makeArray2D!string(4000, 37);
+    string[][] strings;
+    strings.length = 4000;
+    foreach(ref s; strings) s.length = 37;
+    auto oper = strings.toXlOper(Mallocator.instance);
+    auto arr2d = pool.makeArray2D!string(oper);
+}
+
+
+// the number of bytes that need to be allocated for a 2D array of type T[][]
+private size_t numBytesForArray2D(T)(size_t rows, size_t cols) {
+    return rows * (T[].sizeof + T.sizeof * cols);
+}
+
+@("numBytesForArray2D!string rows cols")
+@safe pure unittest {
+    numBytesForArray2D!string(4000, 37).shouldEqual(1_216_000);
+}
+
+@("numBytesForArray2D!int rows cols")
+@safe pure unittest {
+    numBytesForArray2D!int(4000, 37).shouldEqual(624_000);
+}
+
+
+// the number of bytes that need to be allocated to convert val to T[][]
+private size_t numBytesForArray2D(T)(ref XLOPER12 val) {
+    import xlld.xlcall: xlbitDLLFree, XlType;
+    import xlld.xl: coerce, free;
+    import xlld.wrap: dlangToXlOperType;
+    import xlld.any: Any;
+    version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
+
+    const realType = val.xltype & ~xlbitDLLFree;
+    if(realType != XlType.xltypeMulti)
+        return 0;
+
+    const rows = val.val.array.rows;
+    const cols = val.val.array.columns;
+    auto values = val.val.array.lparray[0 .. (rows * cols)];
+    size_t elemAllocBytes;
+
+    foreach(const row; 0 .. rows) {
+        foreach(const col; 0 .. cols) {
+            auto cellVal = coerce(&values[row * cols + col]);
+            version(unittest) --gNumXlCoerce; // ignore this for testing
+            scope(exit) {
+                free(&cellVal);
+                version(unittest) --gNumXlFree; // ignore this for testing
+            }
+
+            // try to convert doubles to string if trying to convert everything to an
+            // array of strings
+            const shouldConvert = (cellVal.xltype == dlangToXlOperType!T.Type) ||
+                (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr)
+                || is(T == Any);
+            if(shouldConvert && is(T == string))
+                elemAllocBytes += (cellVal.val.str[0] + 1) * wchar.sizeof;
+        }
+    }
+
+    return numBytesForArray2D!T(rows, cols) + elemAllocBytes;
+}
+
+@("numBytesForArray2D!double oper")
+unittest {
+    import xlld.wrap: toXlOper;
+
+    auto doubles = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
+    const rows = doubles.length; const cols = doubles[0].length;
+
+    auto oper = doubles.toXlOper(Mallocator.instance);
+    // no allocation for doubles so the memory requirements are just the array itself
+    numBytesForArray2D!double(oper).shouldEqual(numBytesForArray2D!double(rows, cols));
+}
+
+@("numBytesForArray2D!string oper")
+unittest {
+    import xlld.wrap: toXlOper;
+    import std.array: join;
+    import std.algorithm: fold;
+
+    auto strings = [["foo", "bar"], ["quux", "toto"], ["a", "b"]];
+    const rows = strings.length; const cols = strings[0].length;
+
+    auto oper = strings.toXlOper(Mallocator.instance);
+
+    size_t bytesPerString(in string str) {
+        // XLOPER12 strings are wide strings where the first "character"
+        // is the length, the real string is in [1.. $]
+        return (str.length + 1) * wchar.sizeof;
+    }
+
+    const bytesForStrings = strings.join.fold!((a, b) => a + bytesPerString(b))(0);
+    bytesForStrings.shouldEqual(8 + 8 + 10 + 10 + 4 + 4);
+
+    // no allocation for doubles so the memory requirements are just the array itself
+    numBytesForArray2D!string(oper).shouldEqual(numBytesForArray2D!string(rows, cols) + bytesForStrings);
 }
 
 
