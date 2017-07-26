@@ -237,7 +237,8 @@ unittest {
 
     auto oper = strings.toXlOper(Mallocator.instance);
 
-    const bytesForStrings = strings.join.fold!((a, b) => a + numOperStringBytes(b))(0);
+    size_t seed;
+    const bytesForStrings = strings.join.fold!((a, b) => a + numOperStringBytes(b))(seed);
     bytesForStrings.shouldEqual(8 + 8 + 10 + 10 + 4 + 4);
 
     // no allocation for doubles so the memory requirements are just the array itself
