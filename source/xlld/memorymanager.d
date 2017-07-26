@@ -180,12 +180,19 @@ private size_t numBytesForArray2D(T)(size_t rows, size_t cols) {
 
 @("numBytesForArray2D!string rows cols")
 @safe pure unittest {
-    numBytesForArray2D!string(4000, 37).shouldEqual(1_216_000);
+    version(X86)         const expected = 1_216_000;
+    else version(X86_64) const expected = 2_432_000;
+    else static assert(0);
+
+    numBytesForArray2D!string(4000, 37).shouldEqual(expected);
 }
 
 @("numBytesForArray2D!int rows cols")
 @safe pure unittest {
-    numBytesForArray2D!int(4000, 37).shouldEqual(624_000);
+    version(X86)         const expected = 624_000;
+    else version(X86_64) const expected = 656_000;
+    else static assert(0);
+    numBytesForArray2D!int(4000, 37).shouldEqual(expected);
 }
 
 
