@@ -1231,7 +1231,7 @@ unittest {
 
     double[][] doubles = [[1, 2, 3, 4], [11, 12, 13, 14]];
     auto doublesOper = toSRef(doubles, allocator);
-    doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage("fromXlOperMulti failed - oper not of multi type");
+    doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage("apply failed - oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
 }
 
