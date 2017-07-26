@@ -8,11 +8,6 @@ import xlld.worksheet;
 import xlld.any: Any;
 import std.traits: isArray, Unqual;
 
-// here to prevent cyclic dependency
-static this() {
-    import xlld.memorymanager: gTempAllocator, MemoryPool, StartingMemorySize;
-    gTempAllocator = MemoryPool(StartingMemorySize);
-}
 
 
 version(unittest) {

@@ -1,3 +1,8 @@
+/**
+   This module exists to house the static constructors/destructors to prevent cycles.
+   No module imports this one.
+ */
+
 module xlld.static_;
 
 static this() {
@@ -20,5 +25,4 @@ version(unittest) {
         import unit_threaded.should: shouldBeSameSetAs;
         gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
     }
-
 }
