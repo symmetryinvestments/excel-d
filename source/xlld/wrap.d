@@ -519,6 +519,7 @@ unittest {
 
 private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocator) {
     import xlld.xl: coerce, free;
+    import xlld.memorymanager: makeArray2D;
     import std.experimental.allocator: makeArray;
 
     static const exception = new Exception("fromXlOperMulti failed - oper not of multi type");
@@ -531,9 +532,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     const cols = val.val.array.columns;
 
     static if(dim == Dimensions.Two) {
-        auto ret = allocator.makeArray!(T[])(rows);
-        foreach(ref row; ret)
-            row = allocator.makeArray!T(cols);
+        auto ret = allocator.makeArray2D!T(rows, cols);
     } else static if(dim == Dimensions.One) {
         auto ret = allocator.makeArray!T(rows * cols);
     } else

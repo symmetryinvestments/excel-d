@@ -90,16 +90,6 @@ struct MemoryPoolImpl(T) {
         pool.allocate(32_000);
     }
 
-    @("issue 22 - makeArray with 2D array causing relocations")
-    unittest {
-        import std.experimental.allocator: makeArray;
-        auto pool = memoryPool;
-        auto arr2d = pool.makeArray!(string[][])(4000);
-        enum eachSize = 37;
-        foreach(ref arr1d; arr2d) arr1d = pool.makeArray!(string[])(eachSize);
-        foreach(ref arr1d; arr2d) arr1d.length.shouldEqual(eachSize);
-    }
-
     // Frees all the temporary memory by setting the index for available memory back to the beginning
     bool deallocateAll() {
         curPos = 0;
@@ -110,6 +100,23 @@ struct MemoryPoolImpl(T) {
 auto memoryPool() {
     return MemoryPool(StartingMemorySize);
 }
+
+auto makeArray2D(T, A)(ref A allocator, int rows, int cols) {
+    import std.experimental.allocator: makeArray;
+
+    auto ret = allocator.makeArray!(T[])(rows);
+    foreach(ref row; ret)
+        row = allocator.makeArray!T(cols);
+
+    return ret;
+}
+
+@("issue 22 - makeArray with 2D array causing relocations")
+unittest {
+    auto pool = memoryPool;
+    auto arr2d = pool.makeArray2D!string(4000, 37);
+}
+
 
 // the function called by the Excel callback
 void autoFree(LPXLOPER12 arg) {
