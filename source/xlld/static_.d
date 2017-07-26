@@ -6,8 +6,8 @@
 module xlld.static_;
 
 static this() {
-    import xlld.memorymanager: gTempAllocator, MemoryPool, StartingMemorySize;
-    gTempAllocator = MemoryPool(StartingMemorySize);
+    import xlld.memorymanager: gTempAllocator, memoryPool;
+    gTempAllocator = memoryPool;
 
     version(unittest) {
         import xlld.xlcallcpp: SetExcel12EntryPt;
