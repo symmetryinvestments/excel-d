@@ -95,6 +95,42 @@ struct MemoryPoolImpl(T) {
         curPos = 0;
         return true;
     }
+
+    // pre-allocate memory to serve a large request
+    bool reserve(in size_t numBytes) {
+        import std.experimental.allocator: expandArray;
+
+        if(numBytes < data.length - curPos) return true;
+        if(numBytes + curPos > MaxMemorySize) return false;
+
+        const delta = numBytes - (data.length - curPos);
+        return _allocator.expandArray(data, delta, 0);
+    }
+
+    @("reserve")
+    unittest {
+        auto pool = MemoryPool(10);
+
+        pool.allocate(5);
+        pool.reserve(3).shouldBeTrue;
+        pool.curPos.shouldEqual(5);
+        pool.data.length.shouldEqual(10);
+
+        pool.reserve(MaxMemorySize).shouldBeFalse;
+
+        pool.reserve(7).shouldBeTrue;
+
+        const ptr = pool.data.ptr;
+        const length = pool.data.length;
+        pool.curPos.shouldEqual(5);
+        length.shouldEqual(12);
+
+        pool.allocate(7);
+
+        pool.data.ptr.shouldEqual(ptr);
+        pool.data.length.shouldEqual(length);
+        pool.curPos.shouldEqual(12);
+    }
 }
 
 auto memoryPool() {
