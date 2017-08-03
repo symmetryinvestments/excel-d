@@ -254,6 +254,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any[][])) {
     ret.val.array.lparray = &allocator.makeArray!XLOPER12(length)[0];
 
     int i;
+    import std.conv;
     foreach(ref row; value) {
         foreach(ref cell; row) {
             ret.val.array.lparray[i++] = cell;
@@ -263,7 +264,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any[][])) {
     return ret;
 }
 
-@("toXlOper any[]")
+@("toXlOper any[][]")
 unittest {
     import xlld.memorymanager: allocatorContext;
 
@@ -1316,4 +1317,31 @@ unittest {
     auto opers = () @trusted { return ret.val.array.lparray[0 .. 2]; }();
     opers[0].shouldEqualDlang(3.0); // number of rows
     opers[1].shouldEqualDlang(2.0); // number of columns
+}
+
+
+@("wrapAll Any[][] -> Any[][]")
+unittest {
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.memorymanager: allocatorContext;
+    import xlld.any: Any;
+
+    mixin(wrapAll!("xlld.test_d_funcs"));
+
+    LPXLOPER12 ret;
+    with(allocatorContext(theMallocator)) {
+        auto oper = [[any(1.0), any(2.0)], [any(3.0), any(4.0)], [any("foo"), any("bar")]].toXlOper(theMallocator);
+        auto arg = () @trusted { return &oper; }();
+        ret = AnyArrayToAnyArray(arg);
+    }
+
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. 6]; }();
+    ret.val.array.rows.shouldEqual(3);
+    ret.val.array.columns.shouldEqual(2);
+    opers[0].shouldEqualDlang(1.0); // number of rows
+    opers[1].shouldEqualDlang(2.0); // number of columns
+    opers[2].shouldEqualDlang(3.0);
+    opers[3].shouldEqualDlang(4.0);
+    opers[4].shouldEqualDlang("foo");
+    opers[5].shouldEqualDlang("bar");
 }

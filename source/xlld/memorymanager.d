@@ -281,7 +281,6 @@ struct AllocatorContext(A) {
         import xlld.wrap: wrapToXlOper = toXlOper;
         return wrapToXlOper(val, allocator);
     }
-
 }
 
 auto allocatorContext(A)(ref A allocator) {

@@ -45,32 +45,37 @@ struct Any {
     }
 
 
-    string toString() @trusted const {
+    string toString() @safe const {
         import std.conv: text, to;
         import xlld.xlcall: XlType;
         import xlld.wrap: fromXlOper;
-        import xlld.memorymanager: gTempAllocator;
+        import xlld.xlcall: xlbitXLFree, xlbitDLLFree;
+        import std.experimental.allocator.gc_allocator: GCAllocator;
 
-        scope(exit) gTempAllocator.deallocateAll;
+        alias allocator = GCAllocator.instance;
 
         string ret = text("Any(", );
-        switch(_impl.xltype) {
+        const type = _impl.xltype & ~(xlbitXLFree | xlbitDLLFree);
+        switch(type) {
         default:
-            ret ~= _impl.xltype.to!string;
+            ret ~= type.to!string;
             break;
         case XlType.xltypeStr:
-            ret ~= text(`"`, _impl.fromXlOper!string(gTempAllocator), `"`);
+            ret ~= () @trusted { return text(`"`, _impl.fromXlOper!string(allocator), `"`); }();
             break;
         case XlType.xltypeNum:
-            ret ~= _impl.fromXlOper!double(gTempAllocator).to!string;
+            ret ~= () @trusted { return _impl.fromXlOper!double(allocator).to!string; }();
             break;
         case XlType.xltypeMulti:
             int i;
             ret ~= `[`;
-            foreach(r; 0 .. _impl.val.array.rows) {
+            const rows = () @trusted { return _impl.val.array.rows; }();
+            const cols = () @trusted { return _impl.val.array.columns; }();
+            foreach(r; 0 .. rows) {
                 ret ~= `[`;
-                foreach(c; 0 .. _impl.val.array.columns) {
-                    ret ~= text(Any(cast(XLOPER12)_impl.val.array.lparray[i++]), `, `);
+                foreach(c; 0 .. cols) {
+                    auto oper = () @trusted { return _impl.val.array.lparray[i++]; }();
+                    ret ~= text(Any(cast(XLOPER12)oper), `, `);
                 }
                 ret ~= `]`;
             }
