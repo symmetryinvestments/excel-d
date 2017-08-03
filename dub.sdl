@@ -15,11 +15,12 @@ configuration "unittest" {
     targetPath "bin"
     mainSourceFile "test/ut.d"
     dependency "unit-threaded" version="~>0.7.0"
+    versions "testingExcelD"
 }
 
 configuration "ut" {
     targetType "executable"
-    targetName "ut"
+    targetName "utl"
     targetPath "bin"
     mainSourceFile "test/ut.d"
     dependency "unit-threaded" version="~>0.7.0"
