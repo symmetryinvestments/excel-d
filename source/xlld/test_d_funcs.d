@@ -174,3 +174,7 @@ double[] AnyArrayToDoubleArray(Any[][] values) nothrow {
 Any[][] AnyArrayToAnyArray(Any[][] values) nothrow {
     return values;
 }
+
+Any[][] FirstOfTwoAnyArrays(Any[][] a, Any[][]) nothrow {
+    return a;
+}

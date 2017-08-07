@@ -1338,10 +1338,37 @@ unittest {
     auto opers = () @trusted { return ret.val.array.lparray[0 .. 6]; }();
     ret.val.array.rows.shouldEqual(3);
     ret.val.array.columns.shouldEqual(2);
-    opers[0].shouldEqualDlang(1.0); // number of rows
-    opers[1].shouldEqualDlang(2.0); // number of columns
+    opers[0].shouldEqualDlang(1.0);
+    opers[1].shouldEqualDlang(2.0);
     opers[2].shouldEqualDlang(3.0);
     opers[3].shouldEqualDlang(4.0);
     opers[4].shouldEqualDlang("foo");
     opers[5].shouldEqualDlang("bar");
+}
+
+@("wrapAll Any[][] -> Any[][] -> Any[][]")
+unittest {
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.memorymanager: allocatorContext;
+    import xlld.any: Any;
+
+    mixin(wrapAll!("xlld.test_d_funcs"));
+
+    LPXLOPER12 ret;
+    with(allocatorContext(theMallocator)) {
+        auto oper = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]].toXlOper(theMallocator);
+        auto arg = () @trusted { return &oper; }();
+        ret = FirstOfTwoAnyArrays(arg, arg);
+    }
+
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. 6]; }();
+    ret.val.array.rows.shouldEqual(2);
+    ret.val.array.columns.shouldEqual(3);
+    opers[0].shouldEqualDlang(1.0);
+    opers[1].shouldEqualDlang("foo");
+    opers[2].shouldEqualDlang(3.0);
+    opers[3].shouldEqualDlang(4.0);
+    opers[4].shouldEqualDlang(5.0);
+    opers[5].shouldEqualDlang(6.0);
+
 }
