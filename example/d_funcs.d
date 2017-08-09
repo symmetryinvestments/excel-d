@@ -132,3 +132,7 @@ string ManyToString(string arg0, string arg1, string arg2) nothrow {
 double FuncThrows(double) {
     throw new Exception("oops");
 }
+
+Any[][] FirstOfTwoAnyArrays(Any[][] lhs, Any[][] rhs) nothrow {
+    return lhs;
+}
