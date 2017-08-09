@@ -133,6 +133,7 @@ void fromExcel(alias F, A...)(auto ref A args) {
 // it also throws when there is an attempt to deallocate memory that wasn't
 // allocated
 struct TestAllocator {
+
     import std.experimental.allocator.common: platformAlignment;
     import std.experimental.allocator.mallocator: Mallocator;
 
@@ -146,13 +147,16 @@ struct TestAllocator {
         }
     }
 
+    bool debug_;
     private ByteRange[] _allocations;
+    private ByteRange[] _deallocations;
     private int _numAllocations;
 
     enum uint alignment = platformAlignment;
 
     void[] allocate(size_t numBytes) @safe @nogc {
         import std.experimental.allocator: makeArray, expandArray;
+        import core.stdc.stdio: printf;
 
         static const exception = new Exception("Allocation failed");
 
@@ -162,6 +166,7 @@ struct TestAllocator {
         if(numBytes > 0 && ret.length == 0)
             throw exception;
 
+        if(debug_) () @trusted { printf("+   allocate: %p for %d bytes\n", &ret[0], cast(int)ret.length); }();
         auto newEntry = ByteRange(&ret[0], ret.length);
 
         if(_allocations is null)
@@ -173,20 +178,41 @@ struct TestAllocator {
     }
 
     bool deallocate(void[] bytes) @trusted @nogc nothrow {
-        import std.algorithm: remove, canFind;
-        import core.stdc.stdio: sprintf;
+        import std.experimental.allocator: makeArray, expandArray;
+        import std.algorithm: remove, find, canFind;
+        import std.array: front, empty;
+        import core.stdc.stdio: printf, sprintf;
 
         bool pred(ByteRange other) { return other.ptr == bytes.ptr && other.length == bytes.length; }
 
         static char[1024] buffer;
 
-        if(!_allocations.canFind!pred) {
-            auto index = sprintf(&buffer[0],
-                                 "Unknown deallocate byte range. Ptr: %p, length: %ld, allocations:\n",
-                                 &bytes[0], bytes.length);
-            index = printAllocations(buffer, index);
-            assert(false, buffer[0 .. index]);
+        if(debug_) printf("- deallocate: %p for %d bytes\n", &bytes[0], cast(int)bytes.length);
+
+        auto findAllocations = _allocations.find!pred;
+
+        if(findAllocations.empty) {
+            if(_deallocations.canFind!pred) {
+                auto index = sprintf(&buffer[0],
+                                     "Double free on byte range Ptr: %p, length: %ld, allocations:\n",
+                                     &bytes[0], bytes.length);
+                index = printAllocations(buffer, index);
+                assert(false, buffer[0 .. index]);
+
+            } else {
+                auto index = sprintf(&buffer[0],
+                                     "Unknown deallocate byte range. Ptr: %p, length: %ld, allocations:\n",
+                                     &bytes[0], bytes.length);
+                index = printAllocations(buffer, index);
+                assert(false, buffer[0 .. index]);
+            }
         }
+
+        if(_deallocations is null)
+            _deallocations = allocator.makeArray(1, findAllocations.front);
+        else
+            () @trusted { allocator.expandArray(_allocations, 1, findAllocations.front); }();
+
 
         _allocations = _allocations.remove!pred;
 
@@ -194,7 +220,10 @@ struct TestAllocator {
     }
 
     bool deallocateAll() @safe @nogc nothrow {
-        foreach(ref allocation; _allocations) {
+        import std.array: empty, front;
+
+        while(!_allocations.empty) {
+            auto allocation = _allocations.front;
             deallocate(allocation[]);
         }
         return true;
@@ -222,13 +251,14 @@ struct TestAllocator {
 
     int printAllocations(int N)(ref char[N] buffer, int index = 0) @trusted @nogc const nothrow {
         import core.stdc.stdio: sprintf;
-        index += sprintf(&buffer[index], "[");
+        index += sprintf(&buffer[index], "[\n");
         foreach(ref allocation; _allocations) {
-            index += sprintf(&buffer[index], "ByteRange(%p, %ld), ",
+            index += sprintf(&buffer[index], "    ByteRange(%p, %ld),\n",
                              allocation.ptr, allocation.length);
         }
 
         index += sprintf(&buffer[index], "]");
+        buffer[index++] = 0; // null terminate
         return index;
     }
 }
