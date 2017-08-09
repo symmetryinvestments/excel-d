@@ -20,41 +20,40 @@ void freeXLOper(T, A)(T pxloper, ref A allocator)
 {
     import std.experimental.allocator: dispose;
 
-    switch (pxloper.xltype & ~XlType.xlbitDLLFree) with(XlType)
-	{
-		case xltypeStr:
-                    if (pxloper.val.str !is null) {
-                        void* bytesPtr = pxloper.val.str;
-                        const numBytes = (pxloper.val.str[0] + 1) * wchar.sizeof;
-                        allocator.dispose(bytesPtr[0 .. numBytes]);
-                    }
-			break;
-		case xltypeRef:
-			if (pxloper.val.mref.lpmref !is null)
-				allocator.dispose(pxloper.val.mref.lpmref);
-			break;
-		case xltypeMulti:
-			auto cxloper = pxloper.val.array.rows * pxloper.val.array.columns;
-                        const numOpers = cxloper;
-			if (pxloper.val.array.lparray !is null)
-			{
-				auto pxloperFree = pxloper.val.array.lparray;
-				while (cxloper > 0)
-				{
-                                    freeXLOper(pxloperFree, allocator);
-					pxloperFree++;
-					cxloper--;
-				}
-				allocator.dispose(pxloper.val.array.lparray[0 .. numOpers]);
-			}
-			break;
-		case xltypeBigData:
-			if (pxloper.val.bigdata.h.lpbData !is null)
-				allocator.dispose(pxloper.val.bigdata.h.lpbData);
-			break;
-		default: // todo: add error handling
-			break;
-	}
+    switch (pxloper.xltype & ~XlType.xlbitDLLFree) with(XlType) {
+        case xltypeStr:
+            if (pxloper.val.str !is null) {
+                void* bytesPtr = pxloper.val.str;
+                const numBytes = (pxloper.val.str[0] + 1) * wchar.sizeof;
+                allocator.dispose(bytesPtr[0 .. numBytes]);
+            }
+            break;
+        case xltypeRef:
+            if (pxloper.val.mref.lpmref !is null)
+                allocator.dispose(pxloper.val.mref.lpmref);
+            break;
+        case xltypeMulti:
+            auto cxloper = pxloper.val.array.rows * pxloper.val.array.columns;
+            const numOpers = cxloper;
+            if (pxloper.val.array.lparray !is null)
+            {
+                auto pxloperFree = pxloper.val.array.lparray;
+                while (cxloper > 0)
+                {
+                    freeXLOper(pxloperFree, allocator);
+                    pxloperFree++;
+                    cxloper--;
+                }
+                allocator.dispose(pxloper.val.array.lparray[0 .. numOpers]);
+            }
+            break;
+        case xltypeBigData:
+            if (pxloper.val.bigdata.h.lpbData !is null)
+                allocator.dispose(pxloper.val.bigdata.h.lpbData);
+            break;
+        default: // todo: add error handling
+            break;
+    }
 }
 
 @("Free regular XLOPER")

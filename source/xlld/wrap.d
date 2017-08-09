@@ -14,9 +14,10 @@ version(unittest) {
     import unit_threaded;
     import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef;
     import std.experimental.allocator.mallocator: Mallocator;
+    import std.experimental.allocator.gc_allocator: GCAllocator;
     import xlld.any: any;
     alias theMallocator = Mallocator.instance;
-
+    alias theGC = GCAllocator.instance;
 }
 
 
@@ -585,6 +586,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     const cols = val.val.array.columns;
 
     static if(dim == Dimensions.Two) {
+        import core.stdc.stdio;
         auto ret = allocator.makeArray2D!T(*val);
     } else static if(dim == Dimensions.One) {
         auto ret = allocator.makeArray!T(rows * cols);
@@ -995,8 +997,9 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         else {
             foreach(ref dArg; dArgs) {
                 import std.traits: isPointer;
-                static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg)))
+                static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg))) {
                     tempAllocator.dispose(dArg);
+                }
             }
         }
     }
@@ -1102,6 +1105,19 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     auto oper = wrapModuleFunctionImpl!StringToString(gTempAllocator, &arg);
     gTempAllocator.curPos.shouldEqual(0);
     oper.shouldEqualDlang("foobar");
+}
+
+@("No memory allocation bugs in wrapModuleFunctionImpl for Any[][] -> Any[][] -> Any[][]")
+@system unittest {
+    import xlld.memorymanager: allocatorContext;
+    import xlld.test_d_funcs: FirstOfTwoAnyArrays;
+
+    with(allocatorContext(theGC)) {
+        auto dArg = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]];
+        auto arg = toXlOper(dArg);
+        auto oper = wrapModuleFunctionImpl!FirstOfTwoAnyArrays(theMallocator, &arg, &arg);
+        oper.shouldEqualDlang(dArg);
+    }
 }
 
 
