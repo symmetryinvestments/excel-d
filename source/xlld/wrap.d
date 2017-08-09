@@ -1107,7 +1107,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     oper.shouldEqualDlang("foobar");
 }
 
-@("No memory allocation bugs in wrapModuleFunctionImpl for Any[][] -> Any[][] -> Any[][]")
+@("No memory allocation bugs in wrapModuleFunctionImpl for Any[][] -> Any[][] -> Any[][] mallocator")
 @system unittest {
     import xlld.memorymanager: allocatorContext;
     import xlld.test_d_funcs: FirstOfTwoAnyArrays;
@@ -1119,6 +1119,22 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         oper.shouldEqualDlang(dArg);
     }
 }
+
+@("No memory allocation bugs in wrapModuleFunctionImpl for Any[][] -> Any[][] -> Any[][] TestAllocator")
+@system unittest {
+    import xlld.memorymanager: allocatorContext;
+    import xlld.test_d_funcs: FirstOfTwoAnyArrays;
+
+    auto testAllocator = TestAllocator();
+
+    with(allocatorContext(theGC)) {
+        auto dArg = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]];
+        auto arg = toXlOper(dArg);
+        auto oper = wrapModuleFunctionImpl!FirstOfTwoAnyArrays(testAllocator, &arg, &arg);
+        oper.shouldEqualDlang(dArg);
+    }
+}
+
 
 
 string wrapWorksheetFunctionsString(Modules...)() {
