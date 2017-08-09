@@ -142,11 +142,14 @@ extern(Windows) int xlAutoClose() {
     return 1;
 }
 
-extern(Windows) int xlAutoFree12(LPXLOPER12 arg) {
+extern(Windows) int xlAutoFree12(LPXLOPER12 arg) nothrow {
     import xlld.memorymanager: autoFree;
     import xlld.xlcall: xlbitDLLFree;
 
-    assert(arg.xltype & xlbitDLLFree);
+    if(!(arg.xltype & xlbitDLLFree)) {
+        log("[ERROR]: Trying to free XLOPER12 without xlbitDLLFree, ignoring");
+        return 0;
+    }
 
     autoFree(arg);
     return 1;

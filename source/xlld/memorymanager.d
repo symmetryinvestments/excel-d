@@ -254,7 +254,7 @@ unittest {
 
 
 // the function called by the Excel callback
-void autoFree(LPXLOPER12 arg) {
+void autoFree(LPXLOPER12 arg) nothrow {
     import xlld.framework: freeXLOper;
     freeXLOper(arg, autoFreeAllocator);
 }
