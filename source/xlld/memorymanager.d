@@ -13,6 +13,7 @@ import xlld.xlcall: XLOPER12, LPXLOPER12;
 import xlld.any: Any;
 import std.experimental.allocator.mallocator: Mallocator;
 import std.traits: isArray;
+import std.meta: allSatisfy;
 
 version(unittest) {
     import unit_threaded;
@@ -152,6 +153,44 @@ struct MemoryPoolImpl(T) {
 auto memoryPool() {
     return MemoryPool(StartingMemorySize);
 }
+
+enum isOperPtr(T) = is(T == XLOPER12*);
+
+// returns the total number of bytes that will have to be allocated for the D
+// arguments to be passed to wrappedFunc base on the opers passed in.
+// This allows to reserve enough space for all the D arguments
+size_t numBytesForDArgs(alias wrappedFunc, T...)(auto ref T opers) if(allSatisfy!(isOperPtr, T)) {
+    import std.traits: Parameters;
+
+    size_t numBytes;
+
+    foreach(i, T; Parameters!wrappedFunc) {
+        numBytes += numBytesFor!T(*opers[i]);
+    }
+
+    return numBytes;
+}
+
+@("numBytesForDArgs (double, double)")
+unittest {
+    import xlld.wrap: toXlOper;
+    double func(double a, double b) { return a + b; }
+    auto oper1 = (5.0).toXlOper(theGC);
+    auto oper2 = (7.0).toXlOper(theGC);
+    numBytesForDArgs!func(&oper1, &oper2).shouldEqual(0);
+}
+
+@("numBytesForDArgs (double, double)")
+unittest {
+    import xlld.wrap: toXlOper;
+    double func(double a, string b) { return a + b.length; }
+    auto oper1 = (5.0).toXlOper(theGC);
+    auto oper2 = "foo".toXlOper(theGC);
+    // "foo" has length 3, which in wide chars is 6
+    // since XL uses 16 bits for the length, that equals 8 bytes
+    numBytesForDArgs!func(&oper1, &oper2).shouldEqual(8);
+}
+
 
 size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double) || is(T == Any)) {
     return 0;
