@@ -586,15 +586,9 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     const cols = val.val.array.columns;
 
     static if(dim == Dimensions.Two) {
-
-        if(!isMulti(*val)) return T[][].init;
         auto ret = allocator.makeArray2D!T(*val);
-
     } else static if(dim == Dimensions.One) {
-
-        if(!isMulti(*val)) return T[].init;
         auto ret = allocator.makeArray!T(rows * cols);
-
     } else
         static assert(0, "Unknown number of dimensions in fromXlOperMulti");
 
@@ -991,6 +985,11 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 
     Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
 
+    static if(__traits(compiles, tempAllocator.reserve(1))) {
+        import xlld.memorymanager: numBytesForDArgs;
+        tempAllocator.reserve(numBytesForDArgs!wrappedFunc(args));
+    }
+
     void freeAll() {
 
         import std.traits: isArray;
@@ -1215,7 +1214,27 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
     }
 }
 
+@("issue 25 - make sure to reserve memory for all dArgs")
+@system unittest {
+    import xlld.memorymanager: allocatorContext, MemoryPool;
+    import xlld.test_d_funcs: FirstOfTwoAnyArrays;
 
+    auto pool = MemoryPool(1);
+
+    with(allocatorContext(theGC)) {
+        auto dArg = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]];
+        auto arg = toXlOper(dArg);
+        auto oper = wrapModuleFunctionImpl!FirstOfTwoAnyArrays(pool, &arg, &arg);
+    }
+
+    pool.curPos.shouldEqual(0); // deallocateAll in wrapImpl
+
+    version(X86)         const expected = 416;
+    else version(X86_64) const expected = 448;
+    else static assert(false, "Don't know this architecture");
+
+    pool.data.length.shouldEqual(expected); //should have reserved enough memory
+}
 
 string wrapWorksheetFunctionsString(Modules...)() {
 
@@ -1321,7 +1340,8 @@ unittest {
 
     double[][] doubles = [[1, 2, 3, 4], [11, 12, 13, 14]];
     auto doublesOper = toSRef(doubles, allocator);
-    doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage("apply failed - oper not of multi type");
+    doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage(
+        "apply failed - oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
 }
 

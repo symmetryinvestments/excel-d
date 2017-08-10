@@ -431,10 +431,6 @@ T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
     import xlld.wrap: isMulti;
     import std.experimental.allocator: makeArray;
 
-    static if(__traits(compiles, allocator.reserve(5))) {
-        allocator.reserve(numBytesForArray2D!T(oper));
-    }
-
     if(!isMulti(oper))
         return T[][].init;
 
