@@ -171,16 +171,31 @@ unittest {
     back.shouldEqual(arg);
 }
 
-size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double[]) || is(T == Any[])) {
+size_t numBytesFor(T)(ref XLOPER12 oper) if(is(T == double[]) || is(T == Any[]) || is(T == string[])) {
     import xlld.wrap: isMulti;
 
     if(!isMulti(oper))
         return 0;
 
+    size_t elemAllocBytes;
+
+    static if(is(T == string[])) {
+        import xlld.wrap: apply, numOperStringBytes;
+        try
+            oper.apply!(string, (shouldConvert, row, col, cellVal) {
+                if(shouldConvert)
+                    elemAllocBytes += numOperStringBytes(cellVal);
+            });
+        catch(Exception ex) {
+            return 0;
+        }
+    }
+
+
     const rows = oper.val.array.rows;
     const cols = oper.val.array.columns;
 
-    return typeof(T.init[0]).sizeof * (rows * cols);
+    return typeof(T.init[0]).sizeof * (rows * cols) + elemAllocBytes;
 }
 
 @("numBytesFor!double[]")
@@ -200,20 +215,25 @@ unittest {
 
 size_t numBytesFor(T)(ref XLOPER12 oper) if(is(T == double[][]) || is(T == string[][]) || is(T == Any[][])) {
 
-    import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes, apply;
+    import xlld.wrap: isMulti;
+
 
     if(!isMulti(oper))
         return 0;
 
     size_t elemAllocBytes;
 
-    try
-        oper.apply!(T, (shouldConvert, row, col, cellVal) {
-            if(shouldConvert && is(T == string[][]))
-                elemAllocBytes += numOperStringBytes(cellVal);
-        });
-    catch(Exception ex) {
-        return 0;
+    static if(is(T == string[][])) {
+        import xlld.wrap: apply, numOperStringBytes;
+
+        try
+            oper.apply!(T, (shouldConvert, row, col, cellVal) {
+                if(shouldConvert)
+                    elemAllocBytes += numOperStringBytes(cellVal);
+            });
+        catch(Exception ex) {
+            return 0;
+        }
     }
 
     const rows = oper.val.array.rows;
@@ -260,31 +280,6 @@ unittest {
 
     pool.numReallocations.shouldEqual(0);
     back.shouldEqual(arg);
-}
-
-size_t numBytesFor(T)(ref XLOPER12 oper) if(is(T == string[])) {
-
-    import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes, apply;
-
-    if(!isMulti(oper))
-        return 0;
-
-    size_t elemAllocBytes;
-
-    try
-        oper.apply!(string, (shouldConvert, row, col, cellVal) {
-            if(shouldConvert)
-                elemAllocBytes += numOperStringBytes(cellVal);
-        });
-    catch(Exception ex) {
-        return 0;
-    }
-
-    const rows = oper.val.array.rows;
-    const cols = oper.val.array.columns;
-    const length = rows * cols;
-
-    return string.sizeof * length + elemAllocBytes;
 }
 
 
