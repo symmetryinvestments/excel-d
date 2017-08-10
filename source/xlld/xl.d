@@ -35,22 +35,24 @@ void free(LPXLOPER12 oper) nothrow @nogc @trusted {
 
 struct Coerced {
     XLOPER12 oper;
+    private bool coerced;
 
     alias oper this;
 
 
-    this(LPXLOPER12 oper) {
+    this(LPXLOPER12 oper) @safe @nogc nothrow {
         this.oper = coerce(oper);
+        this.coerced = true;
     }
 
-    ~this() {
-        free(oper);
+    ~this() @safe @nogc nothrow {
+        if(coerced) free(oper);
     }
 }
 
 /**
    Coerces an oper and returns an RAII struct that automatically frees memory
  */
-auto scopedCoerce(LPXLOPER12 oper) {
+auto scopedCoerce(LPXLOPER12 oper) @safe @nogc nothrow {
     return Coerced(oper);
 }

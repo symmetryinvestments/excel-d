@@ -962,7 +962,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
  */
 LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
                                   (ref A tempAllocator, auto ref T args) {
-    import xlld.xl: coerce, free;
+    import xlld.xl: scopedCoerce;
     import xlld.worksheet: Dispose;
     import std.traits: Parameters;
     import std.typecons: Tuple;
@@ -971,6 +971,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     static XLOPER12 ret;
 
     XLOPER12[T.length] realArgs;
+
     // must 1st convert each argument to the "real" type.
     // 2D arrays are passed in as SRefs, for instance
     foreach(i, InputType; Parameters!wrappedFunc) {
@@ -978,13 +979,8 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
              realArgs[i] = *args[i];
              continue;
         }
-        realArgs[i] = coerce(args[i]);
+        realArgs[i] = scopedCoerce(args[i]);
     }
-
-    // free any coerced memory
-    scope(exit)
-        foreach(ref arg; realArgs)
-            () @trusted { free(&arg); }();
 
     Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
 
@@ -1032,7 +1028,6 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
             static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
             disposes[0].dispose(wrappedRet);
         }
-
 
     } catch(Exception ex) {
 
