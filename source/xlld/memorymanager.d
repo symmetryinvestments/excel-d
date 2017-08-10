@@ -353,6 +353,23 @@ unittest {
     back.shouldEqual(arg);
 }
 
+@("numBytesFor!any string")
+unittest {
+    import xlld.wrap: toXlOper, fromXlOper;
+    import xlld.any: any;
+
+    auto arg = any("The quick brown fox jumps over the lazy dog",
+                   theGC);
+    auto oper = arg.toXlOper(theGC);
+    auto pool = MemoryPool(1);
+    pool.reserve(numBytesFor!Any(oper));
+    auto back = oper.fromXlOper!Any(pool);
+
+    pool.numReallocations.shouldEqual(0);
+    back.shouldEqual(arg);
+}
+
+
 size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == Any[])) {
     import xlld.wrap: isMulti;
 
@@ -366,13 +383,18 @@ size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == Any[])) {
 }
 
 
-@("numBytesFor!any[] double")
+@("numBytesFor!any[]")
 unittest {
     import xlld.wrap: toXlOper, fromXlOper;
 
     Any[] arg;
     with(allocatorContext(theGC)) {
-        arg = [any(2.0), any(3.0)];
+        arg =
+            [
+                any(2.0),
+                any(3.0),
+                any("the quick brown fox jumps over the lazy dog"),
+            ];
     }
     auto oper = arg.toXlOper(theGC);
     auto pool = MemoryPool(1);
@@ -396,7 +418,7 @@ size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == Any[][])) {
 }
 
 
-@("numBytesFor!any[][] double")
+@("numBytesFor!any[][]")
 unittest {
     import xlld.wrap: toXlOper, fromXlOper;
 
@@ -404,8 +426,8 @@ unittest {
     with(allocatorContext(theGC)) {
         arg =
             [
-                [any(1.0), any(2.0), any(3.0),],
-                [any(4.0), any(5.0), any(6.0),],
+                [any(1.0), any(2.0), any("the quick brown fox jumps over the lazy dog"),],
+                [any(4.0), any(5.0), any("the quick brown fox jumps over the lazy dog"),],
             ];
     }
     auto oper = arg.toXlOper(theGC);
