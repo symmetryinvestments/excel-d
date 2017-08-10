@@ -10,10 +10,18 @@
 module xlld.memorymanager;
 
 import xlld.xlcall: XLOPER12, LPXLOPER12;
+import xlld.any: Any;
 import std.experimental.allocator.mallocator: Mallocator;
 import std.traits: isArray;
 
-version(unittest) import unit_threaded;
+version(unittest) {
+    import unit_threaded;
+    import xlld.test_util;
+    import std.experimental.allocator.gc_allocator: GCAllocator;
+    alias theMallocator = Mallocator.instance;
+    alias theGC = GCAllocator.instance;
+}
+
 
 alias allocator = Mallocator.instance;
 alias autoFreeAllocator = Mallocator.instance;
@@ -34,8 +42,9 @@ struct MemoryPoolImpl(T) {
 
     alias _allocator = T.instance;
 
-    ubyte[] data;
-    size_t curPos;
+    package ubyte[] data;
+    package size_t curPos;
+    private int _numReallocations;
 
     this(size_t startingMemorySize) {
         import std.experimental.allocator: makeArray;
@@ -61,8 +70,10 @@ struct MemoryPoolImpl(T) {
 
             if (newAllocationSize <= data.length)
                 return null;
+
             const delta = newAllocationSize - data.length;
             _allocator.expandArray(data, delta, 0);
+            ++_numReallocations;
         }
 
         auto ret = data[curPos .. curPos + numBytes];
@@ -132,11 +143,281 @@ struct MemoryPoolImpl(T) {
         pool.data.length.shouldEqual(length);
         pool.curPos.shouldEqual(12);
     }
+
+    int numReallocations() @safe @nogc pure nothrow const {
+        return _numReallocations;
+    }
 }
 
 auto memoryPool() {
     return MemoryPool(StartingMemorySize);
 }
+
+size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double)) {
+    return 0;
+}
+
+@("numBytesFor!double")
+unittest {
+    import xlld.wrap: toXlOper, fromXlOper;
+
+    auto arg = 2.0;
+    auto oper = arg.toXlOper(theGC);
+    auto pool = MemoryPool(1);
+    pool.reserve(numBytesFor!(double)(oper));
+    auto back = oper.fromXlOper!(double)(pool);
+
+    pool.numReallocations.shouldEqual(0);
+    back.shouldEqual(arg);
+}
+
+size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double[])) {
+    import xlld.wrap: isMulti;
+
+    if(!isMulti(oper))
+        return 0;
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+
+    return double.sizeof * (rows * cols);
+}
+
+@("numBytesFor!double[]")
+unittest {
+    import xlld.wrap: toXlOper, fromXlOper;
+
+    auto arg = [1.0, 2.0];
+    auto oper = arg.toXlOper(theGC);
+
+    auto pool = MemoryPool(1);
+    pool.reserve(numBytesFor!(double[])(oper));
+    auto back = oper.fromXlOper!(double[])(pool);
+
+    pool.numReallocations.shouldEqual(0);
+    back.shouldEqual(arg);
+}
+
+size_t numBytesFor(T)(ref XLOPER12 oper) if(is(T == double[][]) || is(T == string[][])) {
+
+    import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes, apply;
+
+    if(!isMulti(oper))
+        return 0;
+
+    size_t elemAllocBytes;
+
+    try
+        oper.apply!(T, (shouldConvert, row, col, cellVal) {
+            if(shouldConvert && is(T == string[][]))
+                elemAllocBytes += numOperStringBytes(cellVal);
+        });
+    catch(Exception ex) {
+        return 0;
+    }
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+
+    return numBytesForArray2D!T(rows, cols) + elemAllocBytes;
+}
+
+
+@("numBytesFor!double[][]")
+unittest {
+    import xlld.wrap: toXlOper, fromXlOper;
+
+    auto arg = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]];
+    auto oper = arg.toXlOper(theGC);
+
+    auto pool = MemoryPool(1);
+    pool.reserve(numBytesFor!(double[][])(oper));
+    auto back = oper.fromXlOper!(double[][])(pool);
+
+    pool.numReallocations.shouldEqual(0);
+    back.shouldEqual(arg);
+}
+
+
+size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == string)) {
+    import xlld.wrap: numOperStringBytes;
+    return numOperStringBytes(oper);
+}
+
+@("numBytesFor!string")
+unittest {
+    import xlld.wrap: toXlOper, fromXlOper;
+
+    auto arg = "foo";
+    auto oper = arg.toXlOper(theGC);
+
+    // 2 bytes for the length + 3 chars * wchar.sizeof = 8
+    numBytesFor!string(oper).shouldEqual(8);
+
+    auto pool = MemoryPool(1);
+    pool.reserve(numBytesFor!(string)(oper));
+    auto back = oper.fromXlOper!(string)(pool);
+
+    pool.numReallocations.shouldEqual(0);
+    back.shouldEqual(arg);
+}
+
+size_t numBytesFor(T)(ref XLOPER12 oper) if(is(T == string[])) {
+
+    import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes, apply;
+
+    if(!isMulti(oper))
+        return 0;
+
+    size_t elemAllocBytes;
+
+    try
+        oper.apply!(string, (shouldConvert, row, col, cellVal) {
+            if(shouldConvert)
+                elemAllocBytes += numOperStringBytes(cellVal);
+        });
+    catch(Exception ex) {
+        return 0;
+    }
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+    const length = rows * cols;
+
+    return string.sizeof * length + elemAllocBytes;
+}
+
+
+@("numBytesFor!string[]")
+unittest {
+    import xlld.wrap: toXlOper, fromXlOper;
+
+    auto arg = [
+        "the quick brown fox jumps over something something darkside",
+        "some nonsensical string for size purposes",
+        "quux",
+    ];
+    auto oper = arg.toXlOper(theGC);
+
+    auto pool = MemoryPool(1);
+    pool.reserve(numBytesFor!(string[])(oper));
+    auto back = oper.fromXlOper!(string[])(pool);
+
+    pool.numReallocations.shouldEqual(0);
+    back.shouldEqual(arg);
+}
+
+
+@("numBytesFor!string[][]")
+unittest {
+    import xlld.wrap: toXlOper, fromXlOper;
+
+    auto arg = [
+        [
+            "the quick brown fox jumps over something something darkside",
+            "some nonsensical string for size purposes",
+            "quux",
+        ],
+        [
+            "it's hard to come up with different strings",
+            "lorem ipsum something something darkside",
+            "foobar",
+        ],
+    ];
+    auto oper = arg.toXlOper(theGC);
+
+    auto pool = MemoryPool(1);
+    pool.reserve(numBytesFor!(string[][])(oper) - 10);
+    auto back = oper.fromXlOper!(string[][])(pool);
+
+    pool.numReallocations.shouldEqual(0);
+    back.shouldEqual(arg);
+}
+
+size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == Any)) {
+    return 0;
+}
+
+@("numBytesFor!any double")
+unittest {
+    import xlld.wrap: toXlOper, fromXlOper;
+    import xlld.any: any;
+
+    auto arg = any(2.0, theGC);
+    auto oper = arg.toXlOper(theGC);
+    auto pool = MemoryPool(1);
+    pool.reserve(numBytesFor!Any(oper));
+    auto back = oper.fromXlOper!Any(pool);
+
+    pool.numReallocations.shouldEqual(0);
+    back.shouldEqual(arg);
+}
+
+size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == Any[])) {
+    import xlld.wrap: isMulti;
+
+    if(!isMulti(oper))
+        return 0;
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+
+    return Any.sizeof * (rows * cols);
+}
+
+
+@("numBytesFor!any[] double")
+unittest {
+    import xlld.wrap: toXlOper, fromXlOper;
+
+    Any[] arg;
+    with(allocatorContext(theGC)) {
+        arg = [any(2.0), any(3.0)];
+    }
+    auto oper = arg.toXlOper(theGC);
+    auto pool = MemoryPool(1);
+    pool.reserve(numBytesFor!(Any[])(oper));
+    auto back = oper.fromXlOper!(Any[])(pool);
+
+    pool.numReallocations.shouldEqual(0);
+    back.shouldEqual(arg);
+}
+
+size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == Any[][])) {
+    import xlld.wrap: isMulti;
+
+    if(!isMulti(oper))
+        return 0;
+
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+
+    return Any.sizeof * (rows * cols);
+}
+
+
+@("numBytesFor!any[][] double")
+unittest {
+    import xlld.wrap: toXlOper, fromXlOper;
+
+    Any[][] arg;
+    with(allocatorContext(theGC)) {
+        arg =
+            [
+                [any(1.0), any(2.0), any(3.0),],
+                [any(4.0), any(5.0), any(6.0),],
+            ];
+    }
+    auto oper = arg.toXlOper(theGC);
+    auto pool = MemoryPool(1);
+    pool.reserve(numBytesFor!(Any[][])(oper));
+    auto back = oper.fromXlOper!(Any[][])(pool);
+
+    pool.numReallocations.shouldEqual(0);
+    back.shouldEqual(arg);
+}
+
+
 
 T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
     import xlld.xlcall: XlType;

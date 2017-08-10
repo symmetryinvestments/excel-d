@@ -96,7 +96,7 @@ package size_t numOperStringBytes(T)(in T str) if(is(T == string) || is(T == wst
 package size_t numOperStringBytes(ref const(XLOPER12) oper) @trusted @nogc pure nothrow {
     // XLOPER12 strings are wide strings where index 0 is the length
     // and [1 .. $] is the actual string
-    assert(oper.xltype == XlType.xltypeStr);
+    if(oper.xltype != XlType.xltypeStr) return 0;
     return (oper.val.str[0] + 1) * wchar.sizeof;
 }
 
@@ -586,14 +586,20 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     const cols = val.val.array.columns;
 
     static if(dim == Dimensions.Two) {
-        import core.stdc.stdio;
+
+        if(!isMulti(*val)) return T[][].init;
         auto ret = allocator.makeArray2D!T(*val);
+
     } else static if(dim == Dimensions.One) {
+
+        if(!isMulti(*val)) return T[].init;
         auto ret = allocator.makeArray!T(rows * cols);
+
     } else
-        static assert(0);
+        static assert(0, "Unknown number of dimensions in fromXlOperMulti");
 
     (*val).apply!(T, (shouldConvert, row, col, cellVal) {
+
         auto value = shouldConvert ? cellVal.fromXlOper!T(allocator) : T.init;
 
         static if(dim == Dimensions.Two)
@@ -641,9 +647,10 @@ package void apply(T, alias F)(ref XLOPER12 oper) {
 
             // try to convert doubles to string if trying to convert everything to an
             // array of strings
-            const shouldConvert = (cellVal.xltype == dlangToXlOperType!T.Type) ||
-                (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr)
-                || is(T == Any);
+            const shouldConvert =
+                (cellVal.xltype == dlangToXlOperType!T.Type) ||
+                (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr) ||
+                is(T == Any);
 
             F(shouldConvert, row, col, cellVal);
         }
