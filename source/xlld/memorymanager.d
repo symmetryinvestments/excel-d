@@ -177,12 +177,20 @@ size_t numBytesFor(T)(ref XLOPER12 oper) if(is(T == double[]) || is(T == Any[]) 
     if(!isMulti(oper))
         return 0;
 
+    const rows = oper.val.array.rows;
+    const cols = oper.val.array.columns;
+
+    return typeof(T.init[0]).sizeof * (rows * cols) + countStringBytes!(typeof(T.init[0]))(oper);
+}
+
+private size_t countStringBytes(T)(ref XLOPER12 oper) {
+
     size_t elemAllocBytes;
 
-    static if(is(T == string[])) {
+    static if(is(T == string)) {
         import xlld.wrap: apply, numOperStringBytes;
         try
-            oper.apply!(string, (shouldConvert, row, col, cellVal) {
+            oper.apply!(T, (shouldConvert, row, col, cellVal) {
                 if(shouldConvert)
                     elemAllocBytes += numOperStringBytes(cellVal);
             });
@@ -191,11 +199,7 @@ size_t numBytesFor(T)(ref XLOPER12 oper) if(is(T == double[]) || is(T == Any[]) 
         }
     }
 
-
-    const rows = oper.val.array.rows;
-    const cols = oper.val.array.columns;
-
-    return typeof(T.init[0]).sizeof * (rows * cols) + elemAllocBytes;
+    return elemAllocBytes;
 }
 
 @("numBytesFor!double[]")
@@ -448,24 +452,10 @@ private size_t numBytesForArray2D(T)(ref XLOPER12 oper) {
     if(!isMulti(oper))
         return 0;
 
-    size_t elemAllocBytes;
-
-    static if(is(T == string)) {
-        import xlld.wrap: apply, numOperStringBytes;
-        try
-            oper.apply!(T, (shouldConvert, row, col, cellVal) {
-                if(shouldConvert)
-                    elemAllocBytes += numOperStringBytes(cellVal);
-            });
-        catch(Exception ex) {
-            return 0;
-        }
-    }
-
     const rows = oper.val.array.rows;
     const cols = oper.val.array.columns;
 
-    return numBytesForArray2D!T(rows, cols) + elemAllocBytes;
+    return numBytesForArray2D!T(rows, cols) + countStringBytes!T(oper);
 }
 
 
