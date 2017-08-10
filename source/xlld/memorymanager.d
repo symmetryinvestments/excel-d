@@ -214,32 +214,7 @@ unittest {
 }
 
 size_t numBytesFor(T)(ref XLOPER12 oper) if(is(T == double[][]) || is(T == string[][]) || is(T == Any[][])) {
-
-    import xlld.wrap: isMulti;
-
-
-    if(!isMulti(oper))
-        return 0;
-
-    size_t elemAllocBytes;
-
-    static if(is(T == string[][])) {
-        import xlld.wrap: apply, numOperStringBytes;
-
-        try
-            oper.apply!(T, (shouldConvert, row, col, cellVal) {
-                if(shouldConvert)
-                    elemAllocBytes += numOperStringBytes(cellVal);
-            });
-        catch(Exception ex) {
-            return 0;
-        }
-    }
-
-    const rows = oper.val.array.rows;
-    const cols = oper.val.array.columns;
-
-    return numBytesForArray2D!T(rows, cols) + elemAllocBytes;
+    return numBytesForArray2D!(typeof(T.init[0][0]))(oper);
 }
 
 
@@ -468,20 +443,23 @@ private size_t numBytesForArray2D(T)(size_t rows, size_t cols) {
 
 // the number of bytes that need to be allocated to convert oper to T[][]
 private size_t numBytesForArray2D(T)(ref XLOPER12 oper) {
-    import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes, apply;
+    import xlld.wrap: isMulti;
 
     if(!isMulti(oper))
         return 0;
 
     size_t elemAllocBytes;
 
-    try
-        oper.apply!(T, (shouldConvert, row, col, cellVal) {
-            if(shouldConvert && is(T == string))
-                elemAllocBytes += numOperStringBytes(cellVal);
-        });
-    catch(Exception ex) {
-        return 0;
+    static if(is(T == string)) {
+        import xlld.wrap: apply, numOperStringBytes;
+        try
+            oper.apply!(T, (shouldConvert, row, col, cellVal) {
+                if(shouldConvert)
+                    elemAllocBytes += numOperStringBytes(cellVal);
+            });
+        catch(Exception ex) {
+            return 0;
+        }
     }
 
     const rows = oper.val.array.rows;
@@ -498,9 +476,10 @@ unittest {
     auto doubles = [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
     const rows = doubles.length; const cols = doubles[0].length;
 
-    auto oper = doubles.toXlOper(Mallocator.instance);
+    auto oper = doubles.toXlOper(theGC);
     // no allocation for doubles so the memory requirements are just the array itself
     numBytesForArray2D!double(oper).shouldEqual(numBytesForArray2D!double(rows, cols));
+    numBytesForArray2D!double(oper).shouldEqual(numBytesFor!(double[][])(oper));
 }
 
 @("numBytesForArray2D!string oper")
@@ -520,6 +499,7 @@ unittest {
 
     // no allocation for doubles so the memory requirements are just the array itself
     numBytesForArray2D!string(oper).shouldEqual(numBytesForArray2D!string(rows, cols) + bytesForStrings);
+    numBytesForArray2D!string(oper).shouldEqual(numBytesFor!(string[][])(oper));
 }
 
 
