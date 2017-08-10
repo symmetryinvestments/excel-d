@@ -966,7 +966,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     import xlld.worksheet: Dispose;
     import std.traits: Parameters;
     import std.typecons: Tuple;
-    import std.traits: hasUDA, getUDAs, isArray;
+    import std.traits: hasUDA, getUDAs;
 
     static XLOPER12 ret;
 
@@ -1024,25 +1024,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 
         // call the wrapped function with D types
         auto wrappedRet = wrappedFunc(dArgs.expand);
-
-        // Excel crashes if it's returned an empty array, so stop that from happening
-        static if(isArray!(typeof(wrappedRet))) {
-            if(wrappedRet.length == 0) {
-                ret = "#ERROR: empty result".toAutoFreeOper;
-                return &ret;
-            }
-
-            static if(isArray!(typeof(wrappedRet[0]))) {
-                if(wrappedRet[0].length == 0) {
-                    ret = "#ERROR: empty result".toAutoFreeOper;
-                    return &ret;
-                }
-            }
-        }
-
-        // convert the return value to an Excel type, tell Excel to call
-        // us back to free it afterwards
-        ret = toAutoFreeOper(wrappedRet);
+        ret = excelRet(wrappedRet);
 
         // dispose of the memory allocated in the wrapped function
         static if(hasUDA!(wrappedFunc, Dispose)) {
@@ -1050,6 +1032,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
             static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
             disposes[0].dispose(wrappedRet);
         }
+
 
     } catch(Exception ex) {
 
@@ -1069,6 +1052,29 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     }
 
     return &ret;
+}
+
+// get excel return value from D return value of wrapped function
+private XLOPER12 excelRet(T)(T wrappedRet) {
+
+    import std.traits: isArray;
+
+    // Excel crashes if it's returned an empty array, so stop that from happening
+    static if(isArray!(typeof(wrappedRet))) {
+        if(wrappedRet.length == 0) {
+            return "#ERROR: empty result".toAutoFreeOper;
+        }
+
+        static if(isArray!(typeof(wrappedRet[0]))) {
+            if(wrappedRet[0].length == 0) {
+                return "#ERROR: empty result".toAutoFreeOper;
+            }
+        }
+    }
+
+    // convert the return value to an Excel type, tell Excel to call
+    // us back to free it afterwards
+    return toAutoFreeOper(wrappedRet);
 }
 
 @("No memory allocation bugs in wrapModuleFunctionImpl for double return Mallocator")
