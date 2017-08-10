@@ -1157,6 +1157,21 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
     }
 }
 
+@("Correct number of coercions and frees in wrapModuleFunctionImpl")
+@system unittest {
+    import xlld.test_d_funcs: FuncAddEverything;
+    import xlld.test_util: gNumXlCoerce, gNumXlFree;
+
+    const oldNumCoerce = gNumXlCoerce;
+    const oldNumFree = gNumXlFree;
+
+    auto arg = toSRef([1.0, 2.0], theGC);
+    auto oper = wrapModuleFunctionImpl!FuncAddEverything(theGC, &arg);
+
+    (gNumXlCoerce - oldNumCoerce).shouldEqual(1);
+    (gNumXlFree   - oldNumFree).shouldEqual(1);
+}
+
 
 @("Can't return empty 1D array to Excel")
 @system unittest {
