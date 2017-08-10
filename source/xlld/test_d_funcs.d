@@ -178,3 +178,21 @@ Any[][] AnyArrayToAnyArray(Any[][] values) nothrow {
 Any[][] FirstOfTwoAnyArrays(Any[][] a, Any[][]) nothrow {
     return a;
 }
+
+string[] EmptyStrings1D(Any) nothrow {
+    string[] empty;
+    return empty;
+}
+
+
+string[][] EmptyStrings2D(Any) nothrow {
+    string[][] empty;
+    return empty;
+}
+
+string[][] EmptyStringsHalfEmpty2D(Any) nothrow {
+    string[][] empty;
+    empty.length = 1;
+    assert(empty[0].length == 0);
+    return empty;
+}

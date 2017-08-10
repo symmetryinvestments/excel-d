@@ -966,7 +966,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     import xlld.worksheet: Dispose;
     import std.traits: Parameters;
     import std.typecons: Tuple;
-    import std.traits: hasUDA, getUDAs;
+    import std.traits: hasUDA, getUDAs, isArray;
 
     static XLOPER12 ret;
 
@@ -1024,6 +1024,22 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 
         // call the wrapped function with D types
         auto wrappedRet = wrappedFunc(dArgs.expand);
+
+        // Excel crashes if it's returned an empty array, so stop that from happening
+        static if(isArray!(typeof(wrappedRet))) {
+            if(wrappedRet.length == 0) {
+                ret = "#ERROR: empty result".toAutoFreeOper;
+                return &ret;
+            }
+
+            static if(isArray!(typeof(wrappedRet[0]))) {
+                if(wrappedRet[0].length == 0) {
+                    ret = "#ERROR: empty result".toAutoFreeOper;
+                    return &ret;
+                }
+            }
+        }
+
         // convert the return value to an Excel type, tell Excel to call
         // us back to free it afterwards
         ret = toAutoFreeOper(wrappedRet);
@@ -1132,6 +1148,47 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         auto arg = toXlOper(dArg);
         auto oper = wrapModuleFunctionImpl!FirstOfTwoAnyArrays(testAllocator, &arg, &arg);
         oper.shouldEqualDlang(dArg);
+    }
+}
+
+
+@("Can't return empty 1D array to Excel")
+@system unittest {
+    import xlld.memorymanager: allocatorContext;
+    import xlld.test_d_funcs: EmptyStrings1D;
+
+    with(allocatorContext(theGC)) {
+        auto dArg = any(1.0);
+        auto arg = toXlOper(dArg);
+        auto oper = wrapModuleFunctionImpl!EmptyStrings1D(theGC, &arg);
+        oper.shouldEqualDlang("#ERROR: empty result");
+    }
+}
+
+
+@("Can't return empty 2D array to Excel")
+@system unittest {
+    import xlld.memorymanager: allocatorContext;
+    import xlld.test_d_funcs: EmptyStrings2D;
+
+    with(allocatorContext(theGC)) {
+        auto dArg = any(1.0);
+        auto arg = toXlOper(dArg);
+        auto oper = wrapModuleFunctionImpl!EmptyStrings2D(theGC, &arg);
+        oper.shouldEqualDlang("#ERROR: empty result");
+    }
+}
+
+@("Can't return half empty 2D array to Excel")
+@system unittest {
+    import xlld.memorymanager: allocatorContext;
+    import xlld.test_d_funcs: EmptyStringsHalfEmpty2D;
+
+    with(allocatorContext(theGC)) {
+        auto dArg = any(1.0);
+        auto arg = toXlOper(dArg);
+        auto oper = wrapModuleFunctionImpl!EmptyStringsHalfEmpty2D(theGC, &arg);
+        oper.shouldEqualDlang("#ERROR: empty result");
     }
 }
 
@@ -1402,5 +1459,4 @@ unittest {
     opers[3].shouldEqualDlang(4.0);
     opers[4].shouldEqualDlang(5.0);
     opers[5].shouldEqualDlang(6.0);
-
 }
