@@ -153,7 +153,7 @@ auto memoryPool() {
     return MemoryPool(StartingMemorySize);
 }
 
-size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double)) {
+size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double) || is(T == Any)) {
     return 0;
 }
 
@@ -171,7 +171,7 @@ unittest {
     back.shouldEqual(arg);
 }
 
-size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double[])) {
+size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double[]) || is(T == Any[])) {
     import xlld.wrap: isMulti;
 
     if(!isMulti(oper))
@@ -180,7 +180,7 @@ size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double[])) {
     const rows = oper.val.array.rows;
     const cols = oper.val.array.columns;
 
-    return double.sizeof * (rows * cols);
+    return typeof(T.init[0]).sizeof * (rows * cols);
 }
 
 @("numBytesFor!double[]")
@@ -198,7 +198,7 @@ unittest {
     back.shouldEqual(arg);
 }
 
-size_t numBytesFor(T)(ref XLOPER12 oper) if(is(T == double[][]) || is(T == string[][])) {
+size_t numBytesFor(T)(ref XLOPER12 oper) if(is(T == double[][]) || is(T == string[][]) || is(T == Any[][])) {
 
     import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes, apply;
 
@@ -334,9 +334,6 @@ unittest {
     back.shouldEqual(arg);
 }
 
-size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == Any)) {
-    return 0;
-}
 
 @("numBytesFor!any double")
 unittest {
@@ -370,19 +367,6 @@ unittest {
 }
 
 
-size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == Any[])) {
-    import xlld.wrap: isMulti;
-
-    if(!isMulti(oper))
-        return 0;
-
-    const rows = oper.val.array.rows;
-    const cols = oper.val.array.columns;
-
-    return Any.sizeof * (rows * cols);
-}
-
-
 @("numBytesFor!any[]")
 unittest {
     import xlld.wrap: toXlOper, fromXlOper;
@@ -403,18 +387,6 @@ unittest {
 
     pool.numReallocations.shouldEqual(0);
     back.shouldEqual(arg);
-}
-
-size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == Any[][])) {
-    import xlld.wrap: isMulti;
-
-    if(!isMulti(oper))
-        return 0;
-
-    const rows = oper.val.array.rows;
-    const cols = oper.val.array.columns;
-
-    return Any.sizeof * (rows * cols);
 }
 
 
