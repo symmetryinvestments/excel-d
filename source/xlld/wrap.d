@@ -33,16 +33,15 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     if(is(T == string) || is(T == wstring))
 {
     import std.utf: byWchar;
-    import std.stdio;
 
-    // extra space for the length
     auto wval = cast(wchar*)allocator.allocate(numOperStringBytes(val)).ptr;
-    wval[0] = cast(wchar)val.length;
 
     int i = 1;
     foreach(ch; val.byWchar) {
         wval[i++] = ch;
     }
+
+    wval[0] = cast(ushort)(i - 1);
 
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeStr;
@@ -86,6 +85,19 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     freeXLOper(&oper, allocator);
 }
 
+@("toXlOper!string unicode")
+@system unittest {
+    import std.utf: byWchar;
+    import std.array: array;
+
+    "é".byWchar.array.length.shouldEqual(1);
+    "é"w.byWchar.array.length.shouldEqual(1);
+
+    auto oper = "é".toXlOper(theGC);
+    const ushort length = oper.val.str[0];
+    length.shouldEqual("é"w.length);
+}
+
 // the number of bytes required to store `str` as an XLOPER12 string
 package size_t numOperStringBytes(T)(in T str) if(is(T == string) || is(T == wstring)) {
     // XLOPER12 strings are wide strings where index 0 is the length
@@ -96,7 +108,7 @@ package size_t numOperStringBytes(T)(in T str) if(is(T == string) || is(T == wst
 package size_t numOperStringBytes(ref const(XLOPER12) oper) @trusted @nogc pure nothrow {
     // XLOPER12 strings are wide strings where index 0 is the length
     // and [1 .. $] is the actual string
-    assert(oper.xltype == XlType.xltypeStr);
+    if(oper.xltype != XlType.xltypeStr) return 0;
     return (oper.val.str[0] + 1) * wchar.sizeof;
 }
 
@@ -359,7 +371,8 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
     import std.experimental.allocator: makeArray;
-    import std.utf;
+    import std.utf: byChar;
+    import std.range: walkLength;
 
     const stripType = stripMemoryBitmask(val.xltype);
     if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
@@ -367,9 +380,12 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
     if(stripType == XlType.xltypeStr) {
 
-        auto ret = allocator.makeArray!char(val.val.str[0]);
+        auto chars = val.val.str[1 .. val.val.str[0] + 1].byChar;
+        const length = chars.save.walkLength;
+        auto ret = allocator.makeArray!char(length);
+
         int i;
-        foreach(ch; val.val.str[1 .. ret.length + 1].byChar)
+        foreach(ch; val.val.str[1 .. val.val.str[0] + 1].byChar)
             ret[i++] = ch;
 
         return cast(string)ret;
@@ -405,6 +421,13 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     freeXLOper(&oper, allocator);
     str.shouldEqual("foo");
     allocator.dispose(cast(void[])str);
+}
+
+@("fromXlOper!string unicode")
+@system unittest {
+    auto oper = "é".toXlOper(theGC);
+    auto str = fromXlOper!string(&oper, theGC);
+    str.shouldEqual("é");
 }
 
 private XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
@@ -586,14 +609,14 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     const cols = val.val.array.columns;
 
     static if(dim == Dimensions.Two) {
-        import core.stdc.stdio;
         auto ret = allocator.makeArray2D!T(*val);
     } else static if(dim == Dimensions.One) {
         auto ret = allocator.makeArray!T(rows * cols);
     } else
-        static assert(0);
+        static assert(0, "Unknown number of dimensions in fromXlOperMulti");
 
     (*val).apply!(T, (shouldConvert, row, col, cellVal) {
+
         auto value = shouldConvert ? cellVal.fromXlOper!T(allocator) : T.init;
 
         static if(dim == Dimensions.Two)
@@ -641,9 +664,10 @@ package void apply(T, alias F)(ref XLOPER12 oper) {
 
             // try to convert doubles to string if trying to convert everything to an
             // array of strings
-            const shouldConvert = (cellVal.xltype == dlangToXlOperType!T.Type) ||
-                (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr)
-                || is(T == Any);
+            const shouldConvert =
+                (cellVal.xltype == dlangToXlOperType!T.Type) ||
+                (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr) ||
+                is(T == Any);
 
             F(shouldConvert, row, col, cellVal);
         }
@@ -962,7 +986,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
  */
 LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
                                   (ref A tempAllocator, auto ref T args) {
-    import xlld.xl: scopedCoerce;
+    import xlld.xl: coerce, free;
     import xlld.worksheet: Dispose;
     import std.traits: Parameters;
     import std.typecons: Tuple;
@@ -979,10 +1003,21 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
              realArgs[i] = *args[i];
              continue;
         }
-        realArgs[i] = scopedCoerce(args[i]);
+        realArgs[i] = coerce(args[i]);
+    }
+
+    // scopedCoerce doesn't work with actual Excel
+    scope(exit) {
+        foreach(ref arg; realArgs)
+            free(&arg);
     }
 
     Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
+
+    static if(__traits(compiles, tempAllocator.reserve(1))) {
+        import xlld.memorymanager: numBytesForDArgs;
+        tempAllocator.reserve(numBytesForDArgs!wrappedFunc(realArgs[]));
+    }
 
     void freeAll() {
 
@@ -1008,10 +1043,12 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         try {
             dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], tempAllocator); }();
         } catch(Exception ex) {
-            ret = ("#ERROR converting argument to call " ~ __traits(identifier, wrappedFunc)).toAutoFreeOper;
+            ret = ("#ERROR converting argument to call " ~
+                   __traits(identifier, wrappedFunc)).toAutoFreeOper;
             return &ret;
         } catch(Throwable t) {
-            ret = ("#FATAL ERROR converting argument to call " ~ __traits(identifier, wrappedFunc)).toAutoFreeOper;
+            ret = ("#FATAL ERROR converting argument to call " ~
+                   __traits(identifier, wrappedFunc)).toAutoFreeOper;
             return &ret;
         }
     }
@@ -1208,7 +1245,27 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
     }
 }
 
+@("issue 25 - make sure to reserve memory for all dArgs")
+@system unittest {
+    import xlld.memorymanager: allocatorContext, MemoryPool;
+    import xlld.test_d_funcs: FirstOfTwoAnyArrays;
 
+    auto pool = MemoryPool(1);
+
+    with(allocatorContext(theGC)) {
+        auto dArg = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]];
+        auto arg = toSRef(dArg);
+        auto oper = wrapModuleFunctionImpl!FirstOfTwoAnyArrays(pool, &arg, &arg);
+    }
+
+    pool.curPos.shouldEqual(0); // deallocateAll in wrapImpl
+
+    version(X86)         const expected = 416;
+    else version(X86_64) const expected = 448;
+    else static assert(false, "Don't know this architecture");
+
+    pool.largestReservation.shouldEqual(expected);
+}
 
 string wrapWorksheetFunctionsString(Modules...)() {
 
@@ -1314,7 +1371,8 @@ unittest {
 
     double[][] doubles = [[1, 2, 3, 4], [11, 12, 13, 14]];
     auto doublesOper = toSRef(doubles, allocator);
-    doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage("apply failed - oper not of multi type");
+    doublesOper.fromXlOper!(double[][])(allocator).shouldThrowWithMessage(
+        "apply failed - oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
 }
 

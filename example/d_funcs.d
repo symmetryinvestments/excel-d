@@ -136,3 +136,12 @@ double FuncThrows(double) {
 Any[][] FirstOfTwoAnyArrays(Any[][] lhs, Any[][] rhs) nothrow {
     return lhs;
 }
+
+string[][] FirstOfTwoAnyArraysToString(Any[][] testarg, Any[][] rhs) nothrow {
+    import std.array, std.algorithm, std.conv;
+    try {
+        return testarg.map!(map!(to!string)).map!array.array;
+    } catch(Exception e) {
+        return [[e.msg]];
+    }
+}
