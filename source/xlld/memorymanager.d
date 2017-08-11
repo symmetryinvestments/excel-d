@@ -434,6 +434,9 @@ T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
     if(!isMulti(oper))
         return T[][].init;
 
+    static if(__traits(compiles, allocator.reserve(1)))
+        allocator.reserve(numBytesForArray2D!T(oper));
+
     const rows = oper.val.array.rows;
     const cols = oper.val.array.columns;
 
