@@ -1233,7 +1233,7 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
     else version(X86_64) const expected = 448;
     else static assert(false, "Don't know this architecture");
 
-    pool.data.length.shouldEqual(expected); //should have reserved enough memory
+    pool.largestReservation.shouldEqual(expected);
 }
 
 string wrapWorksheetFunctionsString(Modules...)() {

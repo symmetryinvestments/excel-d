@@ -45,7 +45,11 @@ struct MemoryPoolImpl(T) {
 
     package ubyte[] data;
     package size_t curPos;
-    private int _numReallocations;
+
+    version(unittest) {
+        private int _numReallocations;
+        private size_t _largestReservation;
+    }
 
     this(size_t startingMemorySize) {
         import std.experimental.allocator: makeArray;
@@ -74,7 +78,7 @@ struct MemoryPoolImpl(T) {
 
             const delta = newAllocationSize - data.length;
             _allocator.expandArray(data, delta, 0);
-            ++_numReallocations;
+            version(unittest) ++_numReallocations;
         }
 
         auto ret = data[curPos .. curPos + numBytes];
@@ -112,6 +116,9 @@ struct MemoryPoolImpl(T) {
     // pre-allocate memory to serve a large request
     bool reserve(in size_t numBytes) {
         import std.experimental.allocator: expandArray;
+        version(unittest) import std.algorithm: max;
+
+        version(unittest) _largestReservation = max(_largestReservation, numBytes);
 
         if(numBytes < data.length - curPos) return true;
         if(numBytes + curPos > MaxMemorySize) return false;
@@ -145,8 +152,14 @@ struct MemoryPoolImpl(T) {
         pool.curPos.shouldEqual(12);
     }
 
-    int numReallocations() @safe @nogc pure nothrow const {
-        return _numReallocations;
+    version(unittest) {
+        int numReallocations() @safe @nogc pure nothrow const {
+            return _numReallocations;
+        }
+
+        size_t largestReservation() @safe @nogc pure nothrow const {
+            return _largestReservation;
+        }
     }
 }
 
@@ -558,6 +571,13 @@ struct AllocatorContext(A) {
     auto toXlOper(T)(T val) {
         import xlld.wrap: wrapToXlOper = toXlOper;
         return wrapToXlOper(val, _allocator_);
+    }
+
+    version(unittest) {
+        auto toSRef(T)(T val) {
+            import xlld.test_util: toSRef_ = toSRef;
+            return toSRef_(val, _allocator_);
+        }
     }
 }
 
