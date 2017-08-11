@@ -963,7 +963,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
  */
 LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
                                   (ref A tempAllocator, auto ref T args) {
-    import xlld.xl: scopedCoerce;
+    import xlld.xl: coerce, free;
     import xlld.worksheet: Dispose;
     import std.traits: Parameters;
     import std.typecons: Tuple;
@@ -980,7 +980,13 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
              realArgs[i] = *args[i];
              continue;
         }
-        realArgs[i] = scopedCoerce(args[i]);
+        realArgs[i] = coerce(args[i]);
+    }
+
+    // scopedCoerce doesn't work with actual Excel
+    scope(exit) {
+        foreach(ref arg; realArgs)
+            free(&arg);
     }
 
     Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
