@@ -987,7 +987,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 
     static if(__traits(compiles, tempAllocator.reserve(1))) {
         import xlld.memorymanager: numBytesForDArgs;
-        tempAllocator.reserve(numBytesForDArgs!wrappedFunc(args));
+        tempAllocator.reserve(numBytesForDArgs!wrappedFunc(realArgs[]));
     }
 
     void freeAll() {
@@ -1014,10 +1014,12 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         try {
             dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], tempAllocator); }();
         } catch(Exception ex) {
-            ret = ("#ERROR converting argument to call " ~ __traits(identifier, wrappedFunc)).toAutoFreeOper;
+            ret = ("#ERROR converting argument to call " ~
+                   __traits(identifier, wrappedFunc)).toAutoFreeOper;
             return &ret;
         } catch(Throwable t) {
-            ret = ("#FATAL ERROR converting argument to call " ~ __traits(identifier, wrappedFunc)).toAutoFreeOper;
+            ret = ("#FATAL ERROR converting argument to call " ~
+                   __traits(identifier, wrappedFunc)).toAutoFreeOper;
             return &ret;
         }
     }
@@ -1223,7 +1225,7 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 
     with(allocatorContext(theGC)) {
         auto dArg = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]];
-        auto arg = toXlOper(dArg);
+        auto arg = toSRef(dArg);
         auto oper = wrapModuleFunctionImpl!FirstOfTwoAnyArrays(pool, &arg, &arg);
     }
 
