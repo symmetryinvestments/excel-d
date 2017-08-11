@@ -77,8 +77,9 @@ struct MemoryPoolImpl(T) {
                 return null;
 
             const delta = newAllocationSize - data.length;
-            _allocator.expandArray(data, delta, 0);
             version(unittest) ++_numReallocations;
+            if(!_allocator.expandArray(data, delta, 0))
+                return null;
         }
 
         auto ret = data[curPos .. curPos + numBytes];
