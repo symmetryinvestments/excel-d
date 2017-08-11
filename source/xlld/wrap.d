@@ -33,16 +33,15 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     if(is(T == string) || is(T == wstring))
 {
     import std.utf: byWchar;
-    import std.stdio;
 
-    // extra space for the length
     auto wval = cast(wchar*)allocator.allocate(numOperStringBytes(val)).ptr;
-    wval[0] = cast(wchar)val.length;
 
     int i = 1;
     foreach(ch; val.byWchar) {
         wval[i++] = ch;
     }
+
+    wval[0] = cast(ushort)(i - 1);
 
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeStr;
@@ -84,6 +83,19 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     auto oper = "foo".toXlOper(allocator);
     allocator.numAllocations.shouldEqual(1);
     freeXLOper(&oper, allocator);
+}
+
+@("toXlOper!string unicode")
+@system unittest {
+    import std.utf: byWchar;
+    import std.array: array;
+
+    "é".byWchar.array.length.shouldEqual(1);
+    "é"w.byWchar.array.length.shouldEqual(1);
+
+    auto oper = "é".toXlOper(theGC);
+    const ushort length = oper.val.str[0];
+    length.shouldEqual("é"w.length);
 }
 
 // the number of bytes required to store `str` as an XLOPER12 string
@@ -359,7 +371,8 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
     import std.experimental.allocator: makeArray;
-    import std.utf;
+    import std.utf: byChar;
+    import std.range: walkLength;
 
     const stripType = stripMemoryBitmask(val.xltype);
     if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
@@ -367,9 +380,12 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
     if(stripType == XlType.xltypeStr) {
 
-        auto ret = allocator.makeArray!char(val.val.str[0]);
+        auto chars = val.val.str[1 .. val.val.str[0] + 1].byChar;
+        const length = chars.save.walkLength;
+        auto ret = allocator.makeArray!char(length);
+
         int i;
-        foreach(ch; val.val.str[1 .. ret.length + 1].byChar)
+        foreach(ch; val.val.str[1 .. val.val.str[0] + 1].byChar)
             ret[i++] = ch;
 
         return cast(string)ret;
@@ -405,6 +421,13 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     freeXLOper(&oper, allocator);
     str.shouldEqual("foo");
     allocator.dispose(cast(void[])str);
+}
+
+@("fromXlOper!string unicode")
+@system unittest {
+    auto oper = "é".toXlOper(theGC);
+    auto str = fromXlOper!string(&oper, theGC);
+    str.shouldEqual("é");
 }
 
 private XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
