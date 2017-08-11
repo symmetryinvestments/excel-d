@@ -48,7 +48,7 @@ Sample code (see the [example](example) directory for more):
 
         double ret = 0;
         foreach(row; args)
-            ret += row.fold!((a, b) => b.isNaN ? 0.0 : a + b)(0.0);
+            ret += row.fold!((a, b) => b.isNaN ? a : a + b)(0.0);
         return ret;
     }
 ```
