@@ -605,16 +605,3 @@ void dispose(A, T)(auto ref A allocator, T value) if(!isArray!T) {
     static import std.experimental.allocator;
     std.experimental.allocator.dispose(allocator, value);
 }
-
-
-@("foobar")
-unittest {
-    import std.utf;
-    import std.array;
-    import std.range;
-
-    "é"w.length.shouldEqual(1);
-    "é"w.byChar.array.length.shouldEqual(2);
-    auto chars = "é"w.byChar;
-    chars.save.walkLength.shouldEqual(2);
-}
