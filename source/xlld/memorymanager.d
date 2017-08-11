@@ -191,7 +191,7 @@ unittest {
     numBytesForDArgs!func([oper1, oper2]).shouldEqual(0);
 }
 
-@("numBytesForDArgs (double, double)")
+@("numBytesForDArgs (double, string)")
 unittest {
     import xlld.wrap: toXlOper;
     double func(double a, string b) { return a + b.length; }
