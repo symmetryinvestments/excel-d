@@ -121,6 +121,7 @@ struct MemoryPoolImpl(T) {
 
         version(unittest) _largestReservation = max(_largestReservation, numBytes);
 
+        if(numBytes > MaxMemorySize - (data.length - curPos)) return false;
         if(numBytes < data.length - curPos) return true;
         if(numBytes + curPos > MaxMemorySize) return false;
 
@@ -151,6 +152,16 @@ struct MemoryPoolImpl(T) {
         pool.data.ptr.shouldEqual(ptr);
         pool.data.length.shouldEqual(length);
         pool.curPos.shouldEqual(12);
+    }
+
+    @("reserve fails when called with too large a number")
+    unittest {
+        auto pool = MemoryPool(10);
+        pool.reserve(MaxMemorySize + 1).shouldBeFalse;
+        pool.allocate(5);
+        pool.reserve(MaxMemorySize + 1).shouldBeFalse;
+        pool.reserve(MaxMemorySize - 4).shouldBeFalse;
+        pool.reserve(MaxMemorySize - 5).shouldBeTrue;
     }
 
     version(unittest) {
