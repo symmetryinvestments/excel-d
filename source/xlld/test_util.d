@@ -38,8 +38,13 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
 
         gFreed[gNumXlFree++] = oper.val.str;
 
-        if(oper.xltype == XlType.xltypeStr)
-            *oper = "".toXlOper(Mallocator.instance);
+        if(oper.xltype == XlType.xltypeStr) {
+            try
+                *oper = "".toXlOper(Mallocator.instance);
+            catch(Exception _) {
+                assert(false, "Error converting in excel12UnitTest");
+            }
+        }
 
         return xlretSuccess;
 
@@ -89,12 +94,23 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
 // automatically converts from oper to compare with a D type
 void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
     import xlld.memorymanager: allocator;
-    import xlld.wrap: fromXlOper;
+    import xlld.wrap: fromXlOper, stripMemoryBitmask;
     import xlld.xlcall: XlType;
+    import std.traits: Unqual;
+    import std.conv: text;
+    import std.experimental.allocator.gc_allocator: GCAllocator;
 
     actual.shouldNotBeNull;
-    if(actual.xltype == XlType.xltypeErr)
+
+    const type = actual.xltype.stripMemoryBitmask;
+
+    if(type == XlType.xltypeErr)
         fail("XLOPER is of error type", file, line);
+
+    static if(!is(Unqual!U == string))
+        if(type == XlType.xltypeStr)
+            fail(text("XLOPER is of string type. Value: ", actual.fromXlOper!string(GCAllocator.instance)), file, line);
+
     actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
 }
 
