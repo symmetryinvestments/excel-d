@@ -939,6 +939,8 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
     import std.conv: to;
     import std.algorithm: map;
     import std.range: iota;
+    import std.format: format;
+
     mixin("import " ~ moduleName ~ ": " ~ funcName ~ ";");
 
     const argsLength = Parameters!(mixin(funcName)).length;
@@ -963,12 +965,14 @@ string wrapModuleFunctionStr(string moduleName, string funcName)() {
 
     return [
         register,
-        `extern(Windows) LPXLOPER12 ` ~ funcName ~ `(` ~ argsDecl ~ `) nothrow ` ~ nogc ~ safe ~ `{`,
-        `    static import ` ~ moduleName ~ `;`,
-        `    import xlld.memorymanager: gTempAllocator;`,
-        `    alias wrappedFunc = ` ~ moduleName ~ `.` ~ funcName ~ `;`,
-        `    return wrapModuleFunctionImpl!wrappedFunc(gTempAllocator, ` ~ argsCall ~  `);`,
-        `}`,
+        q{
+            extern(Windows) LPXLOPER12 %s(%s) nothrow %s %s {
+                static import %s;
+                import xlld.memorymanager: gTempAllocator;
+                alias wrappedFunc = %s.%s;
+                return wrapModuleFunctionImpl!wrappedFunc(gTempAllocator, %s);
+            }
+        }.format(funcName, argsDecl, nogc, safe, moduleName, moduleName, funcName, argsCall),
     ].join("\n");
 }
 
