@@ -157,10 +157,15 @@ Any[][] DoubleArrayToAnyArray(double[][] values) @safe nothrow {
 
     return () @trusted {
         with(allocatorContext(allocator)) {
-            return [
-                       [any(values[0][0] * 2), any(values[0][1] * 3)],
-                       [any(third ~ "quux"),   any(fourth ~ "toto")],
-                   ];
+            try
+                return [
+                    [any(values[0][0] * 2), any(values[0][1] * 3)],
+                    [any(third ~ "quux"),   any(fourth ~ "toto")],
+                ];
+            catch(Exception _) {
+                Any[][] empty;
+                return empty;
+            }
         }
     }();
 }
