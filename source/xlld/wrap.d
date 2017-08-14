@@ -1027,15 +1027,19 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 
     Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
 
+    void setRetToError(in string msg) {
+        try
+            ret = msg.toAutoFreeOper;
+        catch(Exception _) {
+            ret.xltype = XlType.xltypeErr;
+        }
+    }
+
     static if(__traits(compiles, tempAllocator.reserve(1))) {
         import xlld.memorymanager: numBytesForDArgs;
         const reserveOk = tempAllocator.reserve(numBytesForDArgs!wrappedFunc(realArgs[]));
         if(!reserveOk) {
-            try
-                ret = ("#ERROR allocating memory for conversion to D arg").toAutoFreeOper;
-            catch(Exception _) {
-                ret.xltype = XlType.xltypeErr;
-            }
+            setRetToError("#ERROR allocating memory for conversion to D arg");
             return &ret;
         }
     }
@@ -1064,21 +1068,10 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         try {
             dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], tempAllocator); }();
         } catch(Exception ex) {
-            try
-                ret = ("#ERROR converting argument to call " ~
-                       __traits(identifier, wrappedFunc)).toAutoFreeOper;
-            catch(Exception _) {
-                ret.xltype = XlType.xltypeErr;
-            }
+            setRetToError("#ERROR converting argument to call " ~ __traits(identifier, wrappedFunc));
             return &ret;
         } catch(Throwable t) {
-            try
-                ret = ("#FATAL ERROR converting argument to call " ~
-                       __traits(identifier, wrappedFunc)).toAutoFreeOper;
-            catch(Exception _) {
-                ret.xltype = XlType.xltypeErr;
-            }
-
+            setRetToError("#FATAL ERROR converting argument to call " ~ __traits(identifier, wrappedFunc));
             return &ret;
         }
     }
@@ -1106,19 +1099,10 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
             () @trusted { printf("Could not call wrapped function: %s\n", &buffer[0]); }();
         }
 
-        try
-            ret = ("#ERROR calling " ~ __traits(identifier, wrappedFunc)).toAutoFreeOper;
-        catch(Exception _) {
-            ret.xltype = XlType.xltypeErr;
-        }
+        setRetToError("#ERROR calling " ~ __traits(identifier, wrappedFunc));
         return &ret;
     } catch(Throwable t) {
-        try
-            ret = ("#FATAL ERROR calling " ~ __traits(identifier, wrappedFunc)).toAutoFreeOper;
-        catch(Exception _) {
-            ret.xltype = XlType.xltypeErr;
-        }
-
+        setRetToError("#FATAL ERROR calling " ~ __traits(identifier, wrappedFunc));
         return &ret;
     }
 
