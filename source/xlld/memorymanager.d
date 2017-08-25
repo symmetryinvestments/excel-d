@@ -215,7 +215,7 @@ unittest {
 }
 
 
-size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double) || is(T == Any)) {
+size_t numBytesFor(T)(ref const(XLOPER12) oper) if(is(T == double) || is(T == Any) || is(T == int)) {
     return 0;
 }
 

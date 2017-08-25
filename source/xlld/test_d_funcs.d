@@ -201,3 +201,7 @@ string[][] EmptyStringsHalfEmpty2D(Any) nothrow {
     assert(empty[0].length == 0);
     return empty;
 }
+
+int Twice(int i) @safe nothrow {
+    return i * 2;
+}

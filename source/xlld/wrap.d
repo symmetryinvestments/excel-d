@@ -20,6 +20,13 @@ version(unittest) {
     alias theGC = GCAllocator.instance;
 }
 
+XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(T == int)) {
+    auto ret = XLOPER12();
+    ret.xltype = XlType.xltypeInt;
+    ret.val.w = val;
+    return ret;
+}
+
 
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(T == double)) {
     auto ret = XLOPER12();
@@ -355,6 +362,25 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
     oper.xltype = XlType.xltypeMissing;
     fromXlOper!double(&oper, allocator).isNaN.shouldBeTrue;
 }
+
+auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == int)) {
+    if(val.xltype == xltypeMissing)
+        return int.init;
+
+    return val.val.w;
+}
+
+@system unittest {
+    42.toXlOper(theGC).fromXlOper!int(theGC).shouldEqual(42);
+}
+
+@("0 for fromXlOper!int missing oper")
+@system unittest {
+    XLOPER12 oper;
+    oper.xltype = XlType.xltypeMissing;
+    oper.fromXlOper!int(theGC).shouldEqual(0);
+}
+
 
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
@@ -1463,6 +1489,15 @@ unittest {
     opers[1].shouldEqualDlang(6.0);
     opers[2].shouldEqualDlang("3quux");
     opers[3].shouldEqualDlang("4toto");
+}
+
+@("wrapModuleFunctionStr int -> int")
+@safe unittest {
+    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "Twice"));
+
+    auto oper = 3.toSRef(theGC);
+    auto arg = () @trusted { return &oper; }();
+    Twice(arg).shouldEqualDlang(6);
 }
 
 
