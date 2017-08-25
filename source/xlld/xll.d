@@ -206,7 +206,9 @@ version(Windows) {
   } else {
     void log(T...)(T args) {
         import std.experimental.logger: trace;
-        trace(args);
+        try
+            trace(args);
+        catch(Exception ex) {}
     }
 }
 
