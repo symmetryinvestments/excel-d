@@ -751,7 +751,7 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any[][])) {
 
 
 private enum isWorksheetFunction(alias F) =
-    isSupportedFunction!(F, double, double[][], string[][], string[], double[], string, Any, Any[], Any[][]);
+    isSupportedFunction!(F, double, double[][], string[][], string[], double[], string, Any, Any[], Any[][], int);
 
 @safe pure unittest {
     import xlld.test_d_funcs;
@@ -761,6 +761,7 @@ private enum isWorksheetFunction(alias F) =
     static assert(!isWorksheetFunction!shouldNotBeAProblem);
     static assert(!isWorksheetFunction!FuncThrows);
     static assert(isWorksheetFunction!DoubleArrayToAnyArray);
+    static assert(isWorksheetFunction!Twice);
 }
 
 /**
