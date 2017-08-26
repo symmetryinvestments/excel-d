@@ -6,9 +6,6 @@
 module xlld.static_;
 
 static this() {
-    import xlld.memorymanager: gTempAllocator, memoryPool;
-    gTempAllocator = memoryPool;
-
     version(unittest) {
         import xlld.xlcallcpp: SetExcel12EntryPt;
         import xlld.test_util: excel12UnitTest;

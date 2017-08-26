@@ -1190,24 +1190,26 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 
 @("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return pool")
 @system unittest {
+    import std.typecons: Ternary;
     import xlld.memorymanager: gTempAllocator;
     import xlld.test_d_funcs: FuncTripleEverything;
 
     auto arg = toSRef([1.0, 2.0, 3.0], gTempAllocator);
     auto oper = wrapModuleFunctionImpl!FuncTripleEverything(gTempAllocator, &arg);
-    gTempAllocator.curPos.shouldEqual(0);
+    gTempAllocator.empty.shouldEqual(Ternary.yes);
     oper.shouldEqualDlang([[3.0, 6.0, 9.0]]);
     autoFree(oper); // normally this is done by Excel
 }
 
 @("No memory allocation bugs in wrapModuleFunctionImpl for string")
 @system unittest {
+    import std.typecons: Ternary;
     import xlld.memorymanager: gTempAllocator;
     import xlld.test_d_funcs: StringToString;
 
     auto arg = "foo".toSRef(gTempAllocator);
     auto oper = wrapModuleFunctionImpl!StringToString(gTempAllocator, &arg);
-    gTempAllocator.curPos.shouldEqual(0);
+    gTempAllocator.empty.shouldEqual(Ternary.yes);
     oper.shouldEqualDlang("foobar");
 }
 
@@ -1297,10 +1299,11 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 
 @("issue 25 - make sure to reserve memory for all dArgs")
 @system unittest {
+    import std.typecons: Ternary;
     import xlld.memorymanager: allocatorContext, MemoryPool;
     import xlld.test_d_funcs: FirstOfTwoAnyArrays;
 
-    auto pool = MemoryPool(1);
+    auto pool = MemoryPool();
 
     with(allocatorContext(theGC)) {
         auto dArg = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]];
@@ -1308,13 +1311,7 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
         auto oper = wrapModuleFunctionImpl!FirstOfTwoAnyArrays(pool, &arg, &arg);
     }
 
-    pool.curPos.shouldEqual(0); // deallocateAll in wrapImpl
-
-    version(X86)         const expected = 416;
-    else version(X86_64) const expected = 448;
-    else static assert(false, "Don't know this architecture");
-
-    pool.largestReservation.shouldEqual(expected);
+    pool.empty.shouldEqual(Ternary.yes); // deallocateAll in wrapImpl
 }
 
 string wrapWorksheetFunctionsString(Modules...)() {
@@ -1422,41 +1419,6 @@ unittest {
     doublesOper.fromXlOper!(double[][])(theGC).shouldThrowWithMessage(
         "oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
-}
-
-struct TempMemoryPool {
-
-    import xlld.memorymanager: gTempAllocator;
-    alias _allocator = gTempAllocator;
-
-    static auto fromXlOper(T, U)(U oper) {
-        import xlld.wrap: wrapFromXlOper = fromXlOper;
-        return wrapFromXlOper!T(oper, _allocator);
-    }
-
-    static auto toXlOper(T)(T val) {
-        import xlld.wrap: wrapToXlOper = toXlOper;
-        return wrapToXlOper(val, _allocator);
-    }
-
-    ~this() @safe {
-        _allocator.deallocateAll;
-    }
-}
-
-
-@("TempMemoryPool")
-unittest {
-    import xlld.memorymanager: pool = gTempAllocator;
-
-    with(TempMemoryPool()) {
-        auto strOper = toXlOper("foo");
-        auto str = fromXlOper!string(strOper);
-        pool.curPos.shouldNotEqual(0);
-        str.shouldEqual("foo");
-    }
-
-    pool.curPos.shouldEqual(0);
 }
 
 @("wrap function with @Dispose")
