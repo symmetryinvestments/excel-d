@@ -2,7 +2,7 @@ module xlld.wrap;
 
 import xlld.xlcall;
 import xlld.traits: isSupportedFunction;
-import xlld.memorymanager: autoFree, dispose;
+import xlld.memorymanager: autoFree;
 import xlld.framework: freeXLOper;
 import xlld.worksheet;
 import xlld.any: Any;
@@ -41,7 +41,7 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
 {
     import std.utf: byWchar;
 
-    static const exception = new Exception("Failed to allocate memory for string oper");
+    __gshared static const exception = new Exception("Failed to allocate memory for string oper");
 
     auto wval = cast(wchar*)allocator.allocate(numOperStringBytes(val)).ptr;
     if(wval is null)
@@ -130,7 +130,7 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     import std.algorithm: map, all;
     import std.array: array;
 
-    static const exception = new Exception("# of columns must all be the same and aren't");
+    __gshared static const exception = new Exception("# of columns must all be the same and aren't");
     if(!values.all!(a => a.length == values[0].length))
        throw exception;
 
@@ -191,7 +191,7 @@ private XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
     ret.val.array.columns = cols;
 
     ret.val.array.lparray = cast(XLOPER12*)allocator.allocate(rows * cols * ret.sizeof).ptr;
-    static const exception = new Exception("Failed to allocate memory for multi oper");
+    __gshared static const exception = new Exception("Failed to allocate memory for multi oper");
     if(ret.val.array.lparray is null)
         throw exception;
 
@@ -392,7 +392,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
         return null;
 
-    static const allocationException = new Exception("Could not allocate memory for array of char");
+    __gshared static const allocationException = new Exception("Could not allocate memory for array of char");
 
     if(stripType == XlType.xltypeStr) {
 
@@ -412,7 +412,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
         // if a double, try to convert it to a string
         import core.stdc.stdio: snprintf;
         char[1024] buffer;
-        static const exception = new Exception("Could not convert double to string");
+        __gshared static const exception = new Exception("Could not convert double to string");
         const numChars = snprintf(&buffer[0], buffer.length, "%lf", val.val.num);
         if(numChars > buffer.length - 1)
             throw exception;
@@ -436,6 +436,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
 @("fromXlOper!string")
 @system unittest {
+    import std.experimental.allocator: dispose;
     TestAllocator allocator;
     auto oper = "foo".toXlOper(allocator);
     auto str = fromXlOper!string(&oper, allocator);
@@ -501,6 +502,7 @@ unittest {
 
 @("fromXlOper!string[][] TestAllocator")
 unittest {
+    import std.experimental.allocator: disposeMultidimensionalArray;
     TestAllocator allocator;
     auto strings = [["foo", "bar", "baz"], ["toto", "titi", "quux"]];
     auto oper = strings.toXlOper(allocator);
@@ -510,7 +512,7 @@ unittest {
 
     freeXLOper(&oper, allocator);
     backAgain.shouldEqual(strings);
-    allocator.dispose(backAgain);
+    allocator.disposeMultidimensionalArray(cast(void[][][])backAgain);
 }
 
 @("fromXlOper!string[][] when not all opers are strings")
@@ -547,6 +549,7 @@ unittest {
 
 @("fromXlOper!double[][] TestAllocator")
 unittest {
+    import std.experimental.allocator: disposeMultidimensionalArray;
     TestAllocator allocator;
     auto doubles = [[1.0, 2.0], [3.0, 4.0]];
     auto oper = doubles.toXlOper(allocator);
@@ -556,7 +559,7 @@ unittest {
 
     freeXLOper(&oper, allocator);
     backAgain.shouldEqual(doubles);
-    allocator.dispose(backAgain);
+    allocator.disposeMultidimensionalArray(backAgain);
 }
 
 
@@ -596,6 +599,7 @@ unittest {
 
 @("fromXlOper!string[] TestAllocator")
 unittest {
+    import std.experimental.allocator: disposeMultidimensionalArray;
     TestAllocator allocator;
     auto strings = ["foo", "bar", "baz", "toto", "titi", "quux"];
     auto oper = strings.toXlOper(allocator);
@@ -605,11 +609,12 @@ unittest {
 
     backAgain.shouldEqual(strings);
     freeXLOper(&oper, allocator);
-    allocator.dispose(backAgain);
+    allocator.disposeMultidimensionalArray(cast(void[][])backAgain);
 }
 
 @("fromXlOper!double[] TestAllocator")
 unittest {
+    import std.experimental.allocator: dispose;
     TestAllocator allocator;
     auto doubles = [1.0, 2.0, 3.0, 4.0];
     auto oper = doubles.toXlOper(allocator);
@@ -628,8 +633,8 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     import xlld.memorymanager: makeArray2D;
     import std.experimental.allocator: makeArray;
 
-    static const operException = new Exception("oper not of multi type");
-    static const allocationException = new Exception("Could not allocate memory in fromXlOperMulti");
+    __gshared static const operException = new Exception("oper not of multi type");
+    __gshared static const allocationException = new Exception("Could not allocate memory in fromXlOperMulti");
 
     if(!isMulti(*val)) {
         throw operException;
@@ -673,7 +678,7 @@ package void apply(T, alias F)(ref XLOPER12 oper) {
     import xlld.any: Any;
     version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
 
-    static const exception = new Exception("apply failed - oper not of multi type");
+    __gshared static const exception = new Exception("apply failed - oper not of multi type");
 
     if(!isMulti(oper))
         throw exception;
@@ -1062,25 +1067,21 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         }
     }
 
-    static if(__traits(compiles, tempAllocator.reserve(1))) {
-        import xlld.memorymanager: numBytesForDArgs;
-        const reserveOk = tempAllocator.reserve(numBytesForDArgs!wrappedFunc(realArgs[]));
-        if(!reserveOk) {
-            setRetToError("#ERROR allocating memory for conversion to D arg");
-            return &ret;
-        }
-    }
-
     void freeAll() {
-
-        import std.traits: isArray;
-
         static if(__traits(compiles, tempAllocator.deallocateAll))
             tempAllocator.deallocateAll;
         else {
             foreach(ref dArg; dArgs) {
-                import std.traits: isPointer;
-                static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg))) {
+                import std.traits: isPointer, isArray;
+                static if(isArray!(typeof(dArg)))
+                {
+                    import std.experimental.allocator: disposeMultidimensionalArray;
+                    tempAllocator.disposeMultidimensionalArray(dArg[]);
+                }
+                else
+                static if(isPointer!(typeof(dArg)))
+                {
+                    import std.experimental.allocator: dispose;
                     tempAllocator.dispose(dArg);
                 }
             }
@@ -1402,7 +1403,6 @@ auto fromXlOperCoerce(T)(ref XLOPER12 val) {
 
 
 auto fromXlOperCoerce(T, A)(ref XLOPER12 val, auto ref A allocator) {
-    import std.experimental.allocator: dispose;
     import xlld.xl: coerce, free;
 
     auto coerced = coerce(&val);
