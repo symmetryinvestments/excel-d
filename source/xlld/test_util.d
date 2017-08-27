@@ -170,11 +170,11 @@ struct TestAllocator {
 
     enum uint alignment = platformAlignment;
 
-    void[] allocate(size_t numBytes) @safe @nogc {
+    void[] allocate(size_t numBytes) @trusted @nogc {
         import std.experimental.allocator: makeArray, expandArray;
         import core.stdc.stdio: printf;
 
-        static const exception = new Exception("Allocation failed");
+        __gshared static const exception = new Exception("Allocation failed");
 
         ++_numAllocations;
 

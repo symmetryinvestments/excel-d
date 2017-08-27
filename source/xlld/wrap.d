@@ -35,17 +35,17 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(T == double)) {
     return ret;
 }
 
+__gshared static const toXlOperMemoryException = new Exception("Failed to allocate memory for string oper");
+__gshared static const toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
 
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     if(is(T == string) || is(T == wstring))
 {
     import std.utf: byWchar;
 
-    __gshared static const exception = new Exception("Failed to allocate memory for string oper");
-
     auto wval = cast(wchar*)allocator.allocate(numOperStringBytes(val)).ptr;
     if(wval is null)
-        throw exception;
+        throw toXlOperMemoryException;
 
     int i = 1;
     foreach(ch; val.byWchar) {
@@ -130,9 +130,8 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     import std.algorithm: map, all;
     import std.array: array;
 
-    __gshared static const exception = new Exception("# of columns must all be the same and aren't");
     if(!values.all!(a => a.length == values[0].length))
-       throw exception;
+       throw toXlOperShapeException;
 
     const rows = cast(int)values.length;
     const cols = values.length ? cast(int)values[0].length : 0;
@@ -183,6 +182,8 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     freeXLOper(&oper, allocator);
 }
 
+__gshared static const multiMemoryException = new Exception("Failed to allocate memory for multi oper");
+
 private XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
     auto ret = XLOPER12();
 
@@ -191,9 +192,8 @@ private XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
     ret.val.array.columns = cols;
 
     ret.val.array.lparray = cast(XLOPER12*)allocator.allocate(rows * cols * ret.sizeof).ptr;
-    __gshared static const exception = new Exception("Failed to allocate memory for multi oper");
     if(ret.val.array.lparray is null)
-        throw exception;
+        throw multiMemoryException;
 
     return ret;
 }
@@ -381,6 +381,8 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == int)) {
     oper.fromXlOper!int(theGC).shouldEqual(0);
 }
 
+__gshared static const fromXlOperMemoryException = new Exception("Could not allocate memory for array of char");
+__gshared static const fromXlOperConvException = new Exception("Could not convert double to string");
 
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
@@ -392,7 +394,6 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
         return null;
 
-    __gshared static const allocationException = new Exception("Could not allocate memory for array of char");
 
     if(stripType == XlType.xltypeStr) {
 
@@ -401,7 +402,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
         auto ret = allocator.makeArray!char(length);
 
         if(ret is null && length > 0)
-            throw allocationException;
+            throw fromXlOperMemoryException;
 
         int i;
         foreach(ch; val.val.str[1 .. val.val.str[0] + 1].byChar)
@@ -412,14 +413,13 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
         // if a double, try to convert it to a string
         import core.stdc.stdio: snprintf;
         char[1024] buffer;
-        __gshared static const exception = new Exception("Could not convert double to string");
         const numChars = snprintf(&buffer[0], buffer.length, "%lf", val.val.num);
         if(numChars > buffer.length - 1)
-            throw exception;
+            throw fromXlOperConvException;
         auto ret = allocator.makeArray!char(numChars);
 
         if(ret is null && numChars > 0)
-            throw allocationException;
+            throw fromXlOperMemoryException;
 
         ret[] = buffer[0 .. numChars];
         return cast(string)ret;
@@ -627,17 +627,16 @@ unittest {
     allocator.dispose(backAgain);
 }
 
+__gshared static const fromXlOperMultiOperException = new Exception("oper not of multi type");
+__gshared static const fromXlOperMultiMemoryException = new Exception("Could not allocate memory in fromXlOperMulti");
 
 private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocator) {
     import xlld.xl: coerce, free;
     import xlld.memorymanager: makeArray2D;
     import std.experimental.allocator: makeArray;
 
-    __gshared static const operException = new Exception("oper not of multi type");
-    __gshared static const allocationException = new Exception("Could not allocate memory in fromXlOperMulti");
-
     if(!isMulti(*val)) {
-        throw operException;
+        throw fromXlOperMultiOperException;
     }
 
     const rows = val.val.array.rows;
@@ -653,7 +652,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
         static assert(0, "Unknown number of dimensions in fromXlOperMulti");
 
     if(&ret[0] is null)
-        throw allocationException;
+        throw fromXlOperMultiMemoryException;
 
     (*val).apply!(T, (shouldConvert, row, col, cellVal) {
 
@@ -668,6 +667,8 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     return ret;
 }
 
+__gshared static const applyTypeException = new Exception("apply failed - oper not of multi type");
+
 // apply a function to an oper of type xltypeMulti
 // the function must take a boolean value indicating if the cell value
 // is to be converted or not, and a reference to the cell value itself
@@ -678,10 +679,8 @@ package void apply(T, alias F)(ref XLOPER12 oper) {
     import xlld.any: Any;
     version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
 
-    __gshared static const exception = new Exception("apply failed - oper not of multi type");
-
     if(!isMulti(oper))
-        throw exception;
+        throw applyTypeException;
 
     const rows = oper.val.array.rows;
     const cols = oper.val.array.columns;
