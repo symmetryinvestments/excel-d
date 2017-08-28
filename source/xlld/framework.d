@@ -116,6 +116,8 @@ int Excel12f(int xlfn, LPXLOPER12 pxResult, LPXLOPER12[] args...) nothrow @nogc 
     return Excel12f(xlfn, pxResult, args);
 }
 
+__gshared immutable excel12Exception = new Exception("Error calling Excel12f");
+
 /**
    D version of Excel12f. "D version" in the sense that the types
    are all D types. Avoids having to manually convert to XLOPER12.
@@ -129,7 +131,6 @@ T excel12(T, A...)(int xlfn, auto ref A args) @trusted {
     import xlld.wrap: toXlOper, fromXlOper;
     import xlld.xlcall: xlretSuccess;
 
-    static immutable exception = new Exception("Error calling Excel12f");
     XLOPER12[A.length] operArgs;
     LPXLOPER12[A.length] operArgPtrs;
 
@@ -142,7 +143,7 @@ T excel12(T, A...)(int xlfn, auto ref A args) @trusted {
 
     XLOPER12 result;
     if(Excel12f(xlfn, &result, operArgPtrs) != xlretSuccess)
-        throw exception;
+        throw excel12Exception;
 
     return result.fromXlOper!T(autoFreeAllocator);
 }

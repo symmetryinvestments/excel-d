@@ -19,6 +19,21 @@ void*[maxCoerce] gFreed;
 double[] gDates;
 double[] gTimes;
 
+version(unittest)
+{
+    static this() {
+        import xlld.xlcallcpp: SetExcel12EntryPt;
+        // this effectively "implements" the Excel12v function
+        // so that the code can be unit tested without needing to link
+        // with the Excel SDK
+        SetExcel12EntryPt(&excel12UnitTest);
+    }
+
+    static ~this() {
+        import unit_threaded.should: shouldBeSameSetAs;
+        gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
+    }
+}
 
 extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, LPXLOPER12 result) nothrow @nogc {
 
@@ -170,11 +185,11 @@ struct TestAllocator {
 
     enum uint alignment = platformAlignment;
 
-    void[] allocate(size_t numBytes) @safe @nogc {
+    void[] allocate(size_t numBytes) @trusted @nogc {
         import std.experimental.allocator: makeArray, expandArray;
         import core.stdc.stdio: printf;
 
-        static const exception = new Exception("Allocation failed");
+        static __gshared immutable exception = new Exception("Allocation failed");
 
         ++_numAllocations;
 

@@ -2,7 +2,7 @@ module xlld.wrap;
 
 import xlld.xlcall;
 import xlld.traits: isSupportedFunction;
-import xlld.memorymanager: autoFree, dispose;
+import xlld.memorymanager: autoFree;
 import xlld.framework: freeXLOper;
 import xlld.worksheet;
 import xlld.any: Any;
@@ -35,17 +35,17 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(T == double)) {
     return ret;
 }
 
+__gshared immutable toXlOperMemoryException = new Exception("Failed to allocate memory for string oper");
+__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
 
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     if(is(T == string) || is(T == wstring))
 {
     import std.utf: byWchar;
 
-    static const exception = new Exception("Failed to allocate memory for string oper");
-
     auto wval = cast(wchar*)allocator.allocate(numOperStringBytes(val)).ptr;
     if(wval is null)
-        throw exception;
+        throw toXlOperMemoryException;
 
     int i = 1;
     foreach(ch; val.byWchar) {
@@ -130,9 +130,8 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     import std.algorithm: map, all;
     import std.array: array;
 
-    static const exception = new Exception("# of columns must all be the same and aren't");
     if(!values.all!(a => a.length == values[0].length))
-       throw exception;
+       throw toXlOperShapeException;
 
     const rows = cast(int)values.length;
     const cols = values.length ? cast(int)values[0].length : 0;
@@ -183,6 +182,8 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     freeXLOper(&oper, allocator);
 }
 
+__gshared immutable multiMemoryException = new Exception("Failed to allocate memory for multi oper");
+
 private XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
     auto ret = XLOPER12();
 
@@ -191,9 +192,8 @@ private XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
     ret.val.array.columns = cols;
 
     ret.val.array.lparray = cast(XLOPER12*)allocator.allocate(rows * cols * ret.sizeof).ptr;
-    static const exception = new Exception("Failed to allocate memory for multi oper");
     if(ret.val.array.lparray is null)
-        throw exception;
+        throw multiMemoryException;
 
     return ret;
 }
@@ -381,6 +381,8 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == int)) {
     oper.fromXlOper!int(theGC).shouldEqual(0);
 }
 
+__gshared immutable fromXlOperMemoryException = new Exception("Could not allocate memory for array of char");
+__gshared immutable fromXlOperConvException = new Exception("Could not convert double to string");
 
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
@@ -392,7 +394,6 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
     if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
         return null;
 
-    static const allocationException = new Exception("Could not allocate memory for array of char");
 
     if(stripType == XlType.xltypeStr) {
 
@@ -401,7 +402,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
         auto ret = allocator.makeArray!char(length);
 
         if(ret is null && length > 0)
-            throw allocationException;
+            throw fromXlOperMemoryException;
 
         int i;
         foreach(ch; val.val.str[1 .. val.val.str[0] + 1].byChar)
@@ -412,14 +413,13 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
         // if a double, try to convert it to a string
         import core.stdc.stdio: snprintf;
         char[1024] buffer;
-        static const exception = new Exception("Could not convert double to string");
         const numChars = snprintf(&buffer[0], buffer.length, "%lf", val.val.num);
         if(numChars > buffer.length - 1)
-            throw exception;
+            throw fromXlOperConvException;
         auto ret = allocator.makeArray!char(numChars);
 
         if(ret is null && numChars > 0)
-            throw allocationException;
+            throw fromXlOperMemoryException;
 
         ret[] = buffer[0 .. numChars];
         return cast(string)ret;
@@ -436,6 +436,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
 @("fromXlOper!string")
 @system unittest {
+    import std.experimental.allocator: dispose;
     TestAllocator allocator;
     auto oper = "foo".toXlOper(allocator);
     auto str = fromXlOper!string(&oper, allocator);
@@ -501,6 +502,7 @@ unittest {
 
 @("fromXlOper!string[][] TestAllocator")
 unittest {
+    import std.experimental.allocator: disposeMultidimensionalArray;
     TestAllocator allocator;
     auto strings = [["foo", "bar", "baz"], ["toto", "titi", "quux"]];
     auto oper = strings.toXlOper(allocator);
@@ -510,7 +512,7 @@ unittest {
 
     freeXLOper(&oper, allocator);
     backAgain.shouldEqual(strings);
-    allocator.dispose(backAgain);
+    allocator.disposeMultidimensionalArray(cast(void[][][])backAgain);
 }
 
 @("fromXlOper!string[][] when not all opers are strings")
@@ -547,6 +549,7 @@ unittest {
 
 @("fromXlOper!double[][] TestAllocator")
 unittest {
+    import std.experimental.allocator: disposeMultidimensionalArray;
     TestAllocator allocator;
     auto doubles = [[1.0, 2.0], [3.0, 4.0]];
     auto oper = doubles.toXlOper(allocator);
@@ -556,7 +559,7 @@ unittest {
 
     freeXLOper(&oper, allocator);
     backAgain.shouldEqual(doubles);
-    allocator.dispose(backAgain);
+    allocator.disposeMultidimensionalArray(backAgain);
 }
 
 
@@ -596,6 +599,7 @@ unittest {
 
 @("fromXlOper!string[] TestAllocator")
 unittest {
+    import std.experimental.allocator: disposeMultidimensionalArray;
     TestAllocator allocator;
     auto strings = ["foo", "bar", "baz", "toto", "titi", "quux"];
     auto oper = strings.toXlOper(allocator);
@@ -605,11 +609,12 @@ unittest {
 
     backAgain.shouldEqual(strings);
     freeXLOper(&oper, allocator);
-    allocator.dispose(backAgain);
+    allocator.disposeMultidimensionalArray(cast(void[][])backAgain);
 }
 
 @("fromXlOper!double[] TestAllocator")
 unittest {
+    import std.experimental.allocator: dispose;
     TestAllocator allocator;
     auto doubles = [1.0, 2.0, 3.0, 4.0];
     auto oper = doubles.toXlOper(allocator);
@@ -622,17 +627,16 @@ unittest {
     allocator.dispose(backAgain);
 }
 
+__gshared immutable fromXlOperMultiOperException = new Exception("oper not of multi type");
+__gshared immutable fromXlOperMultiMemoryException = new Exception("Could not allocate memory in fromXlOperMulti");
 
 private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocator) {
     import xlld.xl: coerce, free;
     import xlld.memorymanager: makeArray2D;
     import std.experimental.allocator: makeArray;
 
-    static const operException = new Exception("oper not of multi type");
-    static const allocationException = new Exception("Could not allocate memory in fromXlOperMulti");
-
     if(!isMulti(*val)) {
-        throw operException;
+        throw fromXlOperMultiOperException;
     }
 
     const rows = val.val.array.rows;
@@ -648,7 +652,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
         static assert(0, "Unknown number of dimensions in fromXlOperMulti");
 
     if(&ret[0] is null)
-        throw allocationException;
+        throw fromXlOperMultiMemoryException;
 
     (*val).apply!(T, (shouldConvert, row, col, cellVal) {
 
@@ -663,6 +667,8 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     return ret;
 }
 
+__gshared immutable applyTypeException = new Exception("apply failed - oper not of multi type");
+
 // apply a function to an oper of type xltypeMulti
 // the function must take a boolean value indicating if the cell value
 // is to be converted or not, and a reference to the cell value itself
@@ -673,10 +679,8 @@ package void apply(T, alias F)(ref XLOPER12 oper) {
     import xlld.any: Any;
     version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
 
-    static const exception = new Exception("apply failed - oper not of multi type");
-
     if(!isMulti(oper))
-        throw exception;
+        throw applyTypeException;
 
     const rows = oper.val.array.rows;
     const cols = oper.val.array.columns;
@@ -1062,25 +1066,21 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         }
     }
 
-    static if(__traits(compiles, tempAllocator.reserve(1))) {
-        import xlld.memorymanager: numBytesForDArgs;
-        const reserveOk = tempAllocator.reserve(numBytesForDArgs!wrappedFunc(realArgs[]));
-        if(!reserveOk) {
-            setRetToError("#ERROR allocating memory for conversion to D arg");
-            return &ret;
-        }
-    }
-
     void freeAll() {
-
-        import std.traits: isArray;
-
         static if(__traits(compiles, tempAllocator.deallocateAll))
             tempAllocator.deallocateAll;
         else {
             foreach(ref dArg; dArgs) {
-                import std.traits: isPointer;
-                static if(isArray!(typeof(dArg)) || isPointer!(typeof(dArg))) {
+                import std.traits: isPointer, isArray;
+                static if(isArray!(typeof(dArg)))
+                {
+                    import std.experimental.allocator: disposeMultidimensionalArray;
+                    tempAllocator.disposeMultidimensionalArray(dArg[]);
+                }
+                else
+                static if(isPointer!(typeof(dArg)))
+                {
+                    import std.experimental.allocator: dispose;
                     tempAllocator.dispose(dArg);
                 }
             }
@@ -1190,24 +1190,26 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 
 @("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return pool")
 @system unittest {
+    import std.typecons: Ternary;
     import xlld.memorymanager: gTempAllocator;
     import xlld.test_d_funcs: FuncTripleEverything;
 
     auto arg = toSRef([1.0, 2.0, 3.0], gTempAllocator);
     auto oper = wrapModuleFunctionImpl!FuncTripleEverything(gTempAllocator, &arg);
-    gTempAllocator.curPos.shouldEqual(0);
+    gTempAllocator.empty.shouldEqual(Ternary.yes);
     oper.shouldEqualDlang([[3.0, 6.0, 9.0]]);
     autoFree(oper); // normally this is done by Excel
 }
 
 @("No memory allocation bugs in wrapModuleFunctionImpl for string")
 @system unittest {
+    import std.typecons: Ternary;
     import xlld.memorymanager: gTempAllocator;
     import xlld.test_d_funcs: StringToString;
 
     auto arg = "foo".toSRef(gTempAllocator);
     auto oper = wrapModuleFunctionImpl!StringToString(gTempAllocator, &arg);
-    gTempAllocator.curPos.shouldEqual(0);
+    gTempAllocator.empty.shouldEqual(Ternary.yes);
     oper.shouldEqualDlang("foobar");
 }
 
@@ -1297,10 +1299,11 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 
 @("issue 25 - make sure to reserve memory for all dArgs")
 @system unittest {
+    import std.typecons: Ternary;
     import xlld.memorymanager: allocatorContext, MemoryPool;
     import xlld.test_d_funcs: FirstOfTwoAnyArrays;
 
-    auto pool = MemoryPool(1);
+    auto pool = MemoryPool();
 
     with(allocatorContext(theGC)) {
         auto dArg = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]];
@@ -1308,13 +1311,7 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
         auto oper = wrapModuleFunctionImpl!FirstOfTwoAnyArrays(pool, &arg, &arg);
     }
 
-    pool.curPos.shouldEqual(0); // deallocateAll in wrapImpl
-
-    version(X86)         const expected = 416;
-    else version(X86_64) const expected = 448;
-    else static assert(false, "Don't know this architecture");
-
-    pool.largestReservation.shouldEqual(expected);
+    pool.empty.shouldEqual(Ternary.yes); // deallocateAll in wrapImpl
 }
 
 string wrapWorksheetFunctionsString(Modules...)() {
@@ -1405,7 +1402,6 @@ auto fromXlOperCoerce(T)(ref XLOPER12 val) {
 
 
 auto fromXlOperCoerce(T, A)(ref XLOPER12 val, auto ref A allocator) {
-    import std.experimental.allocator: dispose;
     import xlld.xl: coerce, free;
 
     auto coerced = coerce(&val);
@@ -1422,41 +1418,6 @@ unittest {
     doublesOper.fromXlOper!(double[][])(theGC).shouldThrowWithMessage(
         "oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
-}
-
-struct TempMemoryPool {
-
-    import xlld.memorymanager: gTempAllocator;
-    alias _allocator = gTempAllocator;
-
-    static auto fromXlOper(T, U)(U oper) {
-        import xlld.wrap: wrapFromXlOper = fromXlOper;
-        return wrapFromXlOper!T(oper, _allocator);
-    }
-
-    static auto toXlOper(T)(T val) {
-        import xlld.wrap: wrapToXlOper = toXlOper;
-        return wrapToXlOper(val, _allocator);
-    }
-
-    ~this() @safe {
-        _allocator.deallocateAll;
-    }
-}
-
-
-@("TempMemoryPool")
-unittest {
-    import xlld.memorymanager: pool = gTempAllocator;
-
-    with(TempMemoryPool()) {
-        auto strOper = toXlOper("foo");
-        auto str = fromXlOper!string(strOper);
-        pool.curPos.shouldNotEqual(0);
-        str.shouldEqual("foo");
-    }
-
-    pool.curPos.shouldEqual(0);
 }
 
 @("wrap function with @Dispose")
