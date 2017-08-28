@@ -116,6 +116,16 @@ int Excel12f(int xlfn, LPXLOPER12 pxResult, LPXLOPER12[] args...) nothrow @nogc 
     return Excel12f(xlfn, pxResult, args);
 }
 
+int Excel12f(int xlfn, LPXLOPER12 result, XLOPER12[] args...) nothrow {
+
+    LPXLOPER12[] ptrArgs;
+
+    foreach(ref arg; args)
+        ptrArgs ~= () @trusted { return &arg; }();
+
+    return Excel12f(xlfn, result, ptrArgs);
+}
+
 __gshared immutable excel12Exception = new Exception("Error calling Excel12f");
 
 /**
