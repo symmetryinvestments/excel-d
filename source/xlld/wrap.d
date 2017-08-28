@@ -35,8 +35,8 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(T == double)) {
     return ret;
 }
 
-__gshared static const toXlOperMemoryException = new Exception("Failed to allocate memory for string oper");
-__gshared static const toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
+__gshared immutable toXlOperMemoryException = new Exception("Failed to allocate memory for string oper");
+__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
 
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     if(is(T == string) || is(T == wstring))
@@ -182,7 +182,7 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     freeXLOper(&oper, allocator);
 }
 
-__gshared static const multiMemoryException = new Exception("Failed to allocate memory for multi oper");
+__gshared immutable multiMemoryException = new Exception("Failed to allocate memory for multi oper");
 
 private XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
     auto ret = XLOPER12();
@@ -381,8 +381,8 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == int)) {
     oper.fromXlOper!int(theGC).shouldEqual(0);
 }
 
-__gshared static const fromXlOperMemoryException = new Exception("Could not allocate memory for array of char");
-__gshared static const fromXlOperConvException = new Exception("Could not convert double to string");
+__gshared immutable fromXlOperMemoryException = new Exception("Could not allocate memory for array of char");
+__gshared immutable fromXlOperConvException = new Exception("Could not convert double to string");
 
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
 
@@ -627,8 +627,8 @@ unittest {
     allocator.dispose(backAgain);
 }
 
-__gshared static const fromXlOperMultiOperException = new Exception("oper not of multi type");
-__gshared static const fromXlOperMultiMemoryException = new Exception("Could not allocate memory in fromXlOperMulti");
+__gshared immutable fromXlOperMultiOperException = new Exception("oper not of multi type");
+__gshared immutable fromXlOperMultiMemoryException = new Exception("Could not allocate memory in fromXlOperMulti");
 
 private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocator) {
     import xlld.xl: coerce, free;
@@ -667,7 +667,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     return ret;
 }
 
-__gshared static const applyTypeException = new Exception("apply failed - oper not of multi type");
+__gshared immutable applyTypeException = new Exception("apply failed - oper not of multi type");
 
 // apply a function to an oper of type xltypeMulti
 // the function must take a boolean value indicating if the cell value

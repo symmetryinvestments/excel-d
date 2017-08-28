@@ -189,7 +189,7 @@ struct TestAllocator {
         import std.experimental.allocator: makeArray, expandArray;
         import core.stdc.stdio: printf;
 
-        __gshared static const exception = new Exception("Allocation failed");
+        static __gshared immutable exception = new Exception("Allocation failed");
 
         ++_numAllocations;
 
