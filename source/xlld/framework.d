@@ -143,7 +143,7 @@ T excel12(T, A...)(int xlfn, auto ref A args) @trusted {
 
     XLOPER12 result;
     if(Excel12f(xlfn, &result, operArgPtrs) != xlretSuccess)
-        throw exception;
+        throw excel12Exception;
 
     return result.fromXlOper!T(autoFreeAllocator);
 }
