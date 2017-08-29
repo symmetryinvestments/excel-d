@@ -118,8 +118,7 @@ private void registerAllWorkSheetFunctions() {
 
     // get name of this XLL, needed to pass to xlfRegister
     static XLOPER12 dllName;
-    LPXLOPER12[] empty;
-    Excel12f(xlGetName, &dllName, empty);
+    Excel12f(xlGetName, &dllName);
 
     foreach(strings; getWorksheetFunctions.map!(a => a.toStringArray)) {
         auto opers = strings.map!(a => a.toXlOper(allocator)).array;

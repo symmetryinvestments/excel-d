@@ -103,7 +103,7 @@ unittest {
    Comments:
 */
 
-int Excel12f(int xlfn, LPXLOPER12 pxResult, LPXLOPER12[] args) nothrow @nogc
+int Excel12f(int xlfn, LPXLOPER12 pxResult, LPXLOPER12[] args...) nothrow @nogc
 {
     import xlld.xlcallcpp: Excel12v;
     import std.algorithm: all;
@@ -112,18 +112,19 @@ int Excel12f(int xlfn, LPXLOPER12 pxResult, LPXLOPER12[] args) nothrow @nogc
     return Excel12v(xlfn, pxResult, cast(int)args.length, cast(LPXLOPER12*)args.ptr);
 }
 
-int Excel12f(int xlfn, LPXLOPER12 pxResult, LPXLOPER12[] args...) nothrow @nogc {
-    return Excel12f(xlfn, pxResult, args);
-}
-
 int Excel12f(int xlfn, LPXLOPER12 result, XLOPER12[] args...) nothrow {
 
-    LPXLOPER12[] ptrArgs;
+    auto ptrArgs = new LPXLOPER12[args.length];
 
-    foreach(ref arg; args)
-        ptrArgs ~= () @trusted { return &arg; }();
+    foreach(i, ref arg; args)
+        ptrArgs[i] = () @trusted { return &arg; }();
 
     return Excel12f(xlfn, result, ptrArgs);
+}
+
+int Excel12f(int xlfn, LPXLOPER12 pxResult) nothrow @nogc
+{
+    return Excel12f(xlfn, pxResult, LPXLOPER12[].init);
 }
 
 __gshared immutable excel12Exception = new Exception("Error calling Excel12f");
