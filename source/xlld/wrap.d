@@ -772,7 +772,7 @@ private enum isWorksheetFunction(alias F) =
    A string to mixin that wraps all eligible functions in the
    given module.
  */
-string wrapModuleWorksheetFunctionsString(string moduleName)() {
+string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModule = __MODULE__) {
     if(!__ctfe) {
         return "";
     }
@@ -790,7 +790,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)() {
         alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
 
         static if(isWorksheetFunction!moduleMember) {
-            ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr);
+            ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
         }
     }
 
@@ -969,10 +969,14 @@ template dlangToXlOperType(T) {
 /**
  A string to use with `mixin` that wraps a D function
  */
-string wrapModuleFunctionStr(string moduleName, string funcName)() {
+string wrapModuleFunctionStr(string moduleName, string funcName)(in string callingModule = __MODULE__) {
+
     if(!__ctfe) {
         return "";
     }
+
+    assert(callingModule != moduleName,
+           "Cannot use `wrapAll` with __MODULE__");
 
     import std.array: join;
     import std.traits: Parameters, functionAttributes, FunctionAttribute, getUDAs;
@@ -1314,7 +1318,7 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
     pool.empty.shouldEqual(Ternary.yes); // deallocateAll in wrapImpl
 }
 
-string wrapWorksheetFunctionsString(Modules...)() {
+string wrapWorksheetFunctionsString(Modules...)(string callingModule = __MODULE__) {
 
     if(!__ctfe) {
         return "";
@@ -1322,7 +1326,7 @@ string wrapWorksheetFunctionsString(Modules...)() {
 
     string ret;
     foreach(module_; Modules) {
-        ret ~= wrapModuleWorksheetFunctionsString!module_;
+        ret ~= wrapModuleWorksheetFunctionsString!module_(callingModule);
     }
 
     return ret;
@@ -1337,7 +1341,7 @@ string wrapAll(Modules...)(in string mainModule = __MODULE__) {
 
     import xlld.traits: implGetWorksheetFunctionsString;
     return
-        wrapWorksheetFunctionsString!Modules ~
+        wrapWorksheetFunctionsString!Modules(mainModule) ~
         "\n" ~
         implGetWorksheetFunctionsString!(mainModule) ~
         "\n" ~
