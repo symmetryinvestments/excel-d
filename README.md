@@ -16,6 +16,18 @@ functions in `test/xlld/test_d_funcs.d` available to be used in Excel
 cells. The types are automatically converted between D native types
 and Excel ones.  To build the example: `dub build -c example [--arch=x86_mscoff|--arch=x86_64]`.
 
+The necessary D boilerplate for the XLL is:
+
+```d
+import xlld;
+mixin(wrapAll!("module1", "module2", ...));
+```
+
+Where `"module1"`, etc. all have to be valid D modules compiled into the XLL.
+This must NOT include the module where `wrapAll` appears, i.e. none of those
+strings must be `__MODULE__`. If that happens, the XLL will probably crash
+Excel.
+
 For this package to build you will need the Excel SDK `xlcall32.lib`
 that can be downloaded [from Microsoft](http://go.microsoft.com/fwlink/?LinkID=251082&clcid=0x409).
 Copying it to the build directory should be sufficient
