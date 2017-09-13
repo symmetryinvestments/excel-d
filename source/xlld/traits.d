@@ -183,7 +183,7 @@ private alias Identity(alias T) = T;
 
 // whether or not this is a function that has the "right" types
 template isSupportedFunction(alias F, T...) {
-    import std.traits: isSomeFunction, ReturnType, Parameters, functionAttributes, FunctionAttribute;
+    import std.traits: isSomeFunction, ReturnType, Parameters;
     import std.meta: AliasSeq, allSatisfy;
     import std.typecons: Tuple;
 
@@ -198,11 +198,7 @@ template isSupportedFunction(alias F, T...) {
             enum isSupportedFunction =
                 __traits(compiles, F(Tuple!(Parameters!F)().expand)) &&
                 isOneOfSupported!(ReturnType!F) &&
-                allSatisfy!(isOneOfSupported, Parameters!F) &&
-                functionAttributes!F & FunctionAttribute.nothrow_;
-
-            static if(!isSupportedFunction && !(functionAttributes!F & FunctionAttribute.nothrow_))
-                pragma(msg, "Warning: Function '", __traits(identifier, F), "' not considered because it throws");
+                allSatisfy!(isOneOfSupported, Parameters!F);
 
         } else
             enum isSupportedFunction = false;

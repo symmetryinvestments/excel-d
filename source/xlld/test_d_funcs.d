@@ -116,6 +116,10 @@ double FuncThrows(double) {
     throw new Exception("oops");
 }
 
+double FuncAsserts(double) {
+    assert(false);
+}
+
 
 // @Dispose is used to tell the framework how to free memory that is dynamically
 // allocated by the D function. After returning, the value is converted to an

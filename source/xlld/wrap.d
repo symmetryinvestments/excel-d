@@ -755,7 +755,11 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any[][])) {
 
 
 private enum isWorksheetFunction(alias F) =
-    isSupportedFunction!(F, double, double[][], string[][], string[], double[], string, Any, Any[], Any[][], int);
+    isSupportedFunction!(F,
+                         double, double[], double[][],
+                         string, string[], string[][],
+                         Any, Any[], Any[][],
+                         int);
 
 @safe pure unittest {
     import xlld.test_d_funcs;
@@ -763,7 +767,7 @@ private enum isWorksheetFunction(alias F) =
     // it might stop compiling in a future version when the deprecation rules for
     // visibility kick in
     static assert(!isWorksheetFunction!shouldNotBeAProblem);
-    static assert(!isWorksheetFunction!FuncThrows);
+    static assert(isWorksheetFunction!FuncThrows);
     static assert(isWorksheetFunction!DoubleArrayToAnyArray);
     static assert(isWorksheetFunction!Twice);
 }
@@ -924,12 +928,12 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     ManyToString(&arg0, &arg1, &arg2).shouldEqualDlang("foobarbaz");
 }
 
-@("Only look at nothrow functions")
+@("nothrow functions")
 @system unittest {
     import xlld.memorymanager: allocator;
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
     auto arg = toXlOper(2.0, allocator);
-    static assert(!__traits(compiles, FuncThrows(&arg)));
+    static assert(__traits(compiles, FuncThrows(&arg)));
 }
 
 @("FuncAddEverything wrapper is @nogc")
@@ -942,6 +946,21 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     scope(exit) freeXLOper(&arg, Mallocator.instance);
     FuncAddEverything(&arg);
 }
+
+@("Wrap a function that throws")
+@system unittest {
+    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    auto arg = toSRef(33.3, theGC);
+    FuncThrows(&arg); // should not actually throw
+}
+
+@("Wrap a function that asserts")
+@system unittest {
+    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    auto arg = toSRef(33.3, theGC);
+    FuncAsserts(&arg); // should not actually throw
+}
+
 
 private enum invalidXlOperType = 0xdeadbeef;
 
