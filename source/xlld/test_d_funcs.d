@@ -209,3 +209,7 @@ string[][] EmptyStringsHalfEmpty2D(Any) nothrow {
 int Twice(int i) @safe nothrow {
     return i * 2;
 }
+
+double FuncConstDouble(const double a) @safe nothrow {
+    return a;
+}

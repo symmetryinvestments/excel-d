@@ -20,7 +20,7 @@ version(unittest) {
     alias theGC = GCAllocator.instance;
 }
 
-XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(T == int)) {
+XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == int)) {
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeInt;
     ret.val.w = val;
@@ -28,7 +28,7 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(T == int)) {
 }
 
 
-XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(T == double)) {
+XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == double)) {
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeNum;
     ret.val.num = val;
@@ -39,7 +39,7 @@ __gshared immutable toXlOperMemoryException = new Exception("Failed to allocate 
 __gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
 
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
-    if(is(T == string) || is(T == wstring))
+    if(is(Unqual!T == string) || is(Unqual!T == wstring))
 {
     import std.utf: byWchar;
 
@@ -110,7 +110,7 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
 }
 
 // the number of bytes required to store `str` as an XLOPER12 string
-package size_t numOperStringBytes(T)(in T str) if(is(T == string) || is(T == wstring)) {
+package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(Unqual!T == wstring)) {
     // XLOPER12 strings are wide strings where index 0 is the length
     // and [1 .. $] is the actual string
     return (str.length + 1) * wchar.sizeof;
@@ -125,7 +125,7 @@ package size_t numOperStringBytes(ref const(XLOPER12) oper) @trusted @nogc pure 
 
 
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
-    if(is(T == double) || is(T == string) || is(Unqual!T == Any))
+    if(is(Unqual!T == double) || is(Unqual!T == string) || is(Unqual!T == Any))
 {
     import std.algorithm: map, all;
     import std.array: array;
@@ -199,7 +199,7 @@ private XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
 }
 
 
-XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(T == string[]) || is(T == double[])) {
+XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(Unqual!T == string[]) || is(Unqual!T == double[])) {
     T[1] realValues = [values];
     return realValues.toXlOper(allocator);
 }
@@ -311,7 +311,7 @@ unittest {
     autoFree(&oper); // normally this is done by Excel
 }
 
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(T == int)) {
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == int)) {
     XLOPER12 ret;
     ret.xltype = XlType.xltypeInt;
     ret.val.w = value;
@@ -334,7 +334,7 @@ auto fromXlOper(T, A)(XLOPER12 val, ref A allocator) {
     return fromXlOper!T(val, allocator);
 }
 
-auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
+auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(Unqual!T == double)) {
     if(val.xltype == xltypeMissing)
         return double.init;
 
@@ -363,7 +363,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == double)) {
     fromXlOper!double(&oper, allocator).isNaN.shouldBeTrue;
 }
 
-auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == int)) {
+auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(Unqual!T == int)) {
     if(val.xltype == xltypeMissing)
         return int.init;
 
@@ -384,7 +384,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == int)) {
 __gshared immutable fromXlOperMemoryException = new Exception("Could not allocate memory for array of char");
 __gshared immutable fromXlOperConvException = new Exception("Could not convert double to string");
 
-auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(T == string)) {
+auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(Unqual!T == string)) {
 
     import std.experimental.allocator: makeArray;
     import std.utf: byChar;
@@ -458,7 +458,7 @@ package XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
     return cast(XlType)(type & ~(xlbitXLFree | xlbitDLLFree));
 }
 
-T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any)) {
+T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any)) {
     // FIXME: deep copy
     return Any(*oper);
 }
@@ -706,7 +706,7 @@ package void apply(T, alias F)(ref XLOPER12 oper) {
             const shouldConvert =
                 (cellVal.xltype == dlangToXlOperType!T.Type) ||
                 (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr) ||
-                is(T == Any);
+                is(Unqual!T == Any);
 
             F(shouldConvert, row, col, cellVal);
         }
@@ -720,7 +720,7 @@ package bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
 }
 
 
-T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any[])) {
+T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any[])) {
     return oper.fromXlOperMulti!(Dimensions.One, Any)(allocator);
 }
 
@@ -737,7 +737,7 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any[])) {
 }
 
 
-T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(T == Any[][])) {
+T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any[][])) {
     return oper.fromXlOperMulti!(Dimensions.Two, typeof(T.init[0][0]))(allocator);
 }
 
@@ -970,13 +970,14 @@ private enum invalidXlOperType = 0xdeadbeef;
  whilst Type is the Type that it gets coerced to.
  */
 template dlangToXlOperType(T) {
-    static if(is(T == double[][]) || is(T == string[][]) || is(T == double[]) || is(T == string[])) {
+    static if(is(Unqual!T == double[][]) || is(Unqual!T == string[][]) ||
+              is(Unqual!T == double[]) || is(Unqual!T == string[])) {
         enum InputType = XlType.xltypeSRef;
         enum Type = XlType.xltypeMulti;
-    } else static if(is(T == double)) {
+    } else static if(is(Unqual!T == double)) {
         enum InputType = XlType.xltypeNum;
         enum Type = XlType.xltypeNum;
-    } else static if(is(T == string)) {
+    } else static if(is(Unqual!T == string)) {
         enum InputType = XlType.xltypeStr;
         enum Type = XlType.xltypeStr;
     } else {
@@ -1058,6 +1059,7 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     import std.traits: Parameters;
     import std.typecons: Tuple;
     import std.traits: hasUDA, getUDAs;
+    import std.meta: staticMap;
 
     static XLOPER12 ret;
 
@@ -1079,15 +1081,8 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
             free(&arg);
     }
 
-    Tuple!(Parameters!wrappedFunc) dArgs; // the D types to pass to the wrapped function
-
-    void setRetToError(in string msg) {
-        try
-            ret = msg.toAutoFreeOper;
-        catch(Exception _) {
-            ret.xltype = XlType.xltypeErr;
-        }
-    }
+    // the D types to pass to the wrapped function
+    Tuple!(staticMap!(Unqual, Parameters!wrappedFunc)) dArgs;
 
     void freeAll() {
         static if(__traits(compiles, tempAllocator.deallocateAll))
@@ -1112,6 +1107,14 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 
     // get rid of the temporary memory allocations for the conversions
     scope(exit) freeAll;
+
+    void setRetToError(in string msg) {
+        try
+            ret = msg.toAutoFreeOper;
+        catch(Exception _) {
+            ret.xltype = XlType.xltypeErr;
+        }
+    }
 
     // convert all Excel types to D types
     foreach(i, InputType; Parameters!wrappedFunc) {
@@ -1474,6 +1477,15 @@ unittest {
     auto oper = 3.toSRef(theGC);
     auto arg = () @trusted { return &oper; }();
     Twice(arg).shouldEqualDlang(6);
+}
+
+@("issue 31 - D functions can have const arguments")
+@safe unittest {
+    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "FuncConstDouble"));
+
+    auto oper = (3.0).toSRef(theGC);
+    auto arg = () @trusted { return &oper; }();
+    FuncConstDouble(arg).shouldEqualDlang(3.0);
 }
 
 
