@@ -1,4 +1,4 @@
-# excel-d
+s# excel-d
 
 Excel API bindings and wrapper API for D
 
@@ -42,7 +42,7 @@ Sample code (see the [example](example) directory for more):
               HelpTopic("Adds all cells in an array"),
               FunctionHelp("Adds all cells in an array"),
               ArgumentHelp(["The array to add"]))
-    double FuncAddEverything(double[][] args) nothrow @nogc { // must be nothrow, @nogc optional
+    double FuncAddEverything(double[][] args) nothrow @nogc { // nothrow and @nogc are optional
         import std.algorithm: fold;
         import std.math: isNaN;
 
