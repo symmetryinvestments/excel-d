@@ -1140,15 +1140,6 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         }
 
     } catch(Exception ex) {
-
-        version(unittest) {
-            import core.stdc.stdio: printf;
-            static char[1024] buffer;
-            buffer[0 .. ex.msg.length] = ex.msg[];
-            buffer[ex.msg.length + 1] = 0;
-            () @trusted { printf("Could not call wrapped function: %s\n", &buffer[0]); }();
-        }
-
         setRetToError("#ERROR calling " ~ __traits(identifier, wrappedFunc));
         return &ret;
     } catch(Throwable t) {
