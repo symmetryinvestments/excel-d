@@ -25,6 +25,8 @@ The library file should be useable as-is, as long as on 32-bit Excel `dub build`
 be converted first.  We recommend using `link.exe` to not need the conversion.  On 64 bit Excel
 just use `--arch=x86_64` - no questions of different library formats.
 
+As part of the build a `.def` file is generated with all functions to be exported by the XLL.
+
 Excel won't load the XLL automatically: this must be done manually in File->Tools->Add-Ins.
 Click on "Go" for "Excel Add-Ins" (the default) and select your XLL there after clicking on
 "Browse".
