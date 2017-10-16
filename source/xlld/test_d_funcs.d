@@ -11,6 +11,7 @@ version(unittest):
 import xlld;
 
 
+///
 @Register(ArgumentText("Array to add"),
           HelpTopic("Adds all cells in an array"),
           FunctionHelp("Adds all cells in an array"),
@@ -25,6 +26,7 @@ double FuncAddEverything(double[][] args) nothrow @nogc {
     return ret;
 }
 
+///
 double[][] FuncTripleEverything(double[][] args) nothrow {
     double[][] ret;
     ret.length = args.length;
@@ -37,6 +39,7 @@ double[][] FuncTripleEverything(double[][] args) nothrow {
     return ret;
 }
 
+///
 double FuncAllLengths(string[][] args) nothrow @nogc {
     import std.algorithm: fold;
 
@@ -46,6 +49,7 @@ double FuncAllLengths(string[][] args) nothrow @nogc {
     return ret;
 }
 
+///
 double[][] FuncLengths(string[][] args) nothrow {
     double[][] ret;
 
@@ -60,6 +64,7 @@ double[][] FuncLengths(string[][] args) nothrow {
 }
 
 
+///
 string[][] FuncBob(string[][] args) nothrow {
     string[][] ret;
 
@@ -74,31 +79,37 @@ string[][] FuncBob(string[][] args) nothrow {
 }
 
 
+///
 double FuncDoubleSlice(double[] arg) nothrow @nogc {
     return arg.length;
 }
 
+///
 double FuncStringSlice(string[] arg) nothrow @nogc {
     return arg.length;
 }
 
+///
 double[] FuncSliceTimes3(double[] arg) nothrow {
     import std.algorithm;
     import std.array;
     return arg.map!(a => a * 3).array;
 }
 
+///
 string[] StringsToStrings(string[] args) nothrow {
     import std.algorithm;
     import std.array;
     return args.map!(a => a ~ "foo").array;
 }
 
+///
 string StringsToString(string[] args) nothrow {
     import std.string;
     return args.join(", ");
 }
 
+///
 string StringToString(string arg) nothrow {
     return arg ~ "bar";
 }
@@ -107,6 +118,7 @@ private string shouldNotBeAProblem(string, string[]) nothrow {
     return "";
 }
 
+///
 string ManyToString(string arg0, string arg1, string arg2) nothrow {
     return arg0 ~ arg1 ~ arg2;
 }
@@ -116,21 +128,26 @@ double FuncThrows(double) {
     throw new Exception("oops");
 }
 
+///
 double FuncAsserts(double) {
     assert(false);
 }
 
 
-// @Dispose is used to tell the framework how to free memory that is dynamically
-// allocated by the D function. After returning, the value is converted to an
-// Excel type sand the D value is freed using the lambda defined here.
-// In this example we're using TestAllocator to make sure that there are no
-// memory leaks.
+/**
+    @Dispose is used to tell the framework how to free memory that is dynamically
+    allocated by the D function. After returning, the value is converted to an
+    Excel type sand the D value is freed using the lambda defined here.
+    In this example we're using TestAllocator to make sure that there are no
+    memory leaks.
+*/
 @Dispose!((ret) {
     import xlld.test_util: gTestAllocator;
     import std.experimental.allocator: dispose;
     gTestAllocator.dispose(ret);
 })
+
+///
 double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
     import xlld.test_util: gTestAllocator;
     import std.experimental.allocator: makeArray;
@@ -144,6 +161,7 @@ double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
 }
 
 
+///
 Any[][] DoubleArrayToAnyArray(double[][] values) @safe nothrow {
     import std.experimental.allocator.mallocator: Mallocator;
     import std.conv: to;
@@ -175,30 +193,36 @@ Any[][] DoubleArrayToAnyArray(double[][] values) @safe nothrow {
 }
 
 
+///
 double[] AnyArrayToDoubleArray(Any[][] values) nothrow {
     return [values.length, values.length ? values[0].length : 0];
 }
 
 
+///
 Any[][] AnyArrayToAnyArray(Any[][] values) nothrow {
     return values;
 }
 
+///
 Any[][] FirstOfTwoAnyArrays(Any[][] a, Any[][]) nothrow {
     return a;
 }
 
+///
 string[] EmptyStrings1D(Any) nothrow {
     string[] empty;
     return empty;
 }
 
 
+///
 string[][] EmptyStrings2D(Any) nothrow {
     string[][] empty;
     return empty;
 }
 
+///
 string[][] EmptyStringsHalfEmpty2D(Any) nothrow {
     string[][] empty;
     empty.length = 1;
@@ -206,10 +230,12 @@ string[][] EmptyStringsHalfEmpty2D(Any) nothrow {
     return empty;
 }
 
+///
 int Twice(int i) @safe nothrow {
     return i * 2;
 }
 
+///
 double FuncConstDouble(const double a) @safe nothrow {
     return a;
 }

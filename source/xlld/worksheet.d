@@ -14,6 +14,7 @@ private mixin template ST(string name, T = wstring) {
     mixin(`struct ` ~ name ~ `{ T value; }`);
 }
 
+///
 struct Procedure {
     wstring value;
     string toString() @safe pure const {
@@ -105,6 +106,7 @@ struct Optional {
 alias Register = Optional;
 
 
+///
 struct Dispose(alias function_) {
     alias dispose = function_;
 }

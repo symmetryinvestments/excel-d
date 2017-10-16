@@ -1,3 +1,6 @@
+/**
+    Utility test functions
+*/
 module xlld.test_util;
 
 version(unittest):
@@ -6,21 +9,29 @@ import unit_threaded;
 
 import xlld.xlcall: LPXLOPER12, XLOPER12, XlType;
 
+///
 TestAllocator gTestAllocator;
 /// emulates SRef types by storing what the referenced type actually is
 XlType gReferencedType;
 
 // tracks calls to `coerce` and `free` to make sure memory allocations/deallocations match
 int gNumXlCoerce;
+///
 int gNumXlFree;
+///
 enum maxCoerce = 1000;
+///
 void*[maxCoerce] gCoerced;
+///
 void*[maxCoerce] gFreed;
+///
 double[] gDates;
+///
 double[] gTimes;
 
 version(unittest)
 {
+    ///
     static this() {
         import xlld.xlcallcpp: SetExcel12EntryPt;
         // this effectively "implements" the Excel12v function
@@ -29,12 +40,14 @@ version(unittest)
         SetExcel12EntryPt(&excel12UnitTest);
     }
 
+    ///
     static ~this() {
         import unit_threaded.should: shouldBeSameSetAs;
         gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
     }
 }
 
+///
 extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, LPXLOPER12 result) nothrow @nogc {
 
     import xlld.xlcall;
@@ -106,7 +119,7 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
     }
 }
 
-// automatically converts from oper to compare with a D type
+/// automatically converts from oper to compare with a D type
 void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
     import xlld.memorymanager: allocator;
     import xlld.wrap: fromXlOper, stripMemoryBitmask;
@@ -129,17 +142,18 @@ void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, 
     actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
 }
 
-// automatically converts from oper to compare with a D type
+/// automatically converts from oper to compare with a D type
 void shouldEqualDlang(U)(ref XLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
     shouldEqualDlang(&actual, expected, file, line);
 }
 
-// automatically converts from oper to compare with a D type
+/// automatically converts from oper to compare with a D type
 void shouldEqualDlang(U)(XLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
     shouldEqualDlang(actual, expected, file, line);
 }
 
 
+///
 XLOPER12 toSRef(T, A)(T val, ref A allocator) @trusted {
     import xlld.wrap: toXlOper;
 
@@ -150,7 +164,7 @@ XLOPER12 toSRef(T, A)(T val, ref A allocator) @trusted {
     return ret;
 }
 
-// Mimics Excel calling a particular D function, including freeing memory
+/// Mimics Excel calling a particular D function, including freeing memory
 void fromExcel(alias F, A...)(auto ref A args) {
     import xlld.wrap: wrapModuleFunctionImpl;
     import xlld.memorymanager: gTempAllocator, autoFree;
@@ -160,14 +174,15 @@ void fromExcel(alias F, A...)(auto ref A args) {
 }
 
 
-// tracks allocations and throws in the destructor if there is a memory leak
-// it also throws when there is an attempt to deallocate memory that wasn't
-// allocated
+/// tracks allocations and throws in the destructor if there is a memory leak
+/// it also throws when there is an attempt to deallocate memory that wasn't
+/// allocated
 struct TestAllocator {
 
     import std.experimental.allocator.common: platformAlignment;
     import std.experimental.allocator.mallocator: Mallocator;
 
+    ///
     alias allocator = Mallocator.instance;
 
     private static struct ByteRange {
@@ -178,13 +193,16 @@ struct TestAllocator {
         }
     }
 
+    ///
     bool debug_;
     private ByteRange[] _allocations;
     private ByteRange[] _deallocations;
     private int _numAllocations;
 
+    ///
     enum uint alignment = platformAlignment;
 
+    ///
     void[] allocate(size_t numBytes) @trusted @nogc {
         import std.experimental.allocator: makeArray, expandArray;
         import core.stdc.stdio: printf;
@@ -208,6 +226,7 @@ struct TestAllocator {
         return ret;
     }
 
+    ///
     bool deallocate(void[] bytes) @trusted @nogc nothrow {
         import std.experimental.allocator: makeArray, expandArray;
         import std.algorithm: remove, find, canFind;
@@ -250,6 +269,7 @@ struct TestAllocator {
         return () @trusted { return allocator.deallocate(bytes); }();
     }
 
+    ///
     bool deallocateAll() @safe @nogc nothrow {
         import std.array: empty, front;
 
@@ -260,14 +280,17 @@ struct TestAllocator {
         return true;
     }
 
+    ///
     auto numAllocations() @safe @nogc pure nothrow const {
         return _numAllocations;
     }
 
+    ///
     ~this() @safe @nogc nothrow {
         verify;
     }
 
+    ///
     void verify() @trusted @nogc nothrow {
 
         static char[1024] buffer;
@@ -280,6 +303,7 @@ struct TestAllocator {
         }
     }
 
+    ///
     int printAllocations(int N)(ref char[N] buffer, int index = 0) @trusted @nogc const nothrow {
         import core.stdc.stdio: sprintf;
         index += sprintf(&buffer[index], "[\n");

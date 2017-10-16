@@ -1,14 +1,20 @@
+/**
+   Any type
+ */
 module xlld.any;
 
 
+///
 struct Any {
     import xlld.xlcall: XLOPER12;
 
+    ///
     XLOPER12 _impl;
     alias _impl this;
 
     version(unittest) {
 
+        ///
         bool opEquals(Any other) @trusted const {
             import xlld.xlcall: XlType;
             import xlld.wrap: fromXlOper;
@@ -45,6 +51,7 @@ struct Any {
     }
 
 
+    ///
     string toString() @safe const {
         import std.conv: text, to;
         import xlld.xlcall: XlType;
@@ -87,6 +94,7 @@ struct Any {
 }
 
 
+///
 auto any(T, A)(auto ref T value, auto ref A allocator) @trusted {
     import xlld.wrap: toXlOper;
     return Any(value.toXlOper(allocator));

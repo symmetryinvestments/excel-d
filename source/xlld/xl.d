@@ -10,6 +10,7 @@ version(unittest) {
 
 }
 
+///
 XLOPER12 coerce(LPXLOPER12 oper) nothrow @nogc @trusted {
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlCoerce;
@@ -20,10 +21,12 @@ XLOPER12 coerce(LPXLOPER12 oper) nothrow @nogc @trusted {
     return coerced;
 }
 
+///
 void free(ref XLOPER12 oper) nothrow @nogc @trusted {
     free(&oper);
 }
 
+///
 void free(LPXLOPER12 oper) nothrow @nogc @trusted {
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlFree;
@@ -33,6 +36,7 @@ void free(LPXLOPER12 oper) nothrow @nogc @trusted {
 }
 
 
+///
 struct Coerced {
     XLOPER12 oper;
     private bool coerced;

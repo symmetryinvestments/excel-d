@@ -112,6 +112,7 @@ int Excel12f(int xlfn, LPXLOPER12 pxResult, LPXLOPER12[] args...) nothrow @nogc
     return Excel12v(xlfn, pxResult, cast(int)args.length, cast(LPXLOPER12*)args.ptr);
 }
 
+///
 int Excel12f(int xlfn, LPXLOPER12 result, XLOPER12[] args...) nothrow {
 
     auto ptrArgs = new LPXLOPER12[args.length];
@@ -122,11 +123,13 @@ int Excel12f(int xlfn, LPXLOPER12 result, XLOPER12[] args...) nothrow {
     return Excel12f(xlfn, result, ptrArgs);
 }
 
+///
 int Excel12f(int xlfn, LPXLOPER12 pxResult) nothrow @nogc
 {
     return Excel12f(xlfn, pxResult, LPXLOPER12[].init);
 }
 
+///
 __gshared immutable excel12Exception = new Exception("Error calling Excel12f");
 
 /**

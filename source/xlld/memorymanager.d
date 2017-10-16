@@ -18,12 +18,17 @@ import std.algorithm.comparison: max;
 import std.traits: isArray;
 import std.meta: allSatisfy;
 
+///
 alias allocator = Mallocator.instance;
+///
 alias autoFreeAllocator = Mallocator.instance;
 
+///
 package alias MemoryPool = AllocatorList!((size_t n) => Region!Mallocator(max(n, size_t(1024 * 1024))), Mallocator);
+///
 package MemoryPool gTempAllocator;
 
+///
 T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
     import xlld.wrap: isMulti;
     import std.experimental.allocator: makeMultidimensionalArray;
@@ -33,36 +38,42 @@ T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
         typeof(return).init;
 }
 
-// the function called by the Excel callback
+/// the function called by the Excel callback
 void autoFree(LPXLOPER12 arg) nothrow {
     import xlld.framework: freeXLOper;
     freeXLOper(arg, autoFreeAllocator);
 }
 
+///
 struct AllocatorContext(A) {
-
+    ///
     A* _allocator_;
 
+    ///
     this(ref A allocator) {
         _allocator_ = &allocator;
     }
 
+    ///
     auto any(T)(auto ref T value) {
         import xlld.any: _any = any;
         return _any(value, *_allocator_);
     }
 
+    ///
     auto fromXlOper(T, U)(U oper) {
         import xlld.wrap: wrapFromXlOper = fromXlOper;
         return wrapFromXlOper!T(oper, _allocator_);
     }
 
+    ///
     auto toXlOper(T)(T val) {
         import xlld.wrap: wrapToXlOper = toXlOper;
         return wrapToXlOper(val, _allocator_);
     }
 
     version(unittest) {
+        ///
         auto toSRef(T)(T val) {
             import xlld.test_util: toSRef_ = toSRef;
             return toSRef_(val, _allocator_);
@@ -70,6 +81,7 @@ struct AllocatorContext(A) {
     }
 }
 
+///
 auto allocatorContext(A)(ref A allocator) {
     return AllocatorContext!A(allocator);
 }

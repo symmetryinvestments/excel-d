@@ -20,12 +20,12 @@ import xlld.worksheet;
 import xlld.xlcall;
 import std.traits: isSomeFunction, allSatisfy, isSomeString;
 
-// import unit_threaded and introduce helper functions for testing
+/// import unit_threaded and introduce helper functions for testing
 version(unittest) {
     import unit_threaded;
 
-    // return a WorksheetFunction for a double function(double) with no
-    // optional arguments
+    /// return a WorksheetFunction for a double function(double) with no
+    /// optional arguments
     WorksheetFunction makeWorksheetFunction(wstring name, wstring typeText) @safe pure nothrow {
         return
             WorksheetFunction(
@@ -44,14 +44,17 @@ version(unittest) {
             );
     }
 
+    ///
     WorksheetFunction doubleToDoubleFunction(wstring name) @safe pure nothrow {
         return makeWorksheetFunction(name, "BB"w);
     }
 
+    ///
     WorksheetFunction FP12ToDoubleFunction(wstring name) @safe pure nothrow {
         return makeWorksheetFunction(name, "BK%"w);
     }
 
+    ///
     WorksheetFunction operToOperFunction(wstring name) @safe pure nothrow {
         return makeWorksheetFunction(name, "UU"w);
     }
@@ -91,6 +94,7 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
     }
 }
 
+///
 @("getWorksheetFunction for double -> double functions with no extra attributes")
 @safe pure unittest {
     double foo(double) nothrow @nogc { return 0; }
@@ -100,12 +104,14 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
     getWorksheetFunction!bar.shouldEqual(doubleToDoubleFunction("bar"));
 }
 
+///
 @("getWorksheetFunction for double -> int functions should fail")
 @safe pure unittest {
     double foo(int) { return 0; }
     getWorksheetFunction!foo.shouldThrowWithMessage("Unsupported function type double(int) for foo");
 }
 
+///
 @("getworksheetFunction with @Register in order")
 @safe pure unittest {
 
@@ -119,6 +125,7 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
     getWorksheetFunction!foo.shouldEqual(expected);
 }
 
+///
 @("getworksheetFunction with @Register out of order")
 @safe pure unittest {
 
@@ -155,6 +162,7 @@ private wstring getTypeText(alias F)() if(isSomeFunction!F) {
 }
 
 
+///
 @("getTypeText")
 @safe pure unittest {
     import std.conv: to; // working around unit-threaded bug
@@ -181,14 +189,14 @@ private wstring getTypeText(alias F)() if(isSomeFunction!F) {
 private alias Identity(alias T) = T;
 
 
-// whether or not this is a function that has the "right" types
+/// whether or not this is a function that has the "right" types
 template isSupportedFunction(alias F, T...) {
     import std.traits: isSomeFunction, ReturnType, Parameters;
     import std.meta: AliasSeq, allSatisfy;
     import std.typecons: Tuple;
 
-    // trying to get a pointer to something is a good way of making sure we can
-    // attempt to evaluate `isSomeFunction` - it's not always possible
+    /// trying to get a pointer to something is a good way of making sure we can
+    /// attempt to evaluate `isSomeFunction` - it's not always possible
     enum canGetPointerToIt = __traits(compiles, &F);
     enum isOneOfSupported(U) = isSupportedType!(U, T);
 
@@ -348,10 +356,12 @@ unittest {
 
 
 
+///
 struct DllDefFile {
     Statement[] statements;
 }
 
+///
 struct Statement {
     string name;
     string[] args;
@@ -418,6 +428,7 @@ unittest {
 }
 
 
+///
 mixin template GenerateDllDef(string module_ = __MODULE__) {
     version(exceldDef) {
         void main(string[] args) nothrow {
@@ -435,6 +446,7 @@ mixin template GenerateDllDef(string module_ = __MODULE__) {
     }
 }
 
+///
 void generateDllDef(string module_ = __MODULE__)(string[] args) {
     import std.stdio: File;
     import std.exception: enforce;
