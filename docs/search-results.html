@@ -15,7 +15,8 @@
 		<div id="logotype">
 		<span>Documentation</span>
 		<nav>
-			<a href="http://code.kaleidic.io/">Kaleidic Associates Open Source</a>
+			<a href="http://excel-d.code.kaleidic.io/">Kaleidic Associates Open Source - Excel-D</a>
+			<a href="https://github.com/kaleidicassociates/excel-d/">Github - excel-d</a>
 		</nav>
 		</div>
 
@@ -37,462 +38,489 @@
 <listing>
 <decl id="1" type="module"><name>xlld.dummy</name><desc>&lt;div&gt;&lt;p&gt;Enables linking on  Windows without having to link to the real implementations
  Only for unit testing.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.dummy.html</link></decl><decl id="2" type="module"><name>xlld.framework</name><desc>&lt;div&gt;&lt;p&gt;Utility functions for writing XLLs&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.framework.html</link><decl id="3" type="function"><name>freeXLOper</name><desc>&lt;div&gt;&lt;p&gt;Will free any malloc'd memory associated with the given
-        LPXLOPER, assuming it has any memory associated with it&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.framework.freeXLOper.html</link></decl><decl id="4" type="function"><name>Excel12f</name><desc>&lt;div&gt;&lt;p&gt;Wrapper for the Excel12 function that allows passing D arrays&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.framework.Excel12f.html</link></decl></decl><decl id="5" type="module"><name>xlld.memorymanager</name><desc>&lt;div&gt;&lt;p&gt;MemoryManager.D&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.memorymanager.html</link></decl><decl id="6" type="module"><name>xlld.test_d_funcs</name><desc>&lt;div&gt;&lt;p&gt;Only exists to test the wrapping functionality Contains functions
+        LPXLOPER, assuming it has any memory associated with it&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.framework.freeXLOper.html</link></decl><decl id="4" type="function"><name>Excel12f</name><desc>&lt;div&gt;&lt;p&gt;Wrapper for the Excel12 function that allows passing D arrays&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.framework.Excel12f.html</link></decl><decl id="5" type="function"><name>excel12</name><desc>&lt;div&gt;&lt;p&gt;D version of Excel12f. &amp;quot;D version&amp;quot; in the sense that the types
+   are all D types. Avoids having to manually convert to XLOPER12.
+   e.g. excel12(xlfFoo, 1.0, 2.0);&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.framework.excel12.html</link></decl><decl id="6" type="function"><name>excel12Then</name><desc>&lt;div&gt;&lt;p&gt;Version of excel12 that avoids automatic memory management
+   by asking the caller to supply a compile-time function
+   to call on the result.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.framework.excel12Then.html</link></decl></decl><decl id="7" type="module"><name>xlld.memorymanager</name><desc>&lt;div&gt;&lt;p&gt;MemoryManager.D&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.memorymanager.html</link></decl><decl id="8" type="module"><name>xlld.test_d_funcs</name><desc>&lt;div&gt;&lt;p&gt;Only exists to test the wrapping functionality Contains functions
  with regular D types that will get wrapped so they can be called by
- the spreadsheet.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.test_d_funcs.html</link></decl><decl id="7" type="module"><name>xlld.test_xl_funcs</name><desc>&lt;div&gt;&lt;p&gt;Only exists to test the module reflection functionality
- Contains functions with types that the spreadsheet knows about&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.test_xl_funcs.html</link></decl><decl id="8" type="module"><name>xlld.traits</name><desc>&lt;div&gt;&lt;p&gt;This module implements the compile-time reflection machinery to
+ the spreadsheet.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.test_d_funcs.html</link></decl><decl id="9" type="module"><name>xlld.test_xl_funcs</name><desc>&lt;div&gt;&lt;p&gt;Only exists to test the module reflection functionality
+ Contains functions with types that the spreadsheet knows about&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.test_xl_funcs.html</link></decl><decl id="10" type="module"><name>xlld.traits</name><desc>&lt;div&gt;&lt;p&gt;This module implements the compile-time reflection machinery to
  automatically register all D functions that are eligible in a
- compile-time define list of modules to be called from Excel.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.html</link><decl id="9" type="function"><name>getWorksheetFunction</name><desc>&lt;div&gt;&lt;p&gt;Take a D function as a compile-time parameter and returns a
- WorksheetFunction struct with the fields filled in accordingly.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.getWorksheetFunction.html</link></decl><decl id="10" type="function"><name>getModuleWorksheetFunctions</name><desc>&lt;div&gt;&lt;p&gt;Gets all Excel-callable functions in a given module&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.getModuleWorksheetFunctions.html</link></decl><decl id="11" type="function"><name>getAllWorksheetFunctions</name><desc>&lt;div&gt;&lt;p&gt;Gets all Excel-callable functions from the given modules&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.getAllWorksheetFunctions.html</link></decl><decl id="12" type="function"><name>implGetWorksheetFunctionsString</name><desc>&lt;div&gt;&lt;p&gt;Implements the getWorksheetFunctions function needed by xlld.xll in
+ compile-time define list of modules to be called from Excel.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.html</link><decl id="11" type="function"><name>getWorksheetFunction</name><desc>&lt;div&gt;&lt;p&gt;Take a D function as a compile-time parameter and returns a
+ WorksheetFunction struct with the fields filled in accordingly.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.getWorksheetFunction.html</link></decl><decl id="12" type="function"><name>getModuleWorksheetFunctions</name><desc>&lt;div&gt;&lt;p&gt;Gets all Excel-callable functions in a given module&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.getModuleWorksheetFunctions.html</link></decl><decl id="13" type="function"><name>getAllWorksheetFunctions</name><desc>&lt;div&gt;&lt;p&gt;Gets all Excel-callable functions from the given modules&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.getAllWorksheetFunctions.html</link></decl><decl id="14" type="function"><name>implGetWorksheetFunctionsString</name><desc>&lt;div&gt;&lt;p&gt;Implements the getWorksheetFunctions function needed by xlld.xll in
  order to register the Excel-callable functions at runtime
  This used to be a template mixin but even using a string mixin inside
- fails to actually make it an extern(C) function.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.implGetWorksheetFunctionsString.html</link></decl><decl id="13" type="function"><name>dllDefFile</name><desc>&lt;div&gt;&lt;p&gt;Returns a structure descripting a Windows .def file.
+ fails to actually make it an extern(C) function.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.implGetWorksheetFunctionsString.html</link></decl><decl id="15" type="function"><name>dllDefFile</name><desc>&lt;div&gt;&lt;p&gt;Returns a structure descripting a Windows .def file.
    This allows the tests to not care about the specific formatting
    used when writing the information out.
-   This encapsulates all the functions to be exported by the DLL/XLL.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.dllDefFile.html</link></decl></decl><decl id="14" type="module"><name>xlld.worksheet</name><desc>&lt;div&gt;&lt;p&gt;Interface for registering worksheet functions with Excel&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.html</link><decl id="15" type="struct"><name>WorksheetFunction</name><desc>&lt;div&gt;&lt;p&gt;The arguments used to register a worksheet function with the spreadsheet.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.WorksheetFunction.html</link><decl id="16" type="function"><name>toStringArray</name><desc>&lt;div&gt;&lt;p&gt;Returns an array suitable for use with spreadsheet registration&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.WorksheetFunction.toStringArray.html</link></decl></decl><decl id="17" type="struct"><name>Optional</name><desc>&lt;div&gt;&lt;p&gt;Optional arguments that can be set by a function author, but don't necessarily
-   have to be.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.Optional.html</link></decl><decl id="18" type="alias"><name>Register</name><desc>&lt;div&gt;&lt;p&gt;A user-facing name to use as an UDA to decorate D functions.
+   This encapsulates all the functions to be exported by the DLL/XLL.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.dllDefFile.html</link></decl></decl><decl id="16" type="module"><name>xlld.worksheet</name><desc>&lt;div&gt;&lt;p&gt;Interface for registering worksheet functions with Excel&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.html</link><decl id="17" type="struct"><name>WorksheetFunction</name><desc>&lt;div&gt;&lt;p&gt;The arguments used to register a worksheet function with the spreadsheet.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.WorksheetFunction.html</link><decl id="18" type="function"><name>toStringArray</name><desc>&lt;div&gt;&lt;p&gt;Returns an array suitable for use with spreadsheet registration&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.WorksheetFunction.toStringArray.html</link></decl></decl><decl id="19" type="struct"><name>Optional</name><desc>&lt;div&gt;&lt;p&gt;Optional arguments that can be set by a function author, but don't necessarily
+   have to be.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.Optional.html</link></decl><decl id="20" type="alias"><name>Register</name><desc>&lt;div&gt;&lt;p&gt;A user-facing name to use as an UDA to decorate D functions.
     Any arguments passed to its constructor will be used to register
-    the function with the spreadsheet.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.Register.html</link></decl></decl><decl id="19" type="module"><name>xlld.xl</name><desc>&lt;div&gt;&lt;p&gt;Wraps calls to xlXXX &amp;quot;functions&amp;quot; via the Excel4/Excel12 functions&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xl.html</link></decl><decl id="20" type="module"><name>xlld.xlcall</name><desc>&lt;div&gt;&lt;p&gt;Microsoft Excel Developer's Toolkit
-    Version 15.0&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.html</link><decl id="21" type="function"><name>Excel4v</name><desc>&lt;div&gt;&lt;p&gt;XL 12 Basic Datatypes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.Excel4v.html</link></decl><decl id="22" type="struct"><name>XLREF</name><desc>&lt;div&gt;&lt;p&gt;XLREF structure
-	   Describes a single rectangular reference.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLREF.html</link></decl><decl id="23" type="struct"><name>XLMREF</name><desc>&lt;div&gt;&lt;p&gt;XLMREF structure
+    the function with the spreadsheet.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.Register.html</link></decl></decl><decl id="21" type="module"><name>xlld.xl</name><desc>&lt;div&gt;&lt;p&gt;Wraps calls to xlXXX &amp;quot;functions&amp;quot; via the Excel4/Excel12 functions&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xl.html</link><decl id="22" type="function"><name>scopedCoerce</name><desc>&lt;div&gt;&lt;p&gt;Coerces an oper and returns an RAII struct that automatically frees memory&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xl.scopedCoerce.html</link></decl></decl><decl id="23" type="module"><name>xlld.xlcall</name><desc>&lt;div&gt;&lt;p&gt;Microsoft Excel Developer's Toolkit
+    Version 15.0&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.html</link><decl id="24" type="function"><name>Excel4v</name><desc>&lt;div&gt;&lt;p&gt;XL 12 Basic Datatypes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.Excel4v.html</link></decl><decl id="25" type="struct"><name>XLREF</name><desc>&lt;div&gt;&lt;p&gt;XLREF structure
+	   Describes a single rectangular reference.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLREF.html</link></decl><decl id="26" type="struct"><name>XLMREF</name><desc>&lt;div&gt;&lt;p&gt;XLMREF structure
 	   Describes multiple rectangular references.
 	   This is a variable size structure, default
-	   size is 1 reference.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLMREF.html</link></decl><decl id="24" type="struct"><name>XLREF12</name><desc>&lt;div&gt;&lt;p&gt;XLREF12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLREF12.html</link></decl><decl id="25" type="struct"><name>XLMREF12</name><desc>&lt;div&gt;&lt;p&gt;XLMREF12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLMREF12.html</link></decl><decl id="26" type="struct"><name>FP</name><desc>&lt;div&gt;&lt;p&gt;FP structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.FP.html</link></decl><decl id="27" type="struct"><name>FP12</name><desc>&lt;div&gt;&lt;p&gt;FP12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.FP12.html</link></decl><decl id="28" type="struct"><name>XLOPER</name><desc>&lt;div&gt;&lt;p&gt;XLOPER structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLOPER.html</link></decl><decl id="29" type="struct"><name>XLOPER12</name><desc>&lt;div&gt;&lt;p&gt;XLOPER12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLOPER12.html</link></decl><decl id="30" type="variable"><name>xltypeNum</name><desc>&lt;div&gt;&lt;p&gt;XLOPER and XLOPER12 data types&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xltypeNum.html</link></decl><decl id="31" type="variable"><name>xlretSuccess</name><desc>&lt;div&gt;&lt;p&gt;Return codes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlretSuccess.html</link></decl><decl id="32" type="variable"><name>xleventCalculationEnded</name><desc>&lt;div&gt;&lt;p&gt;XLL events&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xleventCalculationEnded.html</link></decl><decl id="33" type="function"><name>XLCallVer</name><desc>&lt;div&gt;&lt;p&gt;Function prototypes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLCallVer.html</link></decl><decl id="34" type="alias"><name>PXL_HPC_ASYNC_CALLBACK</name><desc>&lt;div&gt;&lt;p&gt;Cluster Connector Async Callback&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.PXL_HPC_ASYNC_CALLBACK.html</link></decl><decl id="35" type="variable"><name>xlHpcRetSuccess</name><desc>&lt;div&gt;&lt;p&gt;Cluster connector entry point return codes
+	   size is 1 reference.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLMREF.html</link></decl><decl id="27" type="struct"><name>XLREF12</name><desc>&lt;div&gt;&lt;p&gt;XLREF12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLREF12.html</link></decl><decl id="28" type="struct"><name>XLMREF12</name><desc>&lt;div&gt;&lt;p&gt;XLMREF12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLMREF12.html</link></decl><decl id="29" type="struct"><name>FP</name><desc>&lt;div&gt;&lt;p&gt;FP structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.FP.html</link></decl><decl id="30" type="struct"><name>FP12</name><desc>&lt;div&gt;&lt;p&gt;FP12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.FP12.html</link></decl><decl id="31" type="struct"><name>XLOPER</name><desc>&lt;div&gt;&lt;p&gt;XLOPER structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLOPER.html</link></decl><decl id="32" type="struct"><name>XLOPER12</name><desc>&lt;div&gt;&lt;p&gt;XLOPER12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLOPER12.html</link></decl><decl id="33" type="variable"><name>xltypeNum</name><desc>&lt;div&gt;&lt;p&gt;XLOPER and XLOPER12 data types&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xltypeNum.html</link></decl><decl id="34" type="variable"><name>xlretSuccess</name><desc>&lt;div&gt;&lt;p&gt;Return codes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlretSuccess.html</link></decl><decl id="35" type="variable"><name>xleventCalculationEnded</name><desc>&lt;div&gt;&lt;p&gt;XLL events&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xleventCalculationEnded.html</link></decl><decl id="36" type="function"><name>XLCallVer</name><desc>&lt;div&gt;&lt;p&gt;Function prototypes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLCallVer.html</link></decl><decl id="37" type="alias"><name>PXL_HPC_ASYNC_CALLBACK</name><desc>&lt;div&gt;&lt;p&gt;Cluster Connector Async Callback&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.PXL_HPC_ASYNC_CALLBACK.html</link></decl><decl id="38" type="variable"><name>xlHpcRetSuccess</name><desc>&lt;div&gt;&lt;p&gt;Cluster connector entry point return codes
 	*//**
-	   Cluster connector entry point return codes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlHpcRetSuccess.html</link></decl><decl id="36" type="variable"><name>xlCommand</name><desc>&lt;div&gt;&lt;p&gt;Function number bits
+	   Cluster connector entry point return codes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlHpcRetSuccess.html</link></decl><decl id="39" type="variable"><name>xlCommand</name><desc>&lt;div&gt;&lt;p&gt;Function number bits
 	*//**
-	   Function number bits&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlCommand.html</link></decl><decl id="37" type="variable"><name>xlFree</name><desc>&lt;div&gt;&lt;p&gt;Auxiliary function numbers&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlFree.html</link></decl><decl id="38" type="variable"><name>xlfCount</name><desc>&lt;div&gt;&lt;p&gt;Built-in Excel functions and command equivalents
+	   Function number bits&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlCommand.html</link></decl><decl id="40" type="variable"><name>xlFree</name><desc>&lt;div&gt;&lt;p&gt;Auxiliary function numbers&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlFree.html</link></decl><decl id="41" type="variable"><name>xlfCount</name><desc>&lt;div&gt;&lt;p&gt;Built-in Excel functions and command equivalents
 	*//**
-	   Built-in Excel functions and command equivalents&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlfCount.html</link></decl></decl><decl id="39" type="module"><name>xlld.xlcallcpp</name><desc>&lt;div&gt;&lt;p&gt;Microsoft Excel Developer's Toolkit
-    Version 14.0&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcallcpp.html</link><decl id="40" type="alias"><name>EXCEL12PROC</name><desc>&lt;div&gt;&lt;p&gt;Excel 12 entry points backwards compatible with Excel 11&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcallcpp.EXCEL12PROC.html</link></decl><decl id="41" type="function"><name>SetExcel12EntryPt</name><desc>&lt;div&gt;&lt;p&gt;This function explicitly sets EXCEL12ENTRYPT.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcallcpp.SetExcel12EntryPt.html</link></decl></decl><decl id="42" type="module"><name>xlld</name><desc>&lt;div&gt;&lt;/div&gt;</desc><link>xlld.html</link><decl id="43" type="module"><name>xlld.dummy</name><desc>&lt;div&gt;&lt;p&gt;Enables linking on  Windows without having to link to the real implementations
- Only for unit testing.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.dummy.html</link></decl><decl id="44" type="module"><name>xlld.framework</name><desc>&lt;div&gt;&lt;p&gt;Utility functions for writing XLLs&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.framework.html</link><decl id="45" type="function"><name>freeXLOper</name><desc>&lt;div&gt;&lt;p&gt;Will free any malloc'd memory associated with the given
-        LPXLOPER, assuming it has any memory associated with it&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.framework.freeXLOper.html</link></decl><decl id="46" type="function"><name>Excel12f</name><desc>&lt;div&gt;&lt;p&gt;Wrapper for the Excel12 function that allows passing D arrays&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.framework.Excel12f.html</link></decl></decl><decl id="47" type="module"><name>xlld.memorymanager</name><desc>&lt;div&gt;&lt;p&gt;MemoryManager.D&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.memorymanager.html</link></decl><decl id="48" type="module"><name>xlld.test_d_funcs</name><desc>&lt;div&gt;&lt;p&gt;Only exists to test the wrapping functionality Contains functions
- with regular D types that will get wrapped so they can be called by
- the spreadsheet.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.test_d_funcs.html</link></decl><decl id="49" type="module"><name>xlld.test_xl_funcs</name><desc>&lt;div&gt;&lt;p&gt;Only exists to test the module reflection functionality
- Contains functions with types that the spreadsheet knows about&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.test_xl_funcs.html</link></decl><decl id="50" type="module"><name>xlld.traits</name><desc>&lt;div&gt;&lt;p&gt;This module implements the compile-time reflection machinery to
- automatically register all D functions that are eligible in a
- compile-time define list of modules to be called from Excel.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.html</link><decl id="51" type="function"><name>getWorksheetFunction</name><desc>&lt;div&gt;&lt;p&gt;Take a D function as a compile-time parameter and returns a
- WorksheetFunction struct with the fields filled in accordingly.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.getWorksheetFunction.html</link></decl><decl id="52" type="function"><name>getModuleWorksheetFunctions</name><desc>&lt;div&gt;&lt;p&gt;Gets all Excel-callable functions in a given module&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.getModuleWorksheetFunctions.html</link></decl><decl id="53" type="function"><name>getAllWorksheetFunctions</name><desc>&lt;div&gt;&lt;p&gt;Gets all Excel-callable functions from the given modules&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.getAllWorksheetFunctions.html</link></decl><decl id="54" type="function"><name>implGetWorksheetFunctionsString</name><desc>&lt;div&gt;&lt;p&gt;Implements the getWorksheetFunctions function needed by xlld.xll in
- order to register the Excel-callable functions at runtime
- This used to be a template mixin but even using a string mixin inside
- fails to actually make it an extern(C) function.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.implGetWorksheetFunctionsString.html</link></decl><decl id="55" type="function"><name>dllDefFile</name><desc>&lt;div&gt;&lt;p&gt;Returns a structure descripting a Windows .def file.
-   This allows the tests to not care about the specific formatting
-   used when writing the information out.
-   This encapsulates all the functions to be exported by the DLL/XLL.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.traits.dllDefFile.html</link></decl></decl><decl id="56" type="module"><name>xlld.worksheet</name><desc>&lt;div&gt;&lt;p&gt;Interface for registering worksheet functions with Excel&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.html</link><decl id="57" type="struct"><name>WorksheetFunction</name><desc>&lt;div&gt;&lt;p&gt;The arguments used to register a worksheet function with the spreadsheet.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.WorksheetFunction.html</link><decl id="58" type="function"><name>toStringArray</name><desc>&lt;div&gt;&lt;p&gt;Returns an array suitable for use with spreadsheet registration&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.WorksheetFunction.toStringArray.html</link></decl></decl><decl id="59" type="struct"><name>Optional</name><desc>&lt;div&gt;&lt;p&gt;Optional arguments that can be set by a function author, but don't necessarily
-   have to be.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.Optional.html</link></decl><decl id="60" type="alias"><name>Register</name><desc>&lt;div&gt;&lt;p&gt;A user-facing name to use as an UDA to decorate D functions.
-    Any arguments passed to its constructor will be used to register
-    the function with the spreadsheet.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.worksheet.Register.html</link></decl></decl><decl id="61" type="module"><name>xlld.xl</name><desc>&lt;div&gt;&lt;p&gt;Wraps calls to xlXXX &amp;quot;functions&amp;quot; via the Excel4/Excel12 functions&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xl.html</link></decl><decl id="62" type="module"><name>xlld.xlcall</name><desc>&lt;div&gt;&lt;p&gt;Microsoft Excel Developer's Toolkit
-    Version 15.0&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.html</link><decl id="63" type="function"><name>Excel4v</name><desc>&lt;div&gt;&lt;p&gt;XL 12 Basic Datatypes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.Excel4v.html</link></decl><decl id="64" type="struct"><name>XLREF</name><desc>&lt;div&gt;&lt;p&gt;XLREF structure
-	   Describes a single rectangular reference.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLREF.html</link></decl><decl id="65" type="struct"><name>XLMREF</name><desc>&lt;div&gt;&lt;p&gt;XLMREF structure
-	   Describes multiple rectangular references.
-	   This is a variable size structure, default
-	   size is 1 reference.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLMREF.html</link></decl><decl id="66" type="struct"><name>XLREF12</name><desc>&lt;div&gt;&lt;p&gt;XLREF12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLREF12.html</link></decl><decl id="67" type="struct"><name>XLMREF12</name><desc>&lt;div&gt;&lt;p&gt;XLMREF12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLMREF12.html</link></decl><decl id="68" type="struct"><name>FP</name><desc>&lt;div&gt;&lt;p&gt;FP structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.FP.html</link></decl><decl id="69" type="struct"><name>FP12</name><desc>&lt;div&gt;&lt;p&gt;FP12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.FP12.html</link></decl><decl id="70" type="struct"><name>XLOPER</name><desc>&lt;div&gt;&lt;p&gt;XLOPER structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLOPER.html</link></decl><decl id="71" type="struct"><name>XLOPER12</name><desc>&lt;div&gt;&lt;p&gt;XLOPER12 structure&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLOPER12.html</link></decl><decl id="72" type="variable"><name>xltypeNum</name><desc>&lt;div&gt;&lt;p&gt;XLOPER and XLOPER12 data types&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xltypeNum.html</link></decl><decl id="73" type="variable"><name>xlretSuccess</name><desc>&lt;div&gt;&lt;p&gt;Return codes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlretSuccess.html</link></decl><decl id="74" type="variable"><name>xleventCalculationEnded</name><desc>&lt;div&gt;&lt;p&gt;XLL events&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xleventCalculationEnded.html</link></decl><decl id="75" type="function"><name>XLCallVer</name><desc>&lt;div&gt;&lt;p&gt;Function prototypes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.XLCallVer.html</link></decl><decl id="76" type="alias"><name>PXL_HPC_ASYNC_CALLBACK</name><desc>&lt;div&gt;&lt;p&gt;Cluster Connector Async Callback&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.PXL_HPC_ASYNC_CALLBACK.html</link></decl><decl id="77" type="variable"><name>xlHpcRetSuccess</name><desc>&lt;div&gt;&lt;p&gt;Cluster connector entry point return codes
-	*//**
-	   Cluster connector entry point return codes&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlHpcRetSuccess.html</link></decl><decl id="78" type="variable"><name>xlCommand</name><desc>&lt;div&gt;&lt;p&gt;Function number bits
-	*//**
-	   Function number bits&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlCommand.html</link></decl><decl id="79" type="variable"><name>xlFree</name><desc>&lt;div&gt;&lt;p&gt;Auxiliary function numbers&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlFree.html</link></decl><decl id="80" type="variable"><name>xlfCount</name><desc>&lt;div&gt;&lt;p&gt;Built-in Excel functions and command equivalents
-	*//**
-	   Built-in Excel functions and command equivalents&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlfCount.html</link></decl></decl><decl id="81" type="module"><name>xlld.xlcallcpp</name><desc>&lt;div&gt;&lt;p&gt;Microsoft Excel Developer's Toolkit
-    Version 14.0&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcallcpp.html</link><decl id="82" type="alias"><name>EXCEL12PROC</name><desc>&lt;div&gt;&lt;p&gt;Excel 12 entry points backwards compatible with Excel 11&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcallcpp.EXCEL12PROC.html</link></decl><decl id="83" type="function"><name>SetExcel12EntryPt</name><desc>&lt;div&gt;&lt;p&gt;This function explicitly sets EXCEL12ENTRYPT.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcallcpp.SetExcel12EntryPt.html</link></decl></decl></decl></listing>
+	   Built-in Excel functions and command equivalents&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcall.xlfCount.html</link></decl></decl><decl id="42" type="module"><name>xlld.xlcallcpp</name><desc>&lt;div&gt;&lt;p&gt;Microsoft Excel Developer's Toolkit
+    Version 14.0&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcallcpp.html</link><decl id="43" type="alias"><name>EXCEL12PROC</name><desc>&lt;div&gt;&lt;p&gt;Excel 12 entry points backwards compatible with Excel 11&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcallcpp.EXCEL12PROC.html</link></decl><decl id="44" type="function"><name>SetExcel12EntryPt</name><desc>&lt;div&gt;&lt;p&gt;This function explicitly sets EXCEL12ENTRYPT.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlcallcpp.SetExcel12EntryPt.html</link></decl></decl><decl id="45" type="module"><name>xlld.xlf</name><desc>&lt;div&gt;&lt;p&gt;This module provides D versions of xlf Excel functions&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xlf.html</link></decl><decl id="46" type="module"><name>xlld.xll</name><desc>&lt;div&gt;&lt;p&gt;Code from generic.h and generic.d
+	Ported to the D Programming Language by Laeeth Isharc (2015)
+	This module provides the ceremony that must be done for every XLL.
+	At least one module must be linked to this one implementing the
+	getWorkSheetFunctions function so that they can be registered
+	with Excel.&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xll.html</link><decl id="47" type="function"><name>registerAutoCloseFunc</name><desc>&lt;div&gt;&lt;p&gt;Registers a delegate to be called when the XLL is unloaded&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xll.registerAutoCloseFunc.1.html</link></decl><decl id="48" type="function"><name>registerAutoCloseFunc</name><desc>&lt;div&gt;&lt;p&gt;Registers a function to be called when the XLL is unloaded&lt;/p&gt;&lt;/div&gt;</desc><link>xlld.xll.registerAutoCloseFunc.2.html</link></decl></decl></listing>
 <index>
-<term value="also"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="constructor"><result decl="18" score="1" /><result decl="60" score="1" /></term>
-<term value="h"><result decl="4" score="1" /><result decl="20" score="1" /><result decl="46" score="1" /><result decl="62" score="1" /></term>
-<term value="take"><result decl="9" score="1" /><result decl="51" score="1" /></term>
-<term value="paramet"><result decl="4" score="1" /><result decl="9" score="1" /><result decl="46" score="1" /><result decl="51" score="1" /></term>
-<term value="xlretSuccess"><result decl="31" score="25" /><result decl="73" score="25" /></term>
-<term value="structureexcel"><result decl="28" score="1" /><result decl="29" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /></term>
-<term value="xll"><result decl="8" score="1" /><result decl="12" score="1" /><result decl="13" score="1" /><result decl="32" score="1" /><result decl="41" score="1" /><result decl="50" score="1" /><result decl="54" score="1" /><result decl="55" score="1" /><result decl="74" score="1" /><result decl="83" score="1" /></term>
-<term value="eventspass"><result decl="32" score="1" /><result decl="74" score="1" /></term>
-<term value="doesn"><result decl="4" score="1" /><result decl="41" score="1" /><result decl="46" score="1" /><result decl="83" score="1" /></term>
-<term value="data"><result decl="20" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="30" score="1" /><result decl="62" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /><result decl="72" score="1" /></term>
-<term value="xlld.test_d_funcs"><result decl="6" score="50" /><result decl="6" score="25" /><result decl="48" score="50" /><result decl="48" score="25" /></term>
-<term value="temporari"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="Ended"><result decl="32" score="6" /><result decl="74" score="6" /></term>
-<term value="auxiliari"><result decl="37" score="1" /><result decl="79" score="1" /></term>
-<term value="setexcel12entrypt"><result decl="41" score="15" /><result decl="83" score="15" /></term>
-<term value="xlld.worksheet.Register"><result decl="18" score="50" /><result decl="60" score="50" /></term>
-<term value="xlld.worksheet.WorksheetFunction.toStringArray"><result decl="16" score="50" /><result decl="58" score="50" /></term>
-<term value="xlcall"><result decl="4" score="1" /><result decl="20" score="25" /><result decl="20" score="1" /><result decl="33" score="3" /><result decl="39" score="1" /><result decl="46" score="1" /><result decl="62" score="25" /><result decl="62" score="1" /><result decl="75" score="3" /><result decl="81" score="1" /></term>
-<term value="built"><result decl="8" score="1" /><result decl="38" score="1" /><result decl="50" score="1" /><result decl="80" score="1" /></term>
-<term value="xlHpcRetSuccess"><result decl="35" score="25" /><result decl="77" score="25" /></term>
-<term value="ed"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="regist"><result decl="8" score="1" /><result decl="12" score="1" /><result decl="14" score="1" /><result decl="15" score="1" /><result decl="18" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="32" score="1" /><result decl="50" score="1" /><result decl="54" score="1" /><result decl="56" score="1" /><result decl="57" score="1" /><result decl="60" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /><result decl="74" score="1" /></term>
-<term value="automag"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="latform"><result decl="20" score="1" /><result decl="62" score="1" /></term>
-<term value="xlCommand"><result decl="36" score="25" /><result decl="78" score="25" /></term>
-<term value="import"><result decl="8" score="1" /><result decl="20" score="1" /><result decl="50" score="1" /><result decl="62" score="1" /></term>
-<term value="excel12"><result decl="40" score="3" /><result decl="41" score="3" /><result decl="82" score="3" /><result decl="83" score="3" /></term>
-<term value="care"><result decl="4" score="1" /><result decl="13" score="1" /><result decl="46" score="1" /><result decl="55" score="1" /></term>
-<term value="free"><result decl="3" score="6" /><result decl="3" score="1" /><result decl="4" score="1" /><result decl="37" score="3" /><result decl="45" score="6" /><result decl="45" score="1" /><result decl="46" score="1" /><result decl="79" score="3" /></term>
-<term value="dll"><result decl="13" score="6" /><result decl="13" score="1" /><result decl="41" score="1" /><result decl="55" score="6" /><result decl="55" score="1" /><result decl="83" score="1" /></term>
-<term value="size"><result decl="23" score="1" /><result decl="25" score="1" /><result decl="65" score="1" /><result decl="67" score="1" /></term>
-<term value="getworksheetfunction"><result decl="9" score="15" /><result decl="51" score="15" /></term>
-<term value="correspond"><result decl="32" score="1" /><result decl="74" score="1" /></term>
-<term value="laeeth"><result decl="5" score="1" /><result decl="20" score="1" /><result decl="47" score="1" /><result decl="62" score="1" /></term>
-<term value="check"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="memorymanager"><result decl="5" score="25" /><result decl="47" score="25" /></term>
-<term value="Register"><result decl="18" score="25" /><result decl="18" score="6" /><result decl="60" score="25" /><result decl="60" score="6" /></term>
-<term value="structur"><result decl="13" score="1" /><result decl="22" score="1" /><result decl="23" score="1" /><result decl="25" score="1" /><result decl="26" score="1" /><result decl="27" score="1" /><result decl="30" score="1" /><result decl="55" score="1" /><result decl="64" score="1" /><result decl="65" score="1" /><result decl="67" score="1" /><result decl="68" score="1" /><result decl="69" score="1" /><result decl="72" score="1" /></term>
-<term value="Optional"><result decl="17" score="25" /><result decl="17" score="6" /><result decl="18" score="3" /><result decl="59" score="25" /><result decl="59" score="6" /><result decl="60" score="3" /></term>
-<term value="defin"><result decl="4" score="1" /><result decl="8" score="1" /><result decl="20" score="1" /><result decl="39" score="1" /><result decl="46" score="1" /><result decl="50" score="1" /><result decl="62" score="1" /><result decl="81" score="1" /></term>
-<term value="author"><result decl="17" score="1" /><result decl="59" score="1" /></term>
-<term value="xleventcalculationended"><result decl="32" score="15" /><result decl="74" score="15" /></term>
-<term value="SetExcel12EntryPt"><result decl="41" score="25" /><result decl="83" score="25" /></term>
-<term value="abov"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="XLMREF12"><result decl="25" score="25" /><result decl="25" score="6" /><result decl="67" score="25" /><result decl="67" score="6" /></term>
-<term value="hpc"><result decl="34" score="3" /><result decl="35" score="3" /><result decl="41" score="1" /><result decl="76" score="3" /><result decl="77" score="3" /><result decl="83" score="1" /></term>
-<term value="place"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="xlld.xlcall.xlHpcRetSuccess"><result decl="35" score="50" /><result decl="77" score="50" /></term>
-<term value="insid"><result decl="12" score="1" /><result decl="54" score="1" /></term>
-<term value="backward"><result decl="40" score="1" /><result decl="82" score="1" /></term>
-<term value="reflect"><result decl="7" score="1" /><result decl="8" score="1" /><result decl="49" score="1" /><result decl="50" score="1" /></term>
-<term value="multipl"><result decl="23" score="1" /><result decl="25" score="1" /><result decl="65" score="1" /><result decl="67" score="1" /></term>
-<term value="face"><result decl="18" score="1" /><result decl="60" score="1" /></term>
-<term value="xleventCalculationEnded"><result decl="32" score="25" /><result decl="74" score="25" /></term>
-<term value="fanci"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="real"><result decl="1" score="1" /><result decl="43" score="1" /></term>
-<term value="src"><result decl="39" score="1" /><result decl="81" score="1" /></term>
-<term value="associ"><result decl="3" score="1" /><result decl="45" score="1" /></term>
-<term value="pointer"><result decl="3" score="1" /><result decl="4" score="1" /><result decl="45" score="1" /><result decl="46" score="1" /></term>
-<term value="getworksheetfunct"><result decl="12" score="1" /><result decl="54" score="1" /></term>
-<term value="connector"><result decl="34" score="1" /><result decl="35" score="1" /><result decl="76" score="1" /><result decl="77" score="1" /></term>
-<term value="includ"><result decl="20" score="1" /><result decl="62" score="1" /></term>
-<term value="EXCEL12PROC"><result decl="40" score="25" /><result decl="41" score="3" /><result decl="82" score="25" /><result decl="83" score="3" /></term>
-<term value="good"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="Module"><result decl="10" score="6" /><result decl="52" score="6" /></term>
-<term value="pt"><result decl="41" score="3" /><result decl="83" score="3" /></term>
-<term value="tostringarray"><result decl="16" score="15" /><result decl="58" score="15" /></term>
-<term value="xlmref12"><result decl="25" score="15" /><result decl="25" score="3" /><result decl="67" score="15" /><result decl="67" score="3" /></term>
-<term value="xlld.framework.freeXLOper"><result decl="3" score="50" /><result decl="45" score="50" /></term>
-<term value="assum"><result decl="3" score="1" /><result decl="8" score="1" /><result decl="45" score="1" /><result decl="50" score="1" /></term>
-<term value="option"><result decl="17" score="1" /><result decl="59" score="1" /></term>
-<term value="stuff"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="ani"><result decl="3" score="1" /><result decl="8" score="1" /><result decl="18" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="45" score="1" /><result decl="50" score="1" /><result decl="60" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /></term>
-<term value="error"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="callabl"><result decl="10" score="1" /><result decl="11" score="1" /><result decl="12" score="1" /><result decl="52" score="1" /><result decl="53" score="1" /><result decl="54" score="1" /></term>
-<term value="ha"><result decl="3" score="1" /><result decl="4" score="1" /><result decl="45" score="1" /><result decl="46" score="1" /></term>
-<term value="fp12"><result decl="27" score="15" /><result decl="27" score="3" /><result decl="69" score="15" /><result decl="69" score="3" /></term>
-<term value="name"><result decl="18" score="1" /><result decl="60" score="1" /></term>
-<term value="access"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="accordingli"><result decl="9" score="1" /><result decl="51" score="1" /></term>
-<term value="xleventregist"><result decl="32" score="1" /><result decl="74" score="1" /></term>
-<term value="Functions"><result decl="10" score="6" /><result decl="11" score="6" /><result decl="12" score="6" /><result decl="52" score="6" /><result decl="53" score="6" /><result decl="54" score="6" /></term>
-<term value="xlxxx"><result decl="19" score="1" /><result decl="61" score="1" /></term>
-<term value="xlf"><result decl="38" score="6" /><result decl="80" score="6" /></term>
-<term value="compat"><result decl="40" score="1" /><result decl="82" score="1" /></term>
-<term value="XLOper"><result decl="3" score="6" /><result decl="45" score="6" /></term>
-<term value="num"><result decl="30" score="3" /><result decl="72" score="3" /></term>
-<term value="Ret"><result decl="35" score="6" /><result decl="77" score="6" /></term>
-<term value="sinc"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="xlfn"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="compil"><result decl="8" score="1" /><result decl="9" score="1" /><result decl="50" score="1" /><result decl="51" score="1" /></term>
-<term value="xlcallcpp"><result decl="39" score="25" /><result decl="81" score="25" /></term>
-<term value="xltypeNum"><result decl="30" score="25" /><result decl="72" score="25" /></term>
-<term value="point"><result decl="35" score="1" /><result decl="39" score="1" /><result decl="40" score="1" /><result decl="41" score="1" /><result decl="77" score="1" /><result decl="81" score="1" /><result decl="82" score="1" /><result decl="83" score="1" /></term>
-<term value="xlld.xlcall.XLMREF"><result decl="23" score="50" /><result decl="65" score="50" /></term>
-<term value="file"><result decl="13" score="3" /><result decl="13" score="1" /><result decl="20" score="1" /><result decl="39" score="1" /><result decl="55" score="3" /><result decl="55" score="1" /><result decl="62" score="1" /><result decl="81" score="1" /></term>
-<term value="sourcese"><result decl="3" score="1" /><result decl="4" score="1" /><result decl="9" score="1" /><result decl="10" score="1" /><result decl="11" score="1" /><result decl="12" score="1" /><result decl="13" score="1" /><result decl="15" score="1" /><result decl="16" score="1" /><result decl="17" score="1" /><result decl="21" score="1" /><result decl="22" score="1" /><result decl="23" score="1" /><result decl="24" score="1" /><result decl="25" score="1" /><result decl="26" score="1" /><result decl="27" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="33" score="1" /><result decl="41" score="1" /><result decl="45" score="1" /><result decl="46" score="1" /><result decl="51" score="1" /><result decl="52" score="1" /><result decl="53" score="1" /><result decl="54" score="1" /><result decl="55" score="1" /><result decl="57" score="1" /><result decl="58" score="1" /><result decl="59" score="1" /><result decl="63" score="1" /><result decl="64" score="1" /><result decl="65" score="1" /><result decl="66" score="1" /><result decl="67" score="1" /><result decl="68" score="1" /><result decl="69" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /><result decl="75" score="1" /><result decl="83" score="1" /></term>
-<term value="creat"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="CALLBACK"><result decl="34" score="6" /><result decl="76" score="6" /></term>
-<term value="xlld.xlcallcpp"><result decl="39" score="50" /><result decl="39" score="25" /><result decl="39" score="6" /><result decl="40" score="5" /><result decl="40" score="3" /><result decl="41" score="5" /><result decl="41" score="3" /><result decl="81" score="50" /><result decl="81" score="25" /><result decl="81" score="6" /><result decl="82" score="5" /><result decl="82" score="3" /><result decl="83" score="5" /><result decl="83" score="3" /></term>
-<term value="implement"><result decl="1" score="1" /><result decl="8" score="1" /><result decl="12" score="1" /><result decl="43" score="1" /><result decl="50" score="1" /><result decl="54" score="1" /></term>
-<term value="contain"><result decl="6" score="1" /><result decl="7" score="1" /><result decl="41" score="1" /><result decl="48" score="1" /><result decl="49" score="1" /><result decl="83" score="1" /></term>
-<term value="xlret"><result decl="4" score="1" /><result decl="31" score="6" /><result decl="46" score="1" /><result decl="73" score="6" /></term>
-<term value="xlld.framework.Excel12f"><result decl="4" score="50" /><result decl="46" score="50" /></term>
-<term value="microsoft"><result decl="5" score="1" /><result decl="20" score="1" /><result decl="39" score="1" /><result decl="47" score="1" /><result decl="62" score="1" /><result decl="81" score="1" /></term>
-<term value="togeth"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="fill"><result decl="9" score="1" /><result decl="51" score="1" /></term>
-<term value="test_d_funcs"><result decl="6" score="25" /><result decl="48" score="25" /></term>
-<term value="know"><result decl="7" score="1" /><result decl="49" score="1" /></term>
-<term value="getmoduleworksheetfunctions"><result decl="10" score="15" /><result decl="52" score="15" /></term>
-<term value="runtim"><result decl="12" score="1" /><result decl="54" score="1" /></term>
-<term value="Excel12f"><result decl="4" score="25" /><result decl="4" score="6" /><result decl="46" score="25" /><result decl="46" score="6" /></term>
-<term value="exist"><result decl="6" score="1" /><result decl="7" score="1" /><result decl="48" score="1" /><result decl="49" score="1" /></term>
-<term value="xlref12"><result decl="24" score="15" /><result decl="24" score="3" /><result decl="66" score="15" /><result decl="66" score="3" /></term>
-<term value="arrayspurpos"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="cpp"><result decl="5" score="1" /><result decl="39" score="1" /><result decl="47" score="1" /><result decl="81" score="1" /></term>
-<term value="xlld.traits.getAllWorksheetFunctions"><result decl="11" score="50" /><result decl="53" score="50" /></term>
-<term value="async"><result decl="34" score="3" /><result decl="34" score="1" /><result decl="76" score="3" /><result decl="76" score="1" /></term>
-<term value="big"><result decl="27" score="1" /><result decl="69" score="1" /></term>
-<term value="FP12"><result decl="27" score="25" /><result decl="27" score="6" /><result decl="69" score="25" /><result decl="69" score="6" /></term>
-<term value="handl"><result decl="27" score="1" /><result decl="41" score="1" /><result decl="69" score="1" /><result decl="83" score="1" /></term>
-<term value="Calculation"><result decl="32" score="6" /><result decl="74" score="6" /></term>
-<term value="load"><result decl="8" score="1" /><result decl="41" score="1" /><result decl="50" score="1" /><result decl="83" score="1" /></term>
-<term value="wrapper"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="ar"><result decl="4" score="1" /><result decl="8" score="1" /><result decl="20" score="1" /><result decl="37" score="1" /><result decl="39" score="1" /><result decl="46" score="1" /><result decl="50" score="1" /><result decl="62" score="1" /><result decl="79" score="1" /><result decl="81" score="1" /></term>
-<term value="mixin"><result decl="8" score="1" /><result decl="12" score="1" /><result decl="50" score="1" /><result decl="54" score="1" /></term>
-<term value="befor"><result decl="20" score="1" /><result decl="62" score="1" /></term>
-<term value="xlld.xlcall.XLCallVer"><result decl="33" score="50" /><result decl="75" score="50" /></term>
-<term value="getModuleWorksheetFunctions"><result decl="10" score="25" /><result decl="52" score="25" /></term>
-<term value="entri"><result decl="35" score="1" /><result decl="39" score="1" /><result decl="40" score="1" /><result decl="41" score="1" /><result decl="77" score="1" /><result decl="81" score="1" /><result decl="82" score="1" /><result decl="83" score="1" /></term>
-<term value="xlld.xlcall.xlFree"><result decl="37" score="50" /><result decl="79" score="50" /></term>
-<term value="funcs"><result decl="6" score="6" /><result decl="7" score="6" /><result decl="48" score="6" /><result decl="49" score="6" /></term>
-<term value="r"><result decl="28" score="1" /><result decl="70" score="1" /></term>
-<term value="event"><result decl="32" score="1" /><result decl="74" score="1" /></term>
-<term value="impl"><result decl="12" score="6" /><result decl="54" score="6" /></term>
-<term value="xlld"><result decl="1" score="15" /><result decl="1" score="5" /><result decl="1" score="3" /><result decl="2" score="15" /><result decl="2" score="5" /><result decl="2" score="3" /><result decl="3" score="5" /><result decl="3" score="3" /><result decl="4" score="5" /><result decl="4" score="3" /><result decl="5" score="15" /><result decl="5" score="5" /><result decl="5" score="3" /><result decl="6" score="15" /><result decl="6" score="5" /><result decl="6" score="3" /><result decl="7" score="15" /><result decl="7" score="5" /><result decl="7" score="3" /><result decl="8" score="15" /><result decl="8" score="5" /><result decl="8" score="3" /><result decl="8" score="1" /><result decl="9" score="5" /><result decl="9" score="3" /><result decl="10" score="5" /><result decl="10" score="3" /><result decl="11" score="5" /><result decl="11" score="3" /><result decl="12" score="5" /><result decl="12" score="3" /><result decl="12" score="1" /><result decl="13" score="5" /><result decl="13" score="3" /><result decl="14" score="15" /><result decl="14" score="5" /><result decl="14" score="3" /><result decl="15" score="5" /><result decl="15" score="3" /><result decl="16" score="5" /><result decl="16" score="3" /><result decl="17" score="5" /><result decl="17" score="3" /><result decl="18" score="5" /><result decl="18" score="3" /><result decl="19" score="15" /><result decl="19" score="5" /><result decl="19" score="3" /><result decl="20" score="15" /><result decl="20" score="5" /><result decl="20" score="3" /><result decl="21" score="5" /><result decl="21" score="3" /><result decl="22" score="5" /><result decl="22" score="3" /><result decl="23" score="5" /><result decl="23" score="3" /><result decl="24" score="5" /><result decl="24" score="3" /><result decl="25" score="5" /><result decl="25" score="3" /><result decl="26" score="5" /><result decl="26" score="3" /><result decl="27" score="5" /><result decl="27" score="3" /><result decl="28" score="5" /><result decl="28" score="3" /><result decl="29" score="5" /><result decl="29" score="3" /><result decl="30" score="5" /><result decl="30" score="3" /><result decl="31" score="5" /><result decl="31" score="3" /><result decl="32" score="5" /><result decl="32" score="3" /><result decl="33" score="5" /><result decl="33" score="3" /><result decl="34" score="5" /><result decl="34" score="3" /><result decl="35" score="5" /><result decl="35" score="3" /><result decl="36" score="5" /><result decl="36" score="3" /><result decl="37" score="5" /><result decl="37" score="3" /><result decl="38" score="5" /><result decl="38" score="3" /><result decl="39" score="15" /><result decl="39" score="5" /><result decl="39" score="3" /><result decl="40" score="5" /><result decl="40" score="3" /><result decl="41" score="5" /><result decl="41" score="3" /><result decl="42" score="50" /><result decl="42" score="25" /><result decl="42" score="25" /><result decl="42" score="6" /><result decl="43" score="15" /><result decl="43" score="5" /><result decl="43" score="3" /><result decl="44" score="15" /><result decl="44" score="5" /><result decl="44" score="3" /><result decl="45" score="5" /><result decl="45" score="3" /><result decl="46" score="5" /><result decl="46" score="3" /><result decl="47" score="15" /><result decl="47" score="5" /><result decl="47" score="3" /><result decl="48" score="15" /><result decl="48" score="5" /><result decl="48" score="3" /><result decl="49" score="15" /><result decl="49" score="5" /><result decl="49" score="3" /><result decl="50" score="15" /><result decl="50" score="5" /><result decl="50" score="3" /><result decl="50" score="1" /><result decl="51" score="5" /><result decl="51" score="3" /><result decl="52" score="5" /><result decl="52" score="3" /><result decl="53" score="5" /><result decl="53" score="3" /><result decl="54" score="5" /><result decl="54" score="3" /><result decl="54" score="1" /><result decl="55" score="5" /><result decl="55" score="3" /><result decl="56" score="15" /><result decl="56" score="5" /><result decl="56" score="3" /><result decl="57" score="5" /><result decl="57" score="3" /><result decl="58" score="5" /><result decl="58" score="3" /><result decl="59" score="5" /><result decl="59" score="3" /><result decl="60" score="5" /><result decl="60" score="3" /><result decl="61" score="15" /><result decl="61" score="5" /><result decl="61" score="3" /><result decl="62" score="15" /><result decl="62" score="5" /><result decl="62" score="3" /><result decl="63" score="5" /><result decl="63" score="3" /><result decl="64" score="5" /><result decl="64" score="3" /><result decl="65" score="5" /><result decl="65" score="3" /><result decl="66" score="5" /><result decl="66" score="3" /><result decl="67" score="5" /><result decl="67" score="3" /><result decl="68" score="5" /><result decl="68" score="3" /><result decl="69" score="5" /><result decl="69" score="3" /><result decl="70" score="5" /><result decl="70" score="3" /><result decl="71" score="5" /><result decl="71" score="3" /><result decl="72" score="5" /><result decl="72" score="3" /><result decl="73" score="5" /><result decl="73" score="3" /><result decl="74" score="5" /><result decl="74" score="3" /><result decl="75" score="5" /><result decl="75" score="3" /><result decl="76" score="5" /><result decl="76" score="3" /><result decl="77" score="5" /><result decl="77" score="3" /><result decl="78" score="5" /><result decl="78" score="3" /><result decl="79" score="5" /><result decl="79" score="3" /><result decl="80" score="5" /><result decl="80" score="3" /><result decl="81" score="15" /><result decl="81" score="5" /><result decl="81" score="3" /><result decl="82" score="5" /><result decl="82" score="3" /><result decl="83" score="5" /><result decl="83" score="3" /></term>
-<term value="All"><result decl="11" score="6" /><result decl="53" score="6" /></term>
-<term value="descript"><result decl="13" score="1" /><result decl="20" score="1" /><result decl="39" score="1" /><result decl="55" score="1" /><result decl="62" score="1" /><result decl="81" score="1" /></term>
-<term value="worksheetfunct"><result decl="9" score="1" /><result decl="51" score="1" /></term>
-<term value="Excel12"><result decl="41" score="6" /><result decl="83" score="6" /></term>
-<term value="xlhpcretsuccess"><result decl="35" score="15" /><result decl="77" score="15" /></term>
-<term value="getAllWorksheetFunctions"><result decl="11" score="25" /><result decl="53" score="25" /></term>
-<term value="Command"><result decl="36" score="6" /><result decl="78" score="6" /></term>
-<term value="all"><result decl="11" score="3" /><result decl="53" score="3" /></term>
-<term value="build"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="windowsthi"><result decl="39" score="1" /><result decl="81" score="1" /></term>
-<term value="explicitli"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="Hpc"><result decl="35" score="6" /><result decl="77" score="6" /></term>
-<term value="need"><result decl="12" score="1" /><result decl="54" score="1" /></term>
-<term value="valu"><result decl="4" score="1" /><result decl="31" score="1" /><result decl="46" score="1" /><result decl="73" score="1" /></term>
-<term value="field"><result decl="9" score="1" /><result decl="30" score="1" /><result decl="51" score="1" /><result decl="72" score="1" /></term>
-<term value="implgetworksheetfunctionsstr"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="u"><result decl="29" score="1" /><result decl="71" score="1" /></term>
-<term value="c"><result decl="12" score="1" /><result decl="20" score="1" /><result decl="37" score="1" /><result decl="39" score="1" /><result decl="54" score="1" /><result decl="62" score="1" /><result decl="79" score="1" /><result decl="81" score="1" /></term>
-<term value="pass"><result decl="4" score="1" /><result decl="18" score="1" /><result decl="41" score="1" /><result decl="46" score="1" /><result decl="60" score="1" /><result decl="83" score="1" /></term>
-<term value="don"><result decl="4" score="1" /><result decl="17" score="1" /><result decl="46" score="1" /><result decl="59" score="1" /></term>
-<term value="register"><result decl="18" score="15" /><result decl="18" score="3" /><result decl="60" score="15" /><result decl="60" score="3" /></term>
-<term value="decor"><result decl="18" score="1" /><result decl="60" score="1" /></term>
-<term value="necessarili"><result decl="17" score="1" /><result decl="59" score="1" /></term>
-<term value="xlld.worksheet.Optional"><result decl="17" score="50" /><result decl="59" score="50" /></term>
-<term value="try"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="lpxloper"><result decl="3" score="1" /><result decl="4" score="1" /><result decl="45" score="1" /><result decl="46" score="1" /></term>
-<term value="toolkit"><result decl="20" score="1" /><result decl="39" score="1" /><result decl="62" score="1" /><result decl="81" score="1" /></term>
-<term value="requir"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="array"><result decl="16" score="3" /><result decl="58" score="3" /></term>
-<term value="Pt"><result decl="41" score="6" /><result decl="83" score="6" /></term>
-<term value="Set"><result decl="41" score="6" /><result decl="83" score="6" /></term>
-<term value="singl"><result decl="22" score="1" /><result decl="24" score="1" /><result decl="64" score="1" /><result decl="66" score="1" /></term>
-<term value="allow"><result decl="4" score="1" /><result decl="13" score="1" /><result decl="46" score="1" /><result decl="55" score="1" /></term>
-<term value="link"><result decl="1" score="1" /><result decl="43" score="1" /></term>
-<term value="to"><result decl="16" score="6" /><result decl="58" score="6" /></term>
-<term value="specif"><result decl="13" score="1" /><result decl="55" score="1" /></term>
-<term value="onli"><result decl="1" score="1" /><result decl="6" score="1" /><result decl="7" score="1" /><result decl="37" score="1" /><result decl="43" score="1" /><result decl="48" score="1" /><result decl="49" score="1" /><result decl="79" score="1" /></term>
-<term value="XLCall"><result decl="33" score="6" /><result decl="75" score="6" /></term>
-<term value="exampl"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="refer"><result decl="22" score="1" /><result decl="23" score="1" /><result decl="24" score="1" /><result decl="25" score="1" /><result decl="64" score="1" /><result decl="65" score="1" /><result decl="66" score="1" /><result decl="67" score="1" /></term>
-<term value="def"><result decl="13" score="3" /><result decl="13" score="1" /><result decl="55" score="3" /><result decl="55" score="1" /></term>
-<term value="regular"><result decl="6" score="1" /><result decl="48" score="1" /></term>
-<term value="spreadsheet"><result decl="6" score="1" /><result decl="7" score="1" /><result decl="15" score="1" /><result decl="16" score="1" /><result decl="18" score="1" /><result decl="48" score="1" /><result decl="49" score="1" /><result decl="57" score="1" /><result decl="58" score="1" /><result decl="60" score="1" /></term>
-<term value="xlld.xlcall.xlretSuccess"><result decl="31" score="50" /><result decl="73" score="50" /></term>
-<term value="xlld.xlcall"><result decl="20" score="50" /><result decl="20" score="25" /><result decl="20" score="6" /><result decl="21" score="5" /><result decl="21" score="3" /><result decl="22" score="5" /><result decl="22" score="3" /><result decl="23" score="5" /><result decl="23" score="3" /><result decl="24" score="5" /><result decl="24" score="3" /><result decl="25" score="5" /><result decl="25" score="3" /><result decl="26" score="5" /><result decl="26" score="3" /><result decl="27" score="5" /><result decl="27" score="3" /><result decl="28" score="5" /><result decl="28" score="3" /><result decl="29" score="5" /><result decl="29" score="3" /><result decl="30" score="5" /><result decl="30" score="3" /><result decl="31" score="5" /><result decl="31" score="3" /><result decl="32" score="5" /><result decl="32" score="3" /><result decl="33" score="5" /><result decl="33" score="3" /><result decl="34" score="5" /><result decl="34" score="3" /><result decl="35" score="5" /><result decl="35" score="3" /><result decl="36" score="5" /><result decl="36" score="3" /><result decl="37" score="5" /><result decl="37" score="3" /><result decl="38" score="5" /><result decl="38" score="3" /><result decl="62" score="50" /><result decl="62" score="25" /><result decl="62" score="6" /><result decl="63" score="5" /><result decl="63" score="3" /><result decl="64" score="5" /><result decl="64" score="3" /><result decl="65" score="5" /><result decl="65" score="3" /><result decl="66" score="5" /><result decl="66" score="3" /><result decl="67" score="5" /><result decl="67" score="3" /><result decl="68" score="5" /><result decl="68" score="3" /><result decl="69" score="5" /><result decl="69" score="3" /><result decl="70" score="5" /><result decl="70" score="3" /><result decl="71" score="5" /><result decl="71" score="3" /><result decl="72" score="5" /><result decl="72" score="3" /><result decl="73" score="5" /><result decl="73" score="3" /><result decl="74" score="5" /><result decl="74" score="3" /><result decl="75" score="5" /><result decl="75" score="3" /><result decl="76" score="5" /><result decl="76" score="3" /><result decl="77" score="5" /><result decl="77" score="3" /><result decl="78" score="5" /><result decl="78" score="3" /><result decl="79" score="5" /><result decl="79" score="3" /><result decl="80" score="5" /><result decl="80" score="3" /></term>
-<term value="xlld.xlcall.xlCommand"><result decl="36" score="50" /><result decl="78" score="50" /></term>
-<term value="xlld.xlcallcpp.EXCEL12PROC"><result decl="40" score="50" /><result decl="82" score="50" /></term>
-<term value="isharc"><result decl="5" score="1" /><result decl="20" score="1" /><result decl="47" score="1" /><result decl="62" score="1" /></term>
-<term value="freeXLOper"><result decl="3" score="25" /><result decl="45" score="25" /></term>
-<term value="encapsul"><result decl="13" score="1" /><result decl="55" score="1" /></term>
-<term value="XLCallVer"><result decl="33" score="25" /><result decl="75" score="25" /></term>
-<term value="xl"><result decl="4" score="1" /><result decl="7" score="6" /><result decl="19" score="25" /><result decl="21" score="1" /><result decl="24" score="1" /><result decl="25" score="1" /><result decl="35" score="6" /><result decl="36" score="6" /><result decl="37" score="6" /><result decl="46" score="1" /><result decl="49" score="6" /><result decl="61" score="25" /><result decl="63" score="1" /><result decl="66" score="1" /><result decl="67" score="1" /><result decl="77" score="6" /><result decl="78" score="6" /><result decl="79" score="6" /></term>
-<term value="interfac"><result decl="14" score="1" /><result decl="56" score="1" /></term>
-<term value="success"><result decl="31" score="3" /><result decl="35" score="3" /><result decl="73" score="3" /><result decl="77" score="3" /></term>
-<term value="fail"><result decl="4" score="1" /><result decl="12" score="1" /><result decl="41" score="1" /><result decl="46" score="1" /><result decl="54" score="1" /><result decl="83" score="1" /></term>
-<term value="xlcommand"><result decl="36" score="15" /><result decl="78" score="15" /></term>
-<term value="itparamet"><result decl="3" score="1" /><result decl="45" score="1" /></term>
-<term value="basic"><result decl="21" score="1" /><result decl="63" score="1" /></term>
-<term value="print"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="xlld.xlcallcpp.SetExcel12EntryPt"><result decl="41" score="50" /><result decl="83" score="50" /></term>
-<term value="ver"><result decl="33" score="3" /><result decl="75" score="3" /></term>
-<term value="entry"><result decl="41" score="3" /><result decl="83" score="3" /></term>
-<term value="String"><result decl="12" score="6" /><result decl="16" score="6" /><result decl="54" score="6" /><result decl="58" score="6" /></term>
-<term value="numbersthes"><result decl="37" score="1" /><result decl="79" score="1" /></term>
-<term value="Entry"><result decl="41" score="6" /><result decl="83" score="6" /></term>
-<term value="windowsdepend"><result decl="20" score="1" /><result decl="62" score="1" /></term>
-<term value="extern"><result decl="12" score="1" /><result decl="54" score="1" /></term>
-<term value="implGetWorksheetFunctionsString"><result decl="12" score="25" /><result decl="54" score="25" /></term>
-<term value="port"><result decl="20" score="1" /><result decl="62" score="1" /></term>
-<term value="list"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="codesthes"><result decl="31" score="1" /><result decl="73" score="1" /></term>
-<term value="framework"><result decl="2" score="25" /><result decl="44" score="25" /></term>
-<term value="xlld.xlcall.Excel4v"><result decl="21" score="50" /><result decl="63" score="50" /></term>
-<term value="header"><result decl="20" score="1" /><result decl="62" score="1" /></term>
-<term value="indic"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="excel4v"><result decl="21" score="15" /><result decl="21" score="3" /><result decl="63" score="15" /><result decl="63" score="3" /></term>
-<term value="EXCEL12"><result decl="40" score="6" /><result decl="82" score="6" /></term>
-<term value="typesus"><result decl="30" score="1" /><result decl="72" score="1" /></term>
-<term value="worksheetfunction"><result decl="15" score="15" /><result decl="16" score="2" /><result decl="57" score="15" /><result decl="58" score="2" /></term>
-<term value="pxl_hpc_async_callback"><result decl="34" score="15" /><result decl="76" score="15" /></term>
-<term value="PXL"><result decl="34" score="6" /><result decl="76" score="6" /></term>
-<term value="string"><result decl="12" score="3" /><result decl="12" score="1" /><result decl="16" score="3" /><result decl="54" score="3" /><result decl="54" score="1" /><result decl="58" score="3" /></term>
-<term value="develop"><result decl="20" score="1" /><result decl="39" score="1" /><result decl="62" score="1" /><result decl="81" score="1" /></term>
-<term value="thi"><result decl="4" score="1" /><result decl="8" score="1" /><result decl="12" score="1" /><result decl="13" score="1" /><result decl="20" score="1" /><result decl="23" score="1" /><result decl="25" score="1" /><result decl="41" score="1" /><result decl="46" score="1" /><result decl="50" score="1" /><result decl="54" score="1" /><result decl="55" score="1" /><result decl="62" score="1" /><result decl="65" score="1" /><result decl="67" score="1" /><result decl="83" score="1" /></term>
-<term value="modul"><result decl="7" score="1" /><result decl="8" score="1" /><result decl="41" score="1" /><result decl="49" score="1" /><result decl="50" score="1" /><result decl="83" score="1" /></term>
-<term value="optional"><result decl="17" score="15" /><result decl="17" score="3" /><result decl="59" score="15" /><result decl="59" score="3" /></term>
-<term value="dport"><result decl="5" score="1" /><result decl="47" score="1" /></term>
-<term value="Array"><result decl="16" score="6" /><result decl="58" score="6" /></term>
-<term value="code"><result decl="4" score="1" /><result decl="35" score="1" /><result decl="39" score="1" /><result decl="46" score="1" /><result decl="77" score="1" /><result decl="81" score="1" /></term>
-<term value="window"><result decl="1" score="1" /><result decl="5" score="1" /><result decl="13" score="1" /><result decl="20" score="1" /><result decl="43" score="1" /><result decl="47" score="1" /><result decl="55" score="1" /><result decl="62" score="1" /></term>
-<term value="describ"><result decl="22" score="1" /><result decl="23" score="1" /><result decl="64" score="1" /><result decl="65" score="1" /></term>
-<term value="xlld.xlcall.XLOPER"><result decl="28" score="50" /><result decl="70" score="50" /></term>
-<term value="xlfcount"><result decl="38" score="15" /><result decl="80" score="15" /></term>
-<term value="unit"><result decl="1" score="1" /><result decl="43" score="1" /></term>
-<term value="xlld.xlcall.XLOPER12"><result decl="29" score="50" /><result decl="71" score="50" /></term>
-<term value="getallworksheetfunctions"><result decl="11" score="15" /><result decl="53" score="15" /></term>
-<term value="set"><result decl="17" score="1" /><result decl="41" score="3" /><result decl="41" score="1" /><result decl="59" score="1" /><result decl="83" score="3" /><result decl="83" score="1" /></term>
-<term value="v"><result decl="31" score="1" /><result decl="40" score="1" /><result decl="73" score="1" /><result decl="82" score="1" /></term>
-<term value="us"><result decl="4" score="1" /><result decl="12" score="1" /><result decl="13" score="1" /><result decl="15" score="1" /><result decl="16" score="1" /><result decl="18" score="1" /><result decl="20" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="39" score="1" /><result decl="40" score="1" /><result decl="46" score="1" /><result decl="54" score="1" /><result decl="55" score="1" /><result decl="57" score="1" /><result decl="58" score="1" /><result decl="60" score="1" /><result decl="62" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /><result decl="81" score="1" /><result decl="82" score="1" /></term>
-<term value="implgetworksheetfunctionsstring"><result decl="12" score="15" /><result decl="54" score="15" /></term>
-<term value="excel12proc"><result decl="40" score="15" /><result decl="82" score="15" /></term>
-<term value="getmodulehandl"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="api"><result decl="20" score="1" /><result decl="37" score="1" /><result decl="39" score="1" /><result decl="62" score="1" /><result decl="79" score="1" /><result decl="81" score="1" /></term>
-<term value="entrypt"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="whose"><result decl="3" score="1" /><result decl="45" score="1" /></term>
-<term value="toStringArray"><result decl="16" score="25" /><result decl="58" score="25" /></term>
-<term value="xlfCount"><result decl="38" score="25" /><result decl="80" score="25" /></term>
-<term value="function"><result decl="2" score="1" /><result decl="4" score="1" /><result decl="6" score="1" /><result decl="7" score="1" /><result decl="8" score="1" /><result decl="9" score="3" /><result decl="9" score="1" /><result decl="10" score="1" /><result decl="11" score="1" /><result decl="12" score="1" /><result decl="13" score="1" /><result decl="14" score="1" /><result decl="15" score="3" /><result decl="15" score="1" /><result decl="16" score="2" /><result decl="17" score="1" /><result decl="18" score="1" /><result decl="19" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="33" score="1" /><result decl="36" score="1" /><result decl="37" score="1" /><result decl="38" score="1" /><result decl="40" score="1" /><result decl="41" score="1" /><result decl="44" score="1" /><result decl="46" score="1" /><result decl="48" score="1" /><result decl="49" score="1" /><result decl="50" score="1" /><result decl="51" score="3" /><result decl="51" score="1" /><result decl="52" score="1" /><result decl="53" score="1" /><result decl="54" score="1" /><result decl="55" score="1" /><result decl="56" score="1" /><result decl="57" score="3" /><result decl="57" score="1" /><result decl="58" score="2" /><result decl="59" score="1" /><result decl="60" score="1" /><result decl="61" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /><result decl="75" score="1" /><result decl="78" score="1" /><result decl="79" score="1" /><result decl="80" score="1" /><result decl="82" score="1" /><result decl="83" score="1" /></term>
-<term value="process"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="format"><result decl="13" score="1" /><result decl="55" score="1" /></term>
-<term value="freexloper"><result decl="3" score="15" /><result decl="45" score="15" /></term>
-<term value="constant"><result decl="20" score="1" /><result decl="62" score="1" /></term>
-<term value="languag"><result decl="20" score="1" /><result decl="37" score="1" /><result decl="62" score="1" /><result decl="79" score="1" /></term>
-<term value="rectangular"><result decl="22" score="1" /><result decl="23" score="1" /><result decl="24" score="1" /><result decl="25" score="1" /><result decl="64" score="1" /><result decl="65" score="1" /><result decl="66" score="1" /><result decl="67" score="1" /></term>
-<term value="callback"><result decl="20" score="1" /><result decl="34" score="3" /><result decl="39" score="1" /><result decl="40" score="1" /><result decl="62" score="1" /><result decl="76" score="3" /><result decl="81" score="1" /><result decl="82" score="1" /></term>
-<term value="struct"><result decl="9" score="1" /><result decl="51" score="1" /></term>
-<term value="structuredescrib"><result decl="24" score="1" /><result decl="25" score="1" /><result decl="26" score="1" /><result decl="27" score="1" /><result decl="66" score="1" /><result decl="67" score="1" /><result decl="68" score="1" /><result decl="69" score="1" /></term>
-<term value="xlld.test_xl_funcs"><result decl="7" score="50" /><result decl="7" score="25" /><result decl="49" score="50" /><result decl="49" score="25" /></term>
-<term value="xlld.memorymanager"><result decl="5" score="50" /><result decl="5" score="25" /><result decl="5" score="6" /><result decl="47" score="50" /><result decl="47" score="25" /><result decl="47" score="6" /></term>
-<term value="WorksheetFunction"><result decl="9" score="3" /><result decl="10" score="3" /><result decl="11" score="3" /><result decl="15" score="25" /><result decl="16" score="5" /><result decl="51" score="3" /><result decl="52" score="3" /><result decl="53" score="3" /><result decl="57" score="25" /><result decl="58" score="5" /></term>
-<term value="command"><result decl="36" score="3" /><result decl="38" score="1" /><result decl="78" score="3" /><result decl="80" score="1" /></term>
-<term value="FP"><result decl="26" score="25" /><result decl="26" score="6" /><result decl="68" score="25" /><result decl="68" score="6" /></term>
-<term value="PXL_HPC_ASYNC_CALLBACK"><result decl="34" score="25" /><result decl="76" score="25" /></term>
-<term value="default"><result decl="23" score="1" /><result decl="25" score="1" /><result decl="65" score="1" /><result decl="67" score="1" /></term>
-<term value="Function"><result decl="9" score="6" /><result decl="15" score="6" /><result decl="16" score="3" /><result decl="51" score="6" /><result decl="57" score="6" /><result decl="58" score="3" /></term>
-<term value="xlmref"><result decl="23" score="15" /><result decl="23" score="3" /><result decl="23" score="1" /><result decl="25" score="1" /><result decl="65" score="15" /><result decl="65" score="3" /><result decl="65" score="1" /><result decl="67" score="1" /></term>
-<term value="xlld.xl"><result decl="19" score="50" /><result decl="19" score="25" /><result decl="19" score="6" /><result decl="61" score="50" /><result decl="61" score="25" /><result decl="61" score="6" /></term>
-<term value="result"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="even"><result decl="12" score="1" /><result decl="54" score="1" /></term>
-<term value="xlld.xlcall.FP"><result decl="26" score="50" /><result decl="68" score="50" /></term>
-<term value="capabl"><result decl="27" score="1" /><result decl="69" score="1" /></term>
-<term value="Success"><result decl="31" score="6" /><result decl="35" score="6" /><result decl="73" score="6" /><result decl="77" score="6" /></term>
-<term value="xlld.xlcall.xlfCount"><result decl="38" score="50" /><result decl="80" score="50" /></term>
-<term value="xlld.traits.getWorksheetFunction"><result decl="9" score="50" /><result decl="51" score="50" /></term>
-<term value="excel"><result decl="4" score="1" /><result decl="8" score="1" /><result decl="10" score="1" /><result decl="11" score="1" /><result decl="12" score="1" /><result decl="19" score="1" /><result decl="20" score="1" /><result decl="31" score="1" /><result decl="37" score="1" /><result decl="38" score="1" /><result decl="39" score="1" /><result decl="40" score="1" /><result decl="41" score="1" /><result decl="46" score="1" /><result decl="50" score="1" /><result decl="52" score="1" /><result decl="53" score="1" /><result decl="54" score="1" /><result decl="61" score="1" /><result decl="62" score="1" /><result decl="73" score="1" /><result decl="79" score="1" /><result decl="80" score="1" /><result decl="81" score="1" /><result decl="82" score="1" /><result decl="83" score="1" /></term>
-<term value="automat"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="xlld.traits.getModuleWorksheetFunctions"><result decl="10" score="50" /><result decl="52" score="50" /></term>
-<term value="xlld.traits.implGetWorksheetFunctionsString"><result decl="12" score="50" /><result decl="54" score="50" /></term>
-<term value="uda"><result decl="18" score="1" /><result decl="60" score="1" /></term>
-<term value="variabl"><result decl="23" score="1" /><result decl="25" score="1" /><result decl="65" score="1" /><result decl="67" score="1" /></term>
-<term value="xlld.xlcall.FP12"><result decl="27" score="50" /><result decl="69" score="50" /></term>
-<term value="equival"><result decl="38" score="1" /><result decl="80" score="1" /></term>
-<term value="Get"><result decl="12" score="6" /><result decl="54" score="6" /></term>
-<term value="platform"><result decl="5" score="1" /><result decl="39" score="1" /><result decl="47" score="1" /><result decl="81" score="1" /></term>
-<term value="pxloper"><result decl="3" score="1" /><result decl="45" score="1" /></term>
-<term value="none"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="xlfree"><result decl="37" score="15" /><result decl="79" score="15" /></term>
-<term value="Def"><result decl="13" score="6" /><result decl="55" score="6" /></term>
-<term value="version"><result decl="20" score="1" /><result decl="39" score="1" /><result decl="40" score="1" /><result decl="62" score="1" /><result decl="81" score="1" /><result decl="82" score="1" /></term>
-<term value="via"><result decl="19" score="1" /><result decl="61" score="1" /></term>
-<term value="ensur"><result decl="40" score="1" /><result decl="82" score="1" /></term>
-<term value="add"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="getWorksheetFunction"><result decl="9" score="25" /><result decl="51" score="25" /></term>
-<term value="grid"><result decl="27" score="1" /><result decl="69" score="1" /></term>
-<term value="xlld.worksheet"><result decl="14" score="50" /><result decl="14" score="25" /><result decl="14" score="6" /><result decl="15" score="5" /><result decl="15" score="3" /><result decl="16" score="5" /><result decl="16" score="3" /><result decl="17" score="5" /><result decl="17" score="3" /><result decl="18" score="5" /><result decl="18" score="3" /><result decl="56" score="50" /><result decl="56" score="25" /><result decl="56" score="6" /><result decl="57" score="5" /><result decl="57" score="3" /><result decl="58" score="5" /><result decl="58" score="3" /><result decl="59" score="5" /><result decl="59" score="3" /><result decl="60" score="5" /><result decl="60" score="3" /></term>
-<term value="calculation"><result decl="32" score="3" /><result decl="74" score="3" /></term>
-<term value="PROC"><result decl="40" score="6" /><result decl="82" score="6" /></term>
-<term value="messag"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="doe"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="s"><result decl="4" score="1" /><result decl="20" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="39" score="1" /><result decl="41" score="1" /><result decl="46" score="1" /><result decl="62" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /><result decl="81" score="1" /><result decl="83" score="1" /></term>
-<term value="debug"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="pxresult"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="occur"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="while"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="module"><result decl="10" score="3" /><result decl="52" score="3" /></term>
-<term value="thei"><result decl="6" score="1" /><result decl="48" score="1" /></term>
-<term value="fundament"><result decl="28" score="1" /><result decl="29" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /></term>
-<term value="xlld.xlcall.PXL_HPC_ASYNC_CALLBACK"><result decl="34" score="50" /><result decl="76" score="50" /></term>
-<term value="XLREF12"><result decl="24" score="25" /><result decl="24" score="6" /><result decl="66" score="25" /><result decl="66" score="6" /></term>
-<term value="hold"><result decl="28" score="1" /><result decl="29" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /></term>
-<term value="fetch"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="getprocaddress"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="Ver"><result decl="33" score="6" /><result decl="75" score="6" /></term>
-<term value="XLOPER12"><result decl="29" score="25" /><result decl="29" score="6" /><result decl="71" score="25" /><result decl="71" score="6" /></term>
-<term value="case"><result decl="4" score="1" /><result decl="41" score="1" /><result decl="46" score="1" /><result decl="83" score="1" /></term>
-<term value="comment"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="Num"><result decl="30" score="6" /><result decl="72" score="6" /></term>
-<term value="test"><result decl="1" score="1" /><result decl="6" score="1" /><result decl="7" score="1" /><result decl="13" score="1" /><result decl="43" score="1" /><result decl="48" score="1" /><result decl="49" score="1" /><result decl="55" score="1" /></term>
-<term value="xlref"><result decl="22" score="15" /><result decl="22" score="3" /><result decl="22" score="1" /><result decl="24" score="1" /><result decl="64" score="15" /><result decl="64" score="3" /><result decl="64" score="1" /><result decl="66" score="1" /></term>
-<term value="macro"><result decl="37" score="1" /><result decl="79" score="1" /></term>
-<term value="given"><result decl="3" score="1" /><result decl="10" score="1" /><result decl="11" score="1" /><result decl="45" score="1" /><result decl="52" score="1" /><result decl="53" score="1" /></term>
-<term value="memorymanag"><result decl="5" score="1" /><result decl="47" score="1" /></term>
-<term value="worksheet"><result decl="9" score="3" /><result decl="10" score="3" /><result decl="11" score="3" /><result decl="12" score="3" /><result decl="14" score="25" /><result decl="14" score="1" /><result decl="15" score="3" /><result decl="15" score="1" /><result decl="16" score="2" /><result decl="51" score="3" /><result decl="52" score="3" /><result decl="53" score="3" /><result decl="54" score="3" /><result decl="56" score="25" /><result decl="56" score="1" /><result decl="57" score="3" /><result decl="57" score="1" /><result decl="58" score="2" /></term>
-<term value="machineri"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="fp"><result decl="26" score="15" /><result decl="26" score="3" /><result decl="26" score="1" /><result decl="27" score="1" /><result decl="68" score="15" /><result decl="68" score="3" /><result decl="68" score="1" /><result decl="69" score="1" /></term>
-<term value="without"><result decl="1" score="1" /><result decl="43" score="1" /></term>
-<term value="known"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="xlretsuccess"><result decl="31" score="15" /><result decl="73" score="15" /></term>
-<term value="xlevent"><result decl="32" score="6" /><result decl="74" score="6" /></term>
-<term value="test_xl_funcs"><result decl="7" score="25" /><result decl="49" score="25" /></term>
-<term value="actual"><result decl="12" score="1" /><result decl="54" score="1" /></term>
-<term value="XLOPER"><result decl="28" score="25" /><result decl="28" score="6" /><result decl="70" score="25" /><result decl="70" score="6" /></term>
-<term value="cluster"><result decl="34" score="1" /><result decl="35" score="1" /><result decl="41" score="1" /><result decl="76" score="1" /><result decl="77" score="1" /><result decl="83" score="1" /></term>
-<term value="pxl"><result decl="34" score="3" /><result decl="76" score="3" /></term>
-<term value="xltype"><result decl="30" score="6" /><result decl="30" score="1" /><result decl="72" score="6" /><result decl="72" score="1" /></term>
-<term value="count"><result decl="4" score="1" /><result decl="38" score="3" /><result decl="46" score="1" /><result decl="80" score="3" /></term>
-<term value="util"><result decl="2" score="1" /><result decl="44" score="1" /></term>
-<term value="xloper12"><result decl="29" score="15" /><result decl="29" score="3" /><result decl="71" score="15" /><result decl="71" score="3" /></term>
-<term value="ended"><result decl="32" score="3" /><result decl="74" score="3" /></term>
-<term value="elig"><result decl="8" score="1" /><result decl="50" score="1" /></term>
-<term value="address"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="memori"><result decl="3" score="1" /><result decl="4" score="1" /><result decl="45" score="1" /><result decl="46" score="1" /></term>
-<term value="enabl"><result decl="1" score="1" /><result decl="43" score="1" /></term>
-<term value="xlld.xlcall.xltypeNum"><result decl="30" score="50" /><result decl="72" score="50" /></term>
-<term value="xlld.xlcall.XLREF12"><result decl="24" score="50" /><result decl="66" score="50" /></term>
-<term value="int"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="xlld.xlcall.XLMREF12"><result decl="25" score="50" /><result decl="67" score="50" /></term>
-<term value="xlld.test"><result decl="6" score="6" /><result decl="7" score="6" /><result decl="48" score="6" /><result decl="49" score="6" /></term>
-<term value="Excel4v"><result decl="21" score="25" /><result decl="21" score="6" /><result decl="63" score="25" /><result decl="63" score="6" /></term>
-<term value="xlcallver"><result decl="33" score="15" /><result decl="75" score="15" /></term>
-<term value="t"><result decl="4" score="1" /><result decl="17" score="1" /><result decl="41" score="1" /><result decl="46" score="1" /><result decl="59" score="1" /><result decl="83" score="1" /></term>
-<term value="order"><result decl="12" score="1" /><result decl="54" score="1" /></term>
-<term value="avail"><result decl="37" score="1" /><result decl="79" score="1" /></term>
-<term value="export"><result decl="13" score="1" /><result decl="41" score="1" /><result decl="55" score="1" /><result decl="83" score="1" /></term>
-<term value="xlld.xlcall.xleventCalculationEnded"><result decl="32" score="50" /><result decl="74" score="50" /></term>
-<term value="Count"><result decl="38" score="6" /><result decl="80" score="6" /></term>
-<term value="xlFree"><result decl="37" score="25" /><result decl="79" score="25" /></term>
-<term value="malloc"><result decl="3" score="1" /><result decl="45" score="1" /></term>
-<term value="xlld.traits"><result decl="8" score="50" /><result decl="8" score="25" /><result decl="8" score="6" /><result decl="9" score="5" /><result decl="9" score="3" /><result decl="10" score="5" /><result decl="10" score="3" /><result decl="11" score="5" /><result decl="11" score="3" /><result decl="12" score="5" /><result decl="12" score="3" /><result decl="13" score="5" /><result decl="13" score="3" /><result decl="50" score="50" /><result decl="50" score="25" /><result decl="50" score="6" /><result decl="51" score="5" /><result decl="51" score="3" /><result decl="52" score="5" /><result decl="52" score="3" /><result decl="53" score="5" /><result decl="53" score="3" /><result decl="54" score="5" /><result decl="54" score="3" /><result decl="55" score="5" /><result decl="55" score="3" /></term>
+<term value="take"><result decl="11" score="1" /></term>
+<term value="xlld.test_d_funcs"><result decl="8" score="50" /><result decl="8" score="25" /></term>
+<term value="Auto"><result decl="47" score="6" /><result decl="48" score="6" /></term>
+<term value="xlcall"><result decl="4" score="1" /><result decl="23" score="25" /><result decl="23" score="1" /><result decl="36" score="3" /><result decl="42" score="1" /></term>
+<term value="g"><result decl="5" score="1" /></term>
+<term value="ed"><result decl="4" score="1" /></term>
+<term value="regist"><result decl="10" score="1" /><result decl="14" score="1" /><result decl="16" score="1" /><result decl="17" score="1" /><result decl="20" score="1" /><result decl="31" score="1" /><result decl="32" score="1" /><result decl="35" score="1" /><result decl="46" score="1" /><result decl="47" score="1" /><result decl="48" score="1" /></term>
+<term value="latform"><result decl="23" score="1" /></term>
+<term value="SetExcel12EntryPt"><result decl="44" score="25" /></term>
+<term value="check"><result decl="4" score="1" /></term>
+<term value="memorymanager"><result decl="7" score="25" /></term>
+<term value="abov"><result decl="10" score="1" /></term>
+<term value="XLMREF12"><result decl="28" score="25" /><result decl="28" score="6" /></term>
+<term value="reflect"><result decl="9" score="1" /><result decl="10" score="1" /></term>
+<term value="xleventCalculationEnded"><result decl="35" score="25" /></term>
+<term value="real"><result decl="1" score="1" /></term>
+<term value="pointer"><result decl="3" score="1" /><result decl="4" score="1" /></term>
+<term value="Module"><result decl="12" score="6" /></term>
+<term value="option"><result decl="19" score="1" /></term>
+<term value="fp12"><result decl="30" score="15" /><result decl="30" score="3" /></term>
+<term value="xltypeNum"><result decl="33" score="25" /></term>
+<term value="try"><result decl="44" score="1" /></term>
+<term value="name"><result decl="20" score="1" /></term>
+<term value="access"><result decl="10" score="1" /></term>
+<term value="accordingli"><result decl="11" score="1" /></term>
+<term value="xleventregist"><result decl="35" score="1" /></term>
+<term value="creat"><result decl="4" score="1" /></term>
+<term value="contain"><result decl="8" score="1" /><result decl="9" score="1" /><result decl="44" score="1" /></term>
+<term value="xlref12"><result decl="27" score="15" /><result decl="27" score="3" /></term>
+<term value="fill"><result decl="11" score="1" /></term>
+<term value="handl"><result decl="30" score="1" /><result decl="44" score="1" /></term>
+<term value="know"><result decl="9" score="1" /></term>
+<term value="runtim"><result decl="14" score="1" /></term>
+<term value="getmoduleworksheetfunctions"><result decl="12" score="15" /></term>
+<term value="async"><result decl="37" score="3" /><result decl="37" score="1" /></term>
+<term value="FP12"><result decl="30" score="25" /><result decl="30" score="6" /></term>
+<term value="Calculation"><result decl="35" score="6" /></term>
+<term value="cpp"><result decl="7" score="1" /><result decl="42" score="1" /></term>
+<term value="load"><result decl="10" score="1" /><result decl="44" score="1" /></term>
+<term value="befor"><result decl="23" score="1" /></term>
+<term value="funcs"><result decl="8" score="6" /><result decl="9" score="6" /></term>
+<term value="event"><result decl="35" score="1" /></term>
+<term value="Func"><result decl="47" score="6" /><result decl="48" score="6" /></term>
+<term value="Excel12"><result decl="44" score="6" /></term>
+<term value="build"><result decl="10" score="1" /></term>
+<term value="need"><result decl="14" score="1" /></term>
+<term value="c"><result decl="14" score="1" /><result decl="23" score="1" /><result decl="40" score="1" /><result decl="42" score="1" /></term>
+<term value="implgetworksheetfunctionsstr"><result decl="10" score="1" /></term>
+<term value="necessarili"><result decl="19" score="1" /></term>
+<term value="link"><result decl="1" score="1" /><result decl="46" score="1" /></term>
+<term value="XLCall"><result decl="36" score="6" /></term>
+<term value="xlld.xlcall.xlCommand"><result decl="39" score="50" /></term>
+<term value="xlld.xlcall.xlretSuccess"><result decl="34" score="50" /></term>
+<term value="isharc"><result decl="7" score="1" /><result decl="23" score="1" /><result decl="46" score="1" /></term>
+<term value="interfac"><result decl="16" score="1" /></term>
+<term value="ceremoni"><result decl="46" score="1" /></term>
+<term value="registerAutoCloseFunc"><result decl="47" score="25" /><result decl="48" score="25" /></term>
+<term value="Entry"><result decl="44" score="6" /></term>
+<term value="xlld.xll"><result decl="46" score="50" /><result decl="46" score="25" /><result decl="46" score="6" /><result decl="47" score="5" /><result decl="47" score="3" /><result decl="48" score="5" /><result decl="48" score="3" /></term>
+<term value="implGetWorksheetFunctionsString"><result decl="14" score="25" /></term>
+<term value="codesthes"><result decl="34" score="1" /></term>
+<term value="convert"><result decl="5" score="1" /></term>
+<term value="excel4v"><result decl="24" score="15" /><result decl="24" score="3" /></term>
+<term value="pxl_hpc_async_callback"><result decl="37" score="15" /></term>
+<term value="ask"><result decl="6" score="1" /></term>
+<term value="modul"><result decl="9" score="1" /><result decl="10" score="1" /><result decl="44" score="1" /><result decl="45" score="1" /><result decl="46" score="1" /></term>
+<term value="optional"><result decl="19" score="15" /><result decl="19" score="3" /></term>
+<term value="entrypt"><result decl="44" score="1" /></term>
+<term value="dport"><result decl="7" score="1" /></term>
+<term value="unit"><result decl="1" score="1" /></term>
+<term value="api"><result decl="23" score="1" /><result decl="40" score="1" /><result decl="42" score="1" /></term>
+<term value="scopedCoerce"><result decl="22" score="25" /></term>
+<term value="languag"><result decl="23" score="1" /><result decl="40" score="1" /><result decl="46" score="1" /></term>
+<term value="freexloper"><result decl="3" score="15" /></term>
+<term value="xlld.xlcall.xlfCount"><result decl="41" score="50" /></term>
+<term value="freed"><result decl="5" score="1" /></term>
+<term value="xlld.test_xl_funcs"><result decl="9" score="50" /><result decl="9" score="25" /></term>
+<term value="command"><result decl="39" score="3" /><result decl="41" score="1" /></term>
+<term value="WorksheetFunction"><result decl="11" score="3" /><result decl="12" score="3" /><result decl="13" score="3" /><result decl="17" score="25" /><result decl="18" score="5" /></term>
+<term value="xlld.traits.getWorksheetFunction"><result decl="11" score="50" /></term>
+<term value="fundament"><result decl="31" score="1" /><result decl="32" score="1" /></term>
+<term value="none"><result decl="4" score="1" /></term>
+<term value="version"><result decl="5" score="1" /><result decl="6" score="1" /><result decl="23" score="1" /><result decl="42" score="1" /><result decl="43" score="1" /><result decl="45" score="1" /></term>
+<term value="hold"><result decl="31" score="1" /><result decl="32" score="1" /></term>
+<term value="occur"><result decl="4" score="1" /></term>
+<term value="XLREF12"><result decl="27" score="25" /><result decl="27" score="6" /></term>
+<term value="address"><result decl="44" score="1" /></term>
+<term value="memorymanag"><result decl="5" score="1" /><result decl="7" score="1" /></term>
+<term value="xlevent"><result decl="35" score="6" /></term>
+<term value="test_xl_funcs"><result decl="9" score="25" /></term>
+<term value="pxl"><result decl="37" score="3" /></term>
+<term value="enabl"><result decl="1" score="1" /></term>
+<term value="xlld.xlcall.xltypeNum"><result decl="33" score="50" /></term>
+<term value="xlld.test"><result decl="8" score="6" /><result decl="9" score="6" /></term>
+<term value="Excel4v"><result decl="24" score="25" /><result decl="24" score="6" /></term>
+<term value="t"><result decl="4" score="1" /><result decl="5" score="1" /><result decl="19" score="1" /><result decl="44" score="1" /></term>
+<term value="export"><result decl="15" score="1" /><result decl="44" score="1" /></term>
+<term value="deleg"><result decl="47" score="1" /></term>
+<term value="bit"><result decl="39" score="1" /></term>
+<term value="follow"><result decl="4" score="1" /></term>
+<term value="wrap"><result decl="8" score="1" /><result decl="21" score="1" /></term>
+<term value="XLREF"><result decl="25" score="25" /><result decl="25" score="6" /></term>
+<term value="xlld.xlcall.XLREF"><result decl="25" score="50" /></term>
+<term value="return"><result decl="4" score="1" /><result decl="5" score="1" /><result decl="11" score="1" /><result decl="15" score="1" /><result decl="18" score="1" /><result decl="22" score="1" /><result decl="34" score="1" /><result decl="38" score="1" /><result decl="43" score="1" /><result decl="44" score="1" /></term>
+<term value="Worksheet"><result decl="11" score="6" /><result decl="12" score="6" /><result decl="13" score="6" /><result decl="14" score="6" /><result decl="17" score="6" /><result decl="18" score="3" /></term>
+<term value="xlld.traits.dllDefFile"><result decl="15" score="50" /></term>
+<term value="xlffoo"><result decl="5" score="1" /></term>
+<term value="xlretSuccess"><result decl="34" score="25" /></term>
+<term value="eventspass"><result decl="35" score="1" /></term>
+<term value="doesn"><result decl="4" score="1" /><result decl="44" score="1" /></term>
+<term value="data"><result decl="23" score="1" /><result decl="31" score="1" /><result decl="32" score="1" /><result decl="33" score="1" /></term>
+<term value="setexcel12entrypt"><result decl="44" score="15" /></term>
+<term value="xlld.worksheet.Register"><result decl="20" score="50" /></term>
+<term value="f"><result decl="5" score="1" /></term>
+<term value="xlHpcRetSuccess"><result decl="38" score="25" /></term>
+<term value="built"><result decl="10" score="1" /><result decl="41" score="1" /></term>
+<term value="automag"><result decl="10" score="1" /></term>
+<term value="dll"><result decl="15" score="6" /><result decl="15" score="1" /><result decl="44" score="1" /></term>
+<term value="getworksheetfunction"><result decl="11" score="15" /></term>
+<term value="author"><result decl="19" score="1" /></term>
+<term value="Optional"><result decl="19" score="25" /><result decl="19" score="6" /><result decl="20" score="3" /></term>
+<term value="xleventcalculationended"><result decl="35" score="15" /></term>
+<term value="must"><result decl="5" score="1" /><result decl="46" score="1" /></term>
+<term value="hpc"><result decl="37" score="3" /><result decl="38" score="3" /><result decl="44" score="1" /></term>
+<term value="insid"><result decl="14" score="1" /></term>
+<term value="src"><result decl="42" score="1" /></term>
+<term value="sens"><result decl="5" score="1" /></term>
+<term value="tostringarray"><result decl="18" score="15" /></term>
+<term value="xlld.framework.freeXLOper"><result decl="3" score="50" /></term>
+<term value="ha"><result decl="3" score="1" /><result decl="4" score="1" /></term>
+<term value="num"><result decl="33" score="3" /></term>
+<term value="sinc"><result decl="44" score="1" /></term>
+<term value="xlld.xlcall.XLMREF"><result decl="26" score="50" /></term>
+<term value="sourcese"><result decl="3" score="1" /><result decl="4" score="1" /><result decl="5" score="1" /><result decl="6" score="1" /><result decl="11" score="1" /><result decl="12" score="1" /><result decl="13" score="1" /><result decl="14" score="1" /><result decl="15" score="1" /><result decl="17" score="1" /><result decl="18" score="1" /><result decl="19" score="1" /><result decl="22" score="1" /><result decl="24" score="1" /><result decl="25" score="1" /><result decl="26" score="1" /><result decl="27" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="30" score="1" /><result decl="31" score="1" /><result decl="32" score="1" /><result decl="36" score="1" /><result decl="44" score="1" /><result decl="47" score="1" /><result decl="48" score="1" /></term>
+<term value="gener"><result decl="46" score="1" /></term>
+<term value="microsoft"><result decl="7" score="1" /><result decl="23" score="1" /><result decl="42" score="1" /></term>
+<term value="xlld.xll.registerAutoCloseFunc"><result decl="47" score="50" /><result decl="48" score="50" /></term>
+<term value="xlld.framework.excel12"><result decl="5" score="50" /></term>
+<term value="exist"><result decl="8" score="1" /><result decl="9" score="1" /></term>
+<term value="arrayspurpos"><result decl="4" score="1" /></term>
+<term value="big"><result decl="30" score="1" /></term>
+<term value="ar"><result decl="4" score="1" /><result decl="5" score="1" /><result decl="10" score="1" /><result decl="23" score="1" /><result decl="40" score="1" /><result decl="42" score="1" /></term>
+<term value="mixin"><result decl="10" score="1" /><result decl="14" score="1" /></term>
+<term value="Close"><result decl="47" score="6" /><result decl="48" score="6" /></term>
+<term value="r"><result decl="31" score="1" /></term>
+<term value="windowsthi"><result decl="42" score="1" /></term>
+<term value="xlld"><result decl="1" score="15" /><result decl="1" score="5" /><result decl="1" score="3" /><result decl="2" score="15" /><result decl="2" score="5" /><result decl="2" score="3" /><result decl="3" score="5" /><result decl="3" score="3" /><result decl="4" score="5" /><result decl="4" score="3" /><result decl="5" score="5" /><result decl="5" score="3" /><result decl="5" score="1" /><result decl="6" score="5" /><result decl="6" score="3" /><result decl="7" score="15" /><result decl="7" score="5" /><result decl="7" score="3" /><result decl="8" score="15" /><result decl="8" score="5" /><result decl="8" score="3" /><result decl="9" score="15" /><result decl="9" score="5" /><result decl="9" score="3" /><result decl="10" score="15" /><result decl="10" score="5" /><result decl="10" score="3" /><result decl="10" score="1" /><result decl="11" score="5" /><result decl="11" score="3" /><result decl="12" score="5" /><result decl="12" score="3" /><result decl="13" score="5" /><result decl="13" score="3" /><result decl="14" score="5" /><result decl="14" score="3" /><result decl="14" score="1" /><result decl="15" score="5" /><result decl="15" score="3" /><result decl="16" score="15" /><result decl="16" score="5" /><result decl="16" score="3" /><result decl="17" score="5" /><result decl="17" score="3" /><result decl="18" score="5" /><result decl="18" score="3" /><result decl="19" score="5" /><result decl="19" score="3" /><result decl="20" score="5" /><result decl="20" score="3" /><result decl="21" score="15" /><result decl="21" score="5" /><result decl="21" score="3" /><result decl="22" score="5" /><result decl="22" score="3" /><result decl="23" score="15" /><result decl="23" score="5" /><result decl="23" score="3" /><result decl="24" score="5" /><result decl="24" score="3" /><result decl="25" score="5" /><result decl="25" score="3" /><result decl="26" score="5" /><result decl="26" score="3" /><result decl="27" score="5" /><result decl="27" score="3" /><result decl="28" score="5" /><result decl="28" score="3" /><result decl="29" score="5" /><result decl="29" score="3" /><result decl="30" score="5" /><result decl="30" score="3" /><result decl="31" score="5" /><result decl="31" score="3" /><result decl="32" score="5" /><result decl="32" score="3" /><result decl="33" score="5" /><result decl="33" score="3" /><result decl="34" score="5" /><result decl="34" score="3" /><result decl="35" score="5" /><result decl="35" score="3" /><result decl="36" score="5" /><result decl="36" score="3" /><result decl="37" score="5" /><result decl="37" score="3" /><result decl="38" score="5" /><result decl="38" score="3" /><result decl="39" score="5" /><result decl="39" score="3" /><result decl="40" score="5" /><result decl="40" score="3" /><result decl="41" score="5" /><result decl="41" score="3" /><result decl="42" score="15" /><result decl="42" score="5" /><result decl="42" score="3" /><result decl="43" score="5" /><result decl="43" score="3" /><result decl="44" score="5" /><result decl="44" score="3" /><result decl="45" score="15" /><result decl="45" score="5" /><result decl="45" score="3" /><result decl="46" score="15" /><result decl="46" score="5" /><result decl="46" score="3" /><result decl="47" score="5" /><result decl="47" score="3" /><result decl="48" score="5" /><result decl="48" score="3" /></term>
+<term value="all"><result decl="13" score="3" /></term>
+<term value="explicitli"><result decl="44" score="1" /></term>
+<term value="xlld.xlcallcpp.SetExcel12EntryPt"><result decl="44" score="50" /></term>
+<term value="pass"><result decl="4" score="1" /><result decl="20" score="1" /><result decl="44" score="1" /></term>
+<term value="don"><result decl="4" score="1" /><result decl="19" score="1" /></term>
+<term value="Set"><result decl="44" score="6" /></term>
+<term value="allow"><result decl="4" score="1" /><result decl="15" score="1" /></term>
+<term value="def"><result decl="15" score="3" /><result decl="15" score="1" /></term>
+<term value="regular"><result decl="8" score="1" /></term>
+<term value="XLCallVer"><result decl="36" score="25" /></term>
+<term value="caller"><result decl="6" score="1" /></term>
+<term value="numbersthes"><result decl="40" score="1" /></term>
+<term value="itparamet"><result decl="3" score="1" /></term>
+<term value="print"><result decl="4" score="1" /></term>
+<term value="framework"><result decl="2" score="25" /></term>
+<term value="typesus"><result decl="33" score="1" /></term>
+<term value="excel12Then"><result decl="6" score="25" /></term>
+<term value="string"><result decl="14" score="3" /><result decl="14" score="1" /><result decl="18" score="3" /></term>
+<term value="develop"><result decl="23" score="1" /><result decl="42" score="1" /></term>
+<term value="thi"><result decl="4" score="1" /><result decl="10" score="1" /><result decl="14" score="1" /><result decl="15" score="1" /><result decl="23" score="1" /><result decl="26" score="1" /><result decl="28" score="1" /><result decl="44" score="1" /><result decl="45" score="1" /><result decl="46" score="1" /></term>
+<term value="getmodulehandl"><result decl="44" score="1" /></term>
+<term value="code"><result decl="4" score="1" /><result decl="38" score="1" /><result decl="42" score="1" /><result decl="46" score="1" /></term>
+<term value="xlld.xlcall.XLOPER"><result decl="31" score="50" /></term>
+<term value="least"><result decl="46" score="1" /></term>
+<term value="xlld.framework.excel12Then"><result decl="6" score="50" /></term>
+<term value="implgetworksheetfunctionsstring"><result decl="14" score="15" /></term>
+<term value="whose"><result decl="3" score="1" /></term>
+<term value="format"><result decl="15" score="1" /></term>
+<term value="manag"><result decl="6" score="1" /></term>
+<term value="func"><result decl="47" score="3" /><result decl="48" score="3" /></term>
+<term value="struct"><result decl="11" score="1" /><result decl="22" score="1" /></term>
+<term value="PXL_HPC_ASYNC_CALLBACK"><result decl="37" score="25" /></term>
+<term value="xlld.xl"><result decl="21" score="50" /><result decl="21" score="25" /><result decl="21" score="6" /><result decl="22" score="5" /><result decl="22" score="3" /></term>
+<term value="even"><result decl="14" score="1" /></term>
+<term value="xlld.xlcall.FP"><result decl="29" score="50" /></term>
+<term value="excel"><result decl="4" score="1" /><result decl="5" score="1" /><result decl="6" score="1" /><result decl="10" score="1" /><result decl="12" score="1" /><result decl="13" score="1" /><result decl="14" score="1" /><result decl="21" score="1" /><result decl="23" score="1" /><result decl="34" score="1" /><result decl="40" score="1" /><result decl="41" score="1" /><result decl="42" score="1" /><result decl="43" score="1" /><result decl="44" score="1" /><result decl="45" score="1" /><result decl="46" score="1" /></term>
+<term value="xlld.traits.implGetWorksheetFunctionsString"><result decl="14" score="50" /></term>
+<term value="variabl"><result decl="26" score="1" /><result decl="28" score="1" /></term>
+<term value="uda"><result decl="20" score="1" /></term>
+<term value="xlld.xlcall.FP12"><result decl="30" score="50" /></term>
+<term value="getWorksheetFunction"><result decl="11" score="25" /></term>
+<term value="XLOPER12"><result decl="32" score="25" /><result decl="32" score="6" /></term>
+<term value="s"><result decl="4" score="1" /><result decl="23" score="1" /><result decl="31" score="1" /><result decl="32" score="1" /><result decl="42" score="1" /><result decl="44" score="1" /></term>
+<term value="debug"><result decl="4" score="1" /></term>
+<term value="getprocaddress"><result decl="44" score="1" /></term>
+<term value="while"><result decl="4" score="1" /></term>
+<term value="xlld.xlcall.PXL_HPC_ASYNC_CALLBACK"><result decl="37" score="50" /></term>
+<term value="fetch"><result decl="44" score="1" /></term>
+<term value="Ver"><result decl="36" score="6" /></term>
+<term value="xlld.xl.scopedCoerce"><result decl="22" score="50" /></term>
+<term value="comment"><result decl="4" score="1" /></term>
+<term value="xlref"><result decl="25" score="15" /><result decl="25" score="3" /><result decl="25" score="1" /><result decl="27" score="1" /></term>
+<term value="fp"><result decl="29" score="15" /><result decl="29" score="3" /><result decl="29" score="1" /><result decl="30" score="1" /></term>
+<term value="known"><result decl="44" score="1" /></term>
+<term value="xltype"><result decl="33" score="6" /><result decl="33" score="1" /></term>
+<term value="count"><result decl="4" score="1" /><result decl="41" score="3" /></term>
+<term value="specifi"><result decl="5" score="1" /></term>
+<term value="xloper12"><result decl="32" score="15" /><result decl="32" score="3" /></term>
+<term value="avoid"><result decl="5" score="1" /><result decl="6" score="1" /></term>
+<term value="ended"><result decl="35" score="3" /></term>
+<term value="memori"><result decl="3" score="1" /><result decl="4" score="1" /><result decl="6" score="1" /></term>
+<term value="oper"><result decl="22" score="1" /></term>
+<term value="xlFree"><result decl="40" score="25" /></term>
+<term value="malloc"><result decl="3" score="1" /></term>
+<term value="earlier"><result decl="43" score="1" /></term>
 <term value="done"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="dummy"><result decl="1" score="25" /><result decl="43" score="25" /></term>
-<term value="d"><result decl="3" score="1" /><result decl="4" score="1" /><result decl="6" score="6" /><result decl="6" score="1" /><result decl="8" score="1" /><result decl="9" score="1" /><result decl="18" score="1" /><result decl="20" score="1" /><result decl="45" score="1" /><result decl="46" score="1" /><result decl="48" score="6" /><result decl="48" score="1" /><result decl="50" score="1" /><result decl="51" score="1" /><result decl="60" score="1" /><result decl="62" score="1" /></term>
-<term value="type"><result decl="6" score="1" /><result decl="7" score="1" /><result decl="20" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="48" score="1" /><result decl="49" score="1" /><result decl="62" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /></term>
-<term value="xlld.framework"><result decl="2" score="50" /><result decl="2" score="25" /><result decl="2" score="6" /><result decl="3" score="5" /><result decl="3" score="3" /><result decl="4" score="5" /><result decl="4" score="3" /><result decl="44" score="50" /><result decl="44" score="25" /><result decl="44" score="6" /><result decl="45" score="5" /><result decl="45" score="3" /><result decl="46" score="5" /><result decl="46" score="3" /></term>
-<term value="bit"><result decl="36" score="1" /><result decl="78" score="1" /></term>
-<term value="follow"><result decl="4" score="1" /><result decl="46" score="1" /></term>
-<term value="HPC"><result decl="34" score="6" /><result decl="76" score="6" /></term>
-<term value="wrap"><result decl="6" score="1" /><result decl="19" score="1" /><result decl="48" score="1" /><result decl="61" score="1" /></term>
-<term value="xloper"><result decl="3" score="3" /><result decl="3" score="1" /><result decl="4" score="1" /><result decl="28" score="15" /><result decl="28" score="3" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="30" score="1" /><result decl="45" score="3" /><result decl="45" score="1" /><result decl="46" score="1" /><result decl="70" score="15" /><result decl="70" score="3" /><result decl="70" score="1" /><result decl="71" score="1" /><result decl="72" score="1" /></term>
-<term value="dlldeffile"><result decl="13" score="15" /><result decl="55" score="15" /></term>
-<term value="ex"><result decl="41" score="1" /><result decl="83" score="1" /></term>
-<term value="proc"><result decl="40" score="3" /><result decl="82" score="3" /></term>
-<term value="program"><result decl="20" score="1" /><result decl="62" score="1" /></term>
-<term value="xlld.worksheet.WorksheetFunction"><result decl="15" score="50" /><result decl="57" score="50" /></term>
-<term value="XLREF"><result decl="22" score="25" /><result decl="22" score="6" /><result decl="64" score="25" /><result decl="64" score="6" /></term>
-<term value="inform"><result decl="13" score="1" /><result decl="55" score="1" /></term>
-<term value="traits"><result decl="8" score="25" /><result decl="50" score="25" /></term>
-<term value="xltypenum"><result decl="30" score="15" /><result decl="72" score="15" /></term>
-<term value="earlier"><result decl="40" score="1" /><result decl="82" score="1" /></term>
-<term value="xlretfail"><result decl="40" score="1" /><result decl="82" score="1" /></term>
-<term value="xlld.dummy"><result decl="1" score="50" /><result decl="1" score="25" /><result decl="1" score="6" /><result decl="43" score="50" /><result decl="43" score="25" /><result decl="43" score="6" /></term>
-<term value="suitabl"><result decl="16" score="1" /><result decl="58" score="1" /></term>
-<term value="functions"><result decl="10" score="3" /><result decl="11" score="3" /><result decl="12" score="3" /><result decl="52" score="3" /><result decl="53" score="3" /><result decl="54" score="3" /></term>
-<term value="user"><result decl="18" score="1" /><result decl="60" score="1" /></term>
-<term value="dllDefFile"><result decl="13" score="25" /><result decl="55" score="25" /></term>
-<term value="templat"><result decl="12" score="1" /><result decl="54" score="1" /></term>
-<term value="xlld.xlcall.XLREF"><result decl="22" score="50" /><result decl="64" score="50" /></term>
-<term value="Free"><result decl="37" score="6" /><result decl="79" score="6" /></term>
-<term value="File"><result decl="13" score="6" /><result decl="55" score="6" /></term>
-<term value="std"><result decl="20" score="1" /><result decl="62" score="1" /></term>
-<term value="return"><result decl="4" score="1" /><result decl="9" score="1" /><result decl="13" score="1" /><result decl="16" score="1" /><result decl="31" score="1" /><result decl="35" score="1" /><result decl="40" score="1" /><result decl="41" score="1" /><result decl="46" score="1" /><result decl="51" score="1" /><result decl="55" score="1" /><result decl="58" score="1" /><result decl="73" score="1" /><result decl="77" score="1" /><result decl="82" score="1" /><result decl="83" score="1" /></term>
-<term value="Worksheet"><result decl="9" score="6" /><result decl="10" score="6" /><result decl="11" score="6" /><result decl="12" score="6" /><result decl="15" score="6" /><result decl="16" score="3" /><result decl="51" score="6" /><result decl="52" score="6" /><result decl="53" score="6" /><result decl="54" score="6" /><result decl="57" score="6" /><result decl="58" score="3" /></term>
-<term value="excel12f"><result decl="4" score="15" /><result decl="4" score="3" /><result decl="46" score="15" /><result decl="46" score="3" /></term>
-<term value="ret"><result decl="35" score="3" /><result decl="77" score="3" /></term>
-<term value="XLMREF"><result decl="23" score="25" /><result decl="23" score="6" /><result decl="65" score="25" /><result decl="65" score="6" /></term>
-<term value="get"><result decl="9" score="6" /><result decl="10" score="6" /><result decl="11" score="6" /><result decl="12" score="3" /><result decl="51" score="6" /><result decl="52" score="6" /><result decl="53" score="6" /><result decl="54" score="3" /></term>
-<term value="arrai"><result decl="16" score="1" /><result decl="58" score="1" /></term>
-<term value="xlld.traits.dllDefFile"><result decl="13" score="50" /><result decl="55" score="50" /></term>
-<term value="argument"><result decl="4" score="1" /><result decl="15" score="1" /><result decl="17" score="1" /><result decl="18" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="46" score="1" /><result decl="57" score="1" /><result decl="59" score="1" /><result decl="60" score="1" /><result decl="70" score="1" /><result decl="71" score="1" /></term>
-<term value="ASYNC"><result decl="34" score="6" /><result decl="76" score="6" /></term>
-<term value="null"><result decl="41" score="1" /><result decl="83" score="1" /></term>
+<term value="dummy"><result decl="1" score="25" /></term>
+<term value="type"><result decl="5" score="1" /><result decl="8" score="1" /><result decl="9" score="1" /><result decl="23" score="1" /><result decl="31" score="1" /><result decl="32" score="1" /></term>
+<term value="xlretfail"><result decl="43" score="1" /></term>
+<term value="program"><result decl="23" score="1" /><result decl="46" score="1" /></term>
+<term value="traits"><result decl="10" score="25" /></term>
+<term value="suitabl"><result decl="18" score="1" /></term>
+<term value="user"><result decl="20" score="1" /></term>
+<term value="XLMREF"><result decl="26" score="25" /><result decl="26" score="6" /></term>
+<term value="Free"><result decl="40" score="6" /></term>
+<term value="std"><result decl="23" score="1" /></term>
+<term value="excel12f"><result decl="4" score="15" /><result decl="4" score="3" /></term>
+<term value="argument"><result decl="4" score="1" /><result decl="17" score="1" /><result decl="19" score="1" /><result decl="20" score="1" /><result decl="31" score="1" /><result decl="32" score="1" /></term>
+<term value="also"><result decl="4" score="1" /></term>
+<term value="constructor"><result decl="20" score="1" /></term>
+<term value="paramet"><result decl="4" score="1" /><result decl="11" score="1" /></term>
+<term value="auxiliari"><result decl="40" score="1" /></term>
+<term value="Coerce"><result decl="22" score="6" /></term>
+<term value="xlCommand"><result decl="39" score="25" /></term>
+<term value="care"><result decl="4" score="1" /><result decl="15" score="1" /></term>
+<term value="correspond"><result decl="35" score="1" /></term>
+<term value="laeeth"><result decl="7" score="1" /><result decl="23" score="1" /><result decl="46" score="1" /></term>
+<term value="structur"><result decl="15" score="1" /><result decl="25" score="1" /><result decl="26" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="30" score="1" /><result decl="33" score="1" /></term>
+<term value="connector"><result decl="37" score="1" /><result decl="38" score="1" /></term>
+<term value="backward"><result decl="43" score="1" /></term>
+<term value="place"><result decl="4" score="1" /></term>
+<term value="face"><result decl="20" score="1" /></term>
+<term value="getworksheetfunct"><result decl="14" score="1" /><result decl="46" score="1" /></term>
+<term value="good"><result decl="44" score="1" /></term>
+<term value="stuff"><result decl="4" score="1" /></term>
+<term value="assum"><result decl="3" score="1" /><result decl="10" score="1" /></term>
+<term value="compat"><result decl="43" score="1" /></term>
+<term value="error"><result decl="4" score="1" /></term>
+<term value="callabl"><result decl="12" score="1" /><result decl="13" score="1" /><result decl="14" score="1" /></term>
+<term value="Functions"><result decl="12" score="6" /><result decl="13" score="6" /><result decl="14" score="6" /></term>
+<term value="e"><result decl="5" score="1" /></term>
+<term value="xlxxx"><result decl="21" score="1" /></term>
+<term value="provid"><result decl="45" score="1" /><result decl="46" score="1" /></term>
+<term value="xlfn"><result decl="4" score="1" /></term>
+<term value="xlcallcpp"><result decl="42" score="25" /></term>
+<term value="point"><result decl="38" score="1" /><result decl="42" score="1" /><result decl="43" score="1" /><result decl="44" score="1" /></term>
+<term value="CALLBACK"><result decl="37" score="6" /></term>
+<term value="file"><result decl="15" score="3" /><result decl="15" score="1" /><result decl="23" score="1" /><result decl="42" score="1" /></term>
+<term value="xlld.xlcallcpp"><result decl="42" score="50" /><result decl="42" score="25" /><result decl="42" score="6" /><result decl="43" score="5" /><result decl="43" score="3" /><result decl="44" score="5" /><result decl="44" score="3" /></term>
+<term value="implement"><result decl="1" score="1" /><result decl="10" score="1" /><result decl="14" score="1" /><result decl="46" score="1" /></term>
+<term value="xlhpcretsuccess"><result decl="38" score="15" /></term>
+<term value="entri"><result decl="38" score="1" /><result decl="42" score="1" /><result decl="43" score="1" /><result decl="44" score="1" /></term>
+<term value="xlld.xlcall.XLCallVer"><result decl="36" score="50" /></term>
+<term value="then"><result decl="6" score="3" /></term>
+<term value="getModuleWorksheetFunctions"><result decl="12" score="25" /></term>
+<term value="ensur"><result decl="43" score="1" /></term>
+<term value="impl"><result decl="14" score="6" /></term>
+<term value="worksheetfunct"><result decl="11" score="1" /></term>
+<term value="u"><result decl="32" score="1" /></term>
+<term value="register"><result decl="20" score="15" /><result decl="20" score="3" /><result decl="47" score="6" /><result decl="48" score="6" /></term>
+<term value="singl"><result decl="25" score="1" /><result decl="27" score="1" /></term>
+<term value="requir"><result decl="4" score="1" /></term>
+<term value="scopedcoerce"><result decl="22" score="15" /></term>
+<term value="onli"><result decl="1" score="1" /><result decl="8" score="1" /><result decl="9" score="1" /><result decl="40" score="1" /></term>
+<term value="exampl"><result decl="10" score="1" /></term>
+<term value="refer"><result decl="25" score="1" /><result decl="26" score="1" /><result decl="27" score="1" /><result decl="28" score="1" /></term>
+<term value="xlld.xlcall"><result decl="23" score="50" /><result decl="23" score="25" /><result decl="23" score="6" /><result decl="24" score="5" /><result decl="24" score="3" /><result decl="25" score="5" /><result decl="25" score="3" /><result decl="26" score="5" /><result decl="26" score="3" /><result decl="27" score="5" /><result decl="27" score="3" /><result decl="28" score="5" /><result decl="28" score="3" /><result decl="29" score="5" /><result decl="29" score="3" /><result decl="30" score="5" /><result decl="30" score="3" /><result decl="31" score="5" /><result decl="31" score="3" /><result decl="32" score="5" /><result decl="32" score="3" /><result decl="33" score="5" /><result decl="33" score="3" /><result decl="34" score="5" /><result decl="34" score="3" /><result decl="35" score="5" /><result decl="35" score="3" /><result decl="36" score="5" /><result decl="36" score="3" /><result decl="37" score="5" /><result decl="37" score="3" /><result decl="38" score="5" /><result decl="38" score="3" /><result decl="39" score="5" /><result decl="39" score="3" /><result decl="40" score="5" /><result decl="40" score="3" /><result decl="41" score="5" /><result decl="41" score="3" /></term>
+<term value="everi"><result decl="46" score="1" /></term>
+<term value="encapsul"><result decl="15" score="1" /></term>
+<term value="success"><result decl="34" score="3" /><result decl="38" score="3" /></term>
+<term value="basic"><result decl="24" score="1" /></term>
+<term value="entry"><result decl="44" score="3" /></term>
+<term value="String"><result decl="14" score="6" /><result decl="18" score="6" /></term>
+<term value="windowsdepend"><result decl="23" score="1" /></term>
+<term value="xlld.xlcall.Excel4v"><result decl="24" score="50" /></term>
+<term value="PXL"><result decl="37" score="6" /></term>
+<term value="worksheetfunction"><result decl="17" score="15" /><result decl="18" score="2" /></term>
+<term value="xlfcount"><result decl="41" score="15" /></term>
+<term value="describ"><result decl="25" score="1" /><result decl="26" score="1" /></term>
+<term value="excel12proc"><result decl="43" score="15" /></term>
+<term value="window"><result decl="1" score="1" /><result decl="7" score="1" /><result decl="15" score="1" /><result decl="23" score="1" /></term>
+<term value="xlld.xlcall.XLOPER12"><result decl="32" score="50" /></term>
+<term value="us"><result decl="4" score="1" /><result decl="14" score="1" /><result decl="15" score="1" /><result decl="17" score="1" /><result decl="18" score="1" /><result decl="20" score="1" /><result decl="23" score="1" /><result decl="31" score="1" /><result decl="32" score="1" /><result decl="42" score="1" /><result decl="43" score="1" /></term>
+<term value="process"><result decl="44" score="1" /></term>
+<term value="structuredescrib"><result decl="27" score="1" /><result decl="28" score="1" /><result decl="29" score="1" /><result decl="30" score="1" /></term>
+<term value="callback"><result decl="23" score="1" /><result decl="37" score="3" /><result decl="42" score="1" /><result decl="43" score="1" /></term>
+<term value="xlld.memorymanager"><result decl="7" score="50" /><result decl="7" score="25" /><result decl="7" score="6" /></term>
+<term value="FP"><result decl="29" score="25" /><result decl="29" score="6" /></term>
+<term value="calculation"><result decl="35" score="3" /></term>
+<term value="xlmref"><result decl="26" score="15" /><result decl="26" score="3" /><result decl="26" score="1" /><result decl="28" score="1" /></term>
+<term value="result"><result decl="4" score="1" /><result decl="6" score="1" /></term>
+<term value="Success"><result decl="34" score="6" /><result decl="38" score="6" /></term>
+<term value="automat"><result decl="6" score="1" /><result decl="10" score="1" /><result decl="22" score="1" /></term>
+<term value="grid"><result decl="30" score="1" /></term>
+<term value="Get"><result decl="14" score="6" /></term>
+<term value="platform"><result decl="7" score="1" /><result decl="42" score="1" /></term>
+<term value="pxloper"><result decl="3" score="1" /></term>
+<term value="via"><result decl="21" score="1" /></term>
+<term value="messag"><result decl="4" score="1" /></term>
+<term value="doe"><result decl="4" score="1" /></term>
+<term value="thei"><result decl="8" score="1" /><result decl="46" score="1" /></term>
+<term value="module"><result decl="12" score="3" /></term>
+<term value="case"><result decl="4" score="1" /><result decl="44" score="1" /></term>
+<term value="auto"><result decl="47" score="3" /><result decl="48" score="3" /></term>
+<term value="macro"><result decl="40" score="1" /></term>
+<term value="worksheet"><result decl="11" score="3" /><result decl="12" score="3" /><result decl="13" score="3" /><result decl="14" score="3" /><result decl="16" score="25" /><result decl="16" score="1" /><result decl="17" score="3" /><result decl="17" score="1" /><result decl="18" score="2" /></term>
+<term value="xlretsuccess"><result decl="34" score="15" /></term>
+<term value="without"><result decl="1" score="1" /></term>
+<term value="actual"><result decl="14" score="1" /></term>
+<term value="XLOPER"><result decl="31" score="25" /><result decl="31" score="6" /></term>
+<term value="coerce"><result decl="22" score="3" /></term>
+<term value="util"><result decl="2" score="1" /></term>
+<term value="avail"><result decl="40" score="1" /></term>
+<term value="xlld.traits"><result decl="10" score="50" /><result decl="10" score="25" /><result decl="10" score="6" /><result decl="11" score="5" /><result decl="11" score="3" /><result decl="12" score="5" /><result decl="12" score="3" /><result decl="13" score="5" /><result decl="13" score="3" /><result decl="14" score="5" /><result decl="14" score="3" /><result decl="15" score="5" /><result decl="15" score="3" /></term>
+<term value="xlld.framework"><result decl="2" score="50" /><result decl="2" score="25" /><result decl="2" score="6" /><result decl="3" score="5" /><result decl="3" score="3" /><result decl="4" score="5" /><result decl="4" score="3" /><result decl="5" score="5" /><result decl="5" score="3" /><result decl="6" score="5" /><result decl="6" score="3" /></term>
+<term value="d"><result decl="3" score="1" /><result decl="4" score="1" /><result decl="5" score="1" /><result decl="8" score="6" /><result decl="8" score="1" /><result decl="10" score="1" /><result decl="11" score="1" /><result decl="20" score="1" /><result decl="23" score="1" /><result decl="45" score="1" /><result decl="46" score="1" /></term>
+<term value="HPC"><result decl="37" score="6" /></term>
+<term value="xltypenum"><result decl="33" score="15" /></term>
+<term value="inform"><result decl="15" score="1" /></term>
+<term value="functions"><result decl="12" score="3" /><result decl="13" score="3" /><result decl="14" score="3" /></term>
+<term value="File"><result decl="15" score="6" /></term>
+<term value="raii"><result decl="22" score="1" /></term>
+<term value="excel12then"><result decl="6" score="15" /></term>
+<term value="ret"><result decl="38" score="3" /></term>
+<term value="get"><result decl="11" score="6" /><result decl="12" score="6" /><result decl="13" score="6" /><result decl="14" score="3" /></term>
+<term value="structureexcel"><result decl="31" score="1" /><result decl="32" score="1" /></term>
+<term value="h"><result decl="4" score="1" /><result decl="23" score="1" /><result decl="46" score="1" /></term>
+<term value="xll"><result decl="10" score="1" /><result decl="14" score="1" /><result decl="15" score="1" /><result decl="35" score="1" /><result decl="44" score="1" /><result decl="46" score="25" /><result decl="46" score="1" /><result decl="47" score="1" /><result decl="48" score="1" /></term>
+<term value="temporari"><result decl="4" score="1" /></term>
+<term value="Ended"><result decl="35" score="6" /></term>
+<term value="xlld.worksheet.WorksheetFunction.toStringArray"><result decl="18" score="50" /></term>
+<term value="import"><result decl="10" score="1" /><result decl="23" score="1" /></term>
+<term value="excel12"><result decl="5" score="25" /><result decl="5" score="6" /><result decl="6" score="6" /><result decl="43" score="3" /><result decl="44" score="3" /></term>
+<term value="free"><result decl="3" score="6" /><result decl="3" score="1" /><result decl="4" score="1" /><result decl="22" score="1" /><result decl="40" score="3" /></term>
+<term value="size"><result decl="26" score="1" /><result decl="28" score="1" /></term>
+<term value="Register"><result decl="20" score="25" /><result decl="20" score="6" /></term>
+<term value="xlld.xlcall.xlHpcRetSuccess"><result decl="38" score="50" /></term>
+<term value="pt"><result decl="44" score="3" /></term>
+<term value="defin"><result decl="4" score="1" /><result decl="10" score="1" /><result decl="23" score="1" /><result decl="42" score="1" /></term>
+<term value="multipl"><result decl="26" score="1" /><result decl="28" score="1" /></term>
+<term value="fanci"><result decl="4" score="1" /></term>
+<term value="associ"><result decl="3" score="1" /></term>
+<term value="includ"><result decl="23" score="1" /></term>
+<term value="EXCEL12PROC"><result decl="43" score="25" /><result decl="44" score="3" /></term>
+<term value="close"><result decl="47" score="3" /><result decl="48" score="3" /></term>
+<term value="coerc"><result decl="22" score="1" /></term>
+<term value="xlmref12"><result decl="28" score="15" /><result decl="28" score="3" /></term>
+<term value="ani"><result decl="3" score="1" /><result decl="10" score="1" /><result decl="20" score="1" /><result decl="31" score="1" /><result decl="32" score="1" /></term>
+<term value="xlf"><result decl="41" score="6" /><result decl="45" score="25" /><result decl="45" score="1" /></term>
+<term value="XLOper"><result decl="3" score="6" /></term>
+<term value="Ret"><result decl="38" score="6" /></term>
+<term value="compil"><result decl="5" score="1" /><result decl="6" score="1" /><result decl="10" score="1" /><result decl="11" score="1" /></term>
+<term value="xlret"><result decl="4" score="1" /><result decl="34" score="6" /></term>
+<term value="xlld.framework.Excel12f"><result decl="4" score="50" /></term>
+<term value="togeth"><result decl="4" score="1" /></term>
+<term value="xlld.traits.getAllWorksheetFunctions"><result decl="13" score="50" /></term>
+<term value="test_d_funcs"><result decl="8" score="25" /></term>
+<term value="suppli"><result decl="6" score="1" /></term>
+<term value="Excel12f"><result decl="4" score="25" /><result decl="4" score="6" /></term>
+<term value="Hpc"><result decl="38" score="6" /></term>
+<term value="wrapper"><result decl="4" score="1" /></term>
+<term value="xlld.xlcall.xlFree"><result decl="40" score="50" /></term>
+<term value="All"><result decl="13" score="6" /></term>
+<term value="descript"><result decl="15" score="1" /><result decl="23" score="1" /><result decl="42" score="1" /></term>
+<term value="getAllWorksheetFunctions"><result decl="13" score="25" /></term>
+<term value="Command"><result decl="39" score="6" /></term>
+<term value="valu"><result decl="4" score="1" /><result decl="5" score="1" /><result decl="34" score="1" /></term>
+<term value="field"><result decl="11" score="1" /><result decl="33" score="1" /></term>
+<term value="decor"><result decl="20" score="1" /></term>
+<term value="xlld.worksheet.Optional"><result decl="19" score="50" /></term>
+<term value="lpxloper"><result decl="3" score="1" /><result decl="4" score="1" /></term>
+<term value="toolkit"><result decl="23" score="1" /><result decl="42" score="1" /></term>
+<term value="array"><result decl="18" score="3" /></term>
+<term value="Pt"><result decl="44" score="6" /></term>
+<term value="to"><result decl="18" score="6" /></term>
+<term value="specif"><result decl="15" score="1" /></term>
+<term value="xlld.xlcallcpp.EXCEL12PROC"><result decl="43" score="50" /></term>
+<term value="spreadsheet"><result decl="8" score="1" /><result decl="9" score="1" /><result decl="17" score="1" /><result decl="18" score="1" /><result decl="20" score="1" /></term>
+<term value="freeXLOper"><result decl="3" score="25" /></term>
+<term value="xl"><result decl="4" score="1" /><result decl="9" score="6" /><result decl="21" score="25" /><result decl="24" score="1" /><result decl="27" score="1" /><result decl="28" score="1" /><result decl="38" score="6" /><result decl="39" score="6" /><result decl="40" score="6" /></term>
+<term value="fail"><result decl="4" score="1" /><result decl="14" score="1" /><result decl="44" score="1" /></term>
+<term value="xlcommand"><result decl="39" score="15" /></term>
+<term value="Then"><result decl="6" score="6" /></term>
+<term value="ver"><result decl="36" score="3" /></term>
+<term value="extern"><result decl="14" score="1" /></term>
+<term value="port"><result decl="23" score="1" /><result decl="46" score="1" /></term>
+<term value="list"><result decl="10" score="1" /></term>
+<term value="header"><result decl="23" score="1" /></term>
+<term value="indic"><result decl="4" score="1" /></term>
+<term value="EXCEL12"><result decl="43" score="6" /></term>
+<term value="xlld.xlf"><result decl="45" score="50" /><result decl="45" score="25" /><result decl="45" score="6" /></term>
+<term value="registerautoclosefunc"><result decl="47" score="15" /><result decl="48" score="15" /></term>
+<term value="Array"><result decl="18" score="6" /></term>
+<term value="getallworksheetfunctions"><result decl="13" score="15" /></term>
+<term value="set"><result decl="19" score="1" /><result decl="44" score="3" /><result decl="44" score="1" /></term>
+<term value="v"><result decl="34" score="1" /><result decl="43" score="1" /></term>
+<term value="toStringArray"><result decl="18" score="25" /></term>
+<term value="xlfCount"><result decl="41" score="25" /></term>
+<term value="function"><result decl="2" score="1" /><result decl="4" score="1" /><result decl="6" score="1" /><result decl="8" score="1" /><result decl="9" score="1" /><result decl="10" score="1" /><result decl="11" score="3" /><result decl="11" score="1" /><result decl="12" score="1" /><result decl="13" score="1" /><result decl="14" score="1" /><result decl="15" score="1" /><result decl="16" score="1" /><result decl="17" score="3" /><result decl="17" score="1" /><result decl="18" score="2" /><result decl="19" score="1" /><result decl="20" score="1" /><result decl="21" score="1" /><result decl="31" score="1" /><result decl="32" score="1" /><result decl="36" score="1" /><result decl="39" score="1" /><result decl="40" score="1" /><result decl="41" score="1" /><result decl="43" score="1" /><result decl="44" score="1" /><result decl="46" score="1" /><result decl="48" score="1" /></term>
+<term value="constant"><result decl="23" score="1" /></term>
+<term value="rectangular"><result decl="25" score="1" /><result decl="26" score="1" /><result decl="27" score="1" /><result decl="28" score="1" /></term>
+<term value="xlfree"><result decl="40" score="15" /></term>
+<term value="default"><result decl="26" score="1" /><result decl="28" score="1" /></term>
+<term value="Function"><result decl="11" score="6" /><result decl="17" score="6" /><result decl="18" score="3" /></term>
+<term value="equival"><result decl="41" score="1" /></term>
+<term value="capabl"><result decl="30" score="1" /></term>
+<term value="xlld.traits.getModuleWorksheetFunctions"><result decl="12" score="50" /></term>
+<term value="Def"><result decl="15" score="6" /></term>
+<term value="add"><result decl="10" score="1" /></term>
+<term value="xlld.worksheet"><result decl="16" score="50" /><result decl="16" score="25" /><result decl="16" score="6" /><result decl="17" score="5" /><result decl="17" score="3" /><result decl="18" score="5" /><result decl="18" score="3" /><result decl="19" score="5" /><result decl="19" score="3" /><result decl="20" score="5" /><result decl="20" score="3" /></term>
+<term value="PROC"><result decl="43" score="6" /></term>
+<term value="scoped"><result decl="22" score="6" /></term>
+<term value="pxresult"><result decl="4" score="1" /></term>
+<term value="manual"><result decl="5" score="1" /></term>
+<term value="Num"><result decl="33" score="6" /></term>
+<term value="test"><result decl="1" score="1" /><result decl="8" score="1" /><result decl="9" score="1" /><result decl="15" score="1" /></term>
+<term value="given"><result decl="3" score="1" /><result decl="12" score="1" /><result decl="13" score="1" /></term>
+<term value="machineri"><result decl="10" score="1" /></term>
+<term value="cluster"><result decl="37" score="1" /><result decl="38" score="1" /><result decl="44" score="1" /></term>
+<term value="elig"><result decl="10" score="1" /></term>
+<term value="xlld.xlcall.XLREF12"><result decl="27" score="50" /></term>
+<term value="int"><result decl="4" score="1" /></term>
+<term value="xlld.xlcall.XLMREF12"><result decl="28" score="50" /></term>
+<term value="xlcallver"><result decl="36" score="15" /></term>
+<term value="ex"><result decl="44" score="1" /></term>
+<term value="order"><result decl="14" score="1" /></term>
+<term value="proc"><result decl="43" score="3" /></term>
+<term value="xlld.xlcall.xleventCalculationEnded"><result decl="35" score="50" /></term>
+<term value="Count"><result decl="41" score="6" /></term>
+<term value="dlldeffile"><result decl="15" score="15" /></term>
+<term value="xloper"><result decl="3" score="3" /><result decl="3" score="1" /><result decl="4" score="1" /><result decl="5" score="1" /><result decl="31" score="15" /><result decl="31" score="3" /><result decl="31" score="1" /><result decl="32" score="1" /><result decl="33" score="1" /></term>
+<term value="xlld.worksheet.WorksheetFunction"><result decl="17" score="50" /></term>
+<term value="xlld.dummy"><result decl="1" score="50" /><result decl="1" score="25" /><result decl="1" score="6" /></term>
+<term value="dllDefFile"><result decl="15" score="25" /></term>
+<term value="templat"><result decl="14" score="1" /></term>
+<term value="null"><result decl="44" score="1" /></term>
+<term value="arrai"><result decl="18" score="1" /></term>
+<term value="ASYNC"><result decl="37" score="6" /></term>
 </index>
 </adrdox>
 </script>
