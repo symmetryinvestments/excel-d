@@ -5,9 +5,9 @@ module xlld.test_util;
 
 version(unittest):
 
-import unit_threaded;
-
 import xlld.xlcall: LPXLOPER12, XLOPER12, XlType;
+import unit_threaded;
+import std.range: isInputRange;
 
 ///
 TestAllocator gTestAllocator;
@@ -102,18 +102,26 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
 
     case xlfDate:
 
-        const ret = gDates.empty ? 0.0 : gDates.front;
-        if(!gDates.empty) gDates.popFront;
-        *result = ret.toXlOper(Mallocator.instance);
-        return xlretSuccess;
+        return returnGlobalMockFrom(gDates, result);
 
     case xlfTime:
-        const ret = gTimes.empty ? 0.0 : gTimes.front;
-        if(!gTimes.empty) gTimes.popFront;
 
-        *result = ret.toXlOper(Mallocator.instance);
-        return xlretSuccess;
+        return returnGlobalMockFrom(gTimes, result);
     }
+}
+
+private int returnGlobalMockFrom(R)(R values, LPXLOPER12 result) if(isInputRange!R) {
+    import xlld.wrap: toXlOper;
+    import xlld.xlcall: xlretSuccess;
+    import std.array: front, popFront, empty;
+    import std.experimental.allocator.mallocator: Mallocator;
+
+    const ret = values.empty ? 0.0 : values.front;
+    if(!values.empty) values.popFront;
+
+    *result = ret.toXlOper(Mallocator.instance);
+    return xlretSuccess;
+
 }
 
 /// automatically converts from oper to compare with a D type
