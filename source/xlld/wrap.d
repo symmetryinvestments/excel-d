@@ -883,10 +883,12 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == DateTime)
 
 private enum isWorksheetFunction(alias F) =
     isSupportedFunction!(F,
+                         int,
                          double, double[], double[][],
                          string, string[], string[][],
                          Any, Any[], Any[][],
-                         int);
+                         DateTime,
+    );
 
 @safe pure unittest {
     import xlld.test_d_funcs;
@@ -897,6 +899,7 @@ private enum isWorksheetFunction(alias F) =
     static assert(isWorksheetFunction!FuncThrows);
     static assert(isWorksheetFunction!DoubleArrayToAnyArray);
     static assert(isWorksheetFunction!Twice);
+    static assert(isWorksheetFunction!DateTimeToDouble);
 }
 
 /**
@@ -1104,6 +1107,25 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     FuncAsserts(&arg); // should not actually throw
 }
 
+///
+@("Wrap a function that accepts a DateTime")
+@system unittest {
+    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+
+    const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
+    gYears = [dateTime.year];
+    gMonths = [dateTime.month];
+    gDays = [dateTime.day];
+    gHours = [dateTime.hour];
+    gMinutes = [dateTime.minute];
+    gSeconds = [dateTime.second];
+
+    auto arg = dateTime.toXlOper(theGC);
+    const ret = DateTimeToDouble(&arg);
+
+    ret.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeNum);
+    ret.val.num.shouldEqual(2017 * 2);
+}
 
 private enum invalidXlOperType = 0xdeadbeef;
 
