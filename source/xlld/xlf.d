@@ -45,7 +45,7 @@ int second(double date) @safe @nogc nothrow {
 
 private int datePart(double date, int xlfn) @safe @nogc nothrow {
     try
-        return cast(int)excel12!double(xlfn, date);
+        return cast(int)excel12!int(xlfn, date);
     catch(Exception ex)
         return 0;
 }

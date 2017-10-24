@@ -15,7 +15,8 @@ import std.datetime: DateTime;
 
 version(unittest) {
     import unit_threaded;
-    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef, gDates, gTimes;
+    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef, gDates, gTimes,
+        gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
     import std.experimental.allocator.mallocator: Mallocator;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     import xlld.any: any;
@@ -851,6 +852,34 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any[][]))
     }
 }
 
+///
+T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == DateTime)) {
+    import xlld.xlf: year, month, day, hour, minute, second;
+    return T(oper.val.num.year, oper.val.num.month, oper.val.num.day,
+             oper.val.num.hour, oper.val.num.minute, oper.val.num.second);
+}
+
+///
+@("fromXlOper!DateTime")
+@system unittest {
+    XLOPER12 oper;
+
+    gYears = [2017];
+    gMonths = [12];
+    gDays = [31];
+    gHours = [1];
+    gMinutes = [2];
+    gSeconds = [3];
+
+    const dateTime = oper.fromXlOper!DateTime(theGC);
+
+    dateTime.year.shouldEqual(2017);
+    dateTime.month.shouldEqual(12);
+    dateTime.day.shouldEqual(31);
+    dateTime.hour.shouldEqual(1);
+    dateTime.minute.shouldEqual(2);
+    dateTime.second.shouldEqual(3);
+}
 
 private enum isWorksheetFunction(alias F) =
     isSupportedFunction!(F,
