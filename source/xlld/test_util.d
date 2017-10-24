@@ -25,9 +25,9 @@ void*[maxCoerce] gCoerced;
 ///
 void*[maxCoerce] gFreed;
 ///
-double[] gDates;
+double[] gDates, gTimes;
 ///
-double[] gTimes;
+int[] gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
 
 ///
 static this() {
@@ -101,12 +101,28 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
         return xlretSuccess;
 
     case xlfDate:
-
         return returnGlobalMockFrom(gDates, result);
 
     case xlfTime:
-
         return returnGlobalMockFrom(gTimes, result);
+
+    case xlfYear:
+        return returnGlobalMockFrom(gYears, result);
+
+    case xlfMonth:
+        return returnGlobalMockFrom(gMonths, result);
+
+    case xlfDay:
+        return returnGlobalMockFrom(gDays, result);
+
+    case xlfHour:
+        return returnGlobalMockFrom(gHours, result);
+
+    case xlfMinute:
+        return returnGlobalMockFrom(gMinutes, result);
+
+    case xlfSecond:
+        return returnGlobalMockFrom(gSeconds, result);
     }
 }
 
@@ -115,8 +131,9 @@ private int returnGlobalMockFrom(R)(R values, LPXLOPER12 result) if(isInputRange
     import xlld.xlcall: xlretSuccess;
     import std.array: front, popFront, empty;
     import std.experimental.allocator.mallocator: Mallocator;
+    import std.range: ElementType;
 
-    const ret = values.empty ? 0.0 : values.front;
+    const ret = values.empty ? ElementType!R.init : values.front;
     if(!values.empty) values.popFront;
 
     *result = ret.toXlOper(Mallocator.instance);

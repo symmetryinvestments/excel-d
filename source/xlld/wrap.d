@@ -10,12 +10,12 @@ import xlld.framework: freeXLOper;
 import xlld.worksheet;
 import xlld.any: Any;
 import std.traits: Unqual;
-
+import std.datetime: DateTime;
 
 
 version(unittest) {
     import unit_threaded;
-    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef;
+    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef, gDates, gTimes;
     import std.experimental.allocator.mallocator: Mallocator;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     import xlld.any: any;
@@ -23,12 +23,21 @@ version(unittest) {
     alias theGC = GCAllocator.instance;
 }
 
+
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == int)) {
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeInt;
     ret.val.w = val;
     return ret;
+}
+
+///
+@("toExcelOper!int")
+unittest {
+    auto oper = 42.toXlOper(theMallocator);
+    oper.xltype.shouldEqual(XlType.xltypeInt);
+    oper.val.w.shouldEqual(42);
 }
 
 
@@ -41,9 +50,16 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == double)) {
 }
 
 ///
-__gshared immutable toXlOperMemoryException = new Exception("Failed to allocate memory for string oper");
+@("toExcelOper!double")
+unittest {
+    auto oper = (42.0).toXlOper(theMallocator);
+    oper.xltype.shouldEqual(XlType.xltypeNum);
+    oper.val.num.shouldEqual(42.0);
+}
+
 ///
-__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
+__gshared immutable toXlOperMemoryException = new Exception("Failed to allocate memory for string oper");
+
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
@@ -135,6 +151,9 @@ package size_t numOperStringBytes(ref const(XLOPER12) oper) @trusted @nogc pure 
     if(oper.xltype != XlType.xltypeStr) return 0;
     return (oper.val.str[0] + 1) * wchar.sizeof;
 }
+
+///
+__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
 
 
 ///
@@ -341,20 +360,35 @@ unittest {
     autoFree(&oper); // normally this is done by Excel
 }
 
-///
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == int)) {
+
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
+    import xlld.xlf: date, time;
     XLOPER12 ret;
-    ret.xltype = XlType.xltypeInt;
-    ret.val.w = value;
+    ret.xltype = XlType.xltypeNum;
+    ret.val.num = date(value.year, value.month, value.day) +
+        time(value.hour, value.minute, value.second);
     return ret;
 }
 
-///
-@("toExcelOper!int")
-unittest {
-    auto oper = 42.toXlOper(theMallocator);
-    oper.xltype.shouldEqual(XlType.xltypeInt);
-    oper.val.w.shouldEqual(42);
+@("toExcelOper!DateTime")
+@safe unittest {
+    gDates = [42.0];
+    gTimes = [3.0];
+
+    const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
+    auto oper = dateTime.toXlOper(theGC);
+
+    oper.xltype.shouldEqual(XlType.xltypeNum);
+    oper.val.num.shouldEqual(45.0);
+
+    gDates = [33.0];
+    gTimes = [4.0];
+
+    oper = dateTime.toXlOper(theGC);
+
+    oper.xltype.shouldEqual(XlType.xltypeNum);
+    oper.val.num.shouldEqual(37.0);
 }
 
 ///
