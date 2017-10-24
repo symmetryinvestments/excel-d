@@ -29,22 +29,19 @@ double[] gDates;
 ///
 double[] gTimes;
 
-version(unittest)
-{
-    ///
-    static this() {
-        import xlld.xlcallcpp: SetExcel12EntryPt;
-        // this effectively "implements" the Excel12v function
-        // so that the code can be unit tested without needing to link
-        // with the Excel SDK
-        SetExcel12EntryPt(&excel12UnitTest);
-    }
+///
+static this() {
+    import xlld.xlcallcpp: SetExcel12EntryPt;
+    // this effectively "implements" the Excel12v function
+    // so that the code can be unit tested without needing to link
+    // with the Excel SDK
+    SetExcel12EntryPt(&excel12UnitTest);
+}
 
-    ///
-    static ~this() {
-        import unit_threaded.should: shouldBeSameSetAs;
-        gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
-    }
+///
+static ~this() {
+    import unit_threaded.should: shouldBeSameSetAs;
+    gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
 }
 
 ///
