@@ -1,11 +1,12 @@
-s# excel-d
+# excel-d
 
 Excel API bindings and wrapper API for D
 
 This dub package contains D declarations for the [Excel SDK](https://msdn.microsoft.com/en-us/library/office/bb687883.aspx)
  as well as a D wrapper API. This allows programmers to write Excel worksheet functions in D.
 
-Motivation and background for the project can be found [here](https://dlang.org/blog/2017/05/31/project-highlight-excel-d/).  And you can see the [lightning talk](https://youtu.be/xJy6ifCekCE?list=PL3jwVPmk_PRxo23yyoc0Ip_cP3-rCm7eB) by Atila Neves.
+Motivation and background for the project can be found [here](https://dlang.org/blog/2017/05/31/project-highlight-excel-d/).
+See also the [DConf 2017 lightning talk](https://youtu.be/xJy6ifCekCE?list=PL3jwVPmk_PRxo23yyoc0Ip_cP3-rCm7eB) about excel-d.
 
 Generated documentation - a work in progress - is available at [Kaleidic Open Source Documentation for Excel-D](http://excel-d.code.kaleidic.io).
 
