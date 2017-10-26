@@ -144,14 +144,15 @@ T excel12(T, A...)(int xlfn, auto ref A args) @trusted {
     import xlld.memorymanager: gTempAllocator, autoFreeAllocator;
     import xlld.wrap: toXlOper, fromXlOper;
     import xlld.xlcall: xlretSuccess;
+    import std.experimental.allocator.gc_allocator: GCAllocator;
+
+    alias allocator = GCAllocator.instance;
 
     XLOPER12[A.length] operArgs;
     LPXLOPER12[A.length] operArgPtrs;
 
-    scope(exit) gTempAllocator.deallocateAll;
-
     foreach(i, _; A) {
-        operArgs[i] = args[i].toXlOper(gTempAllocator);
+        operArgs[i] = args[i].toXlOper(allocator);
         operArgPtrs[i] = &operArgs[i];
     }
 
@@ -187,7 +188,7 @@ auto excel12Then(alias F, A...)(int xlfn, auto ref A args) {
         alias RealType = Unqual!T;
 
     void freeRet(U)() @trusted {
-        autoFreeAllocator.dispose(cast()excelRet);
+        autoFreeAllocator.dispose(cast(U)excelRet);
     }
 
     static if(__traits(compiles, freeRet!RealType()))

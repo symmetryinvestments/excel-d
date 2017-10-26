@@ -9,6 +9,7 @@ module xlld.test_d_funcs;
 version(unittest):
 
 import xlld;
+import std.datetime: DateTime;
 
 
 ///
@@ -238,4 +239,8 @@ int Twice(int i) @safe nothrow {
 ///
 double FuncConstDouble(const double a) @safe nothrow {
     return a;
+}
+
+double DateTimeToDouble(DateTime d) @safe nothrow {
+    return d.year * 2;
 }

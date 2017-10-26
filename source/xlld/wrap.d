@@ -9,13 +9,14 @@ import xlld.memorymanager: autoFree;
 import xlld.framework: freeXLOper;
 import xlld.worksheet;
 import xlld.any: Any;
-import std.traits: Unqual;
-
+import std.traits: Unqual, isIntegral;
+import std.datetime: DateTime;
 
 
 version(unittest) {
     import unit_threaded;
-    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef;
+    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef, gDates, gTimes,
+        gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
     import std.experimental.allocator.mallocator: Mallocator;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     import xlld.any: any;
@@ -23,12 +24,21 @@ version(unittest) {
     alias theGC = GCAllocator.instance;
 }
 
+
 ///
-XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == int)) {
+XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(isIntegral!T) {
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeInt;
     ret.val.w = val;
     return ret;
+}
+
+///
+@("toExcelOper!int")
+unittest {
+    auto oper = 42.toXlOper(theMallocator);
+    oper.xltype.shouldEqual(XlType.xltypeInt);
+    oper.val.w.shouldEqual(42);
 }
 
 
@@ -41,9 +51,16 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == double)) {
 }
 
 ///
-__gshared immutable toXlOperMemoryException = new Exception("Failed to allocate memory for string oper");
+@("toExcelOper!double")
+unittest {
+    auto oper = (42.0).toXlOper(theMallocator);
+    oper.xltype.shouldEqual(XlType.xltypeNum);
+    oper.val.num.shouldEqual(42.0);
+}
+
 ///
-__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
+__gshared immutable toXlOperMemoryException = new Exception("Failed to allocate memory for string oper");
+
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
@@ -135,6 +152,9 @@ package size_t numOperStringBytes(ref const(XLOPER12) oper) @trusted @nogc pure 
     if(oper.xltype != XlType.xltypeStr) return 0;
     return (oper.val.str[0] + 1) * wchar.sizeof;
 }
+
+///
+__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
 
 
 ///
@@ -341,20 +361,51 @@ unittest {
     autoFree(&oper); // normally this is done by Excel
 }
 
-///
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == int)) {
-    XLOPER12 ret;
-    ret.xltype = XlType.xltypeInt;
-    ret.val.w = value;
+
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
+    import xlld.framework: Excel12f;
+    XLOPER12 ret, date, time;
+
+    auto year = value.year.toXlOper(allocator);
+    auto month = value.month.toXlOper(allocator);
+    auto day = value.day.toXlOper(allocator);
+
+    const dateCode = () @trusted { return Excel12f(xlfDate, &date, &year, &month, &day); }();
+    assert(dateCode == xlretSuccess);
+    assert(date.xltype == XlType.xltypeNum);
+
+    auto hour = value.hour.toXlOper(allocator);
+    auto minute = value.minute.toXlOper(allocator);
+    auto second = value.second.toXlOper(allocator);
+
+    const timeCode = () @trusted { return Excel12f(xlfTime, &time, &hour, &minute, &second); }();
+    assert(timeCode == xlretSuccess);
+    assert(time.xltype == XlType.xltypeNum);
+
+    ret.xltype = XlType.xltypeNum;
+    ret.val.num = date.val.num + time.val.num;
     return ret;
 }
 
-///
-@("toExcelOper!int")
-unittest {
-    auto oper = 42.toXlOper(theMallocator);
-    oper.xltype.shouldEqual(XlType.xltypeInt);
-    oper.val.w.shouldEqual(42);
+@("toExcelOper!DateTime")
+@safe unittest {
+    gDates = [42.0];
+    gTimes = [3.0];
+
+    const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
+    auto oper = dateTime.toXlOper(theGC);
+
+    oper.xltype.shouldEqual(XlType.xltypeNum);
+    oper.val.num.shouldEqual(45.0);
+
+    gDates = [33.0];
+    gTimes = [4.0];
+
+    oper = dateTime.toXlOper(theGC);
+
+    oper.xltype.shouldEqual(XlType.xltypeNum);
+    oper.val.num.shouldEqual(37.0);
 }
 
 ///
@@ -817,13 +868,56 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any[][]))
     }
 }
 
+///
+T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == DateTime)) {
+    import xlld.framework: Excel12f;
+    import xlld.xlcall: XlType, xlretSuccess, xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
+
+    XLOPER12 ret;
+
+    auto get(int fn) @trusted {
+        const code = Excel12f(fn, &ret, oper);
+        assert(code == xlretSuccess);
+        // for some reason the Excel API returns doubles
+        assert(ret.xltype == XlType.xltypeNum);
+
+        return cast(int)ret.val.num;
+    }
+
+    return T(get(xlfYear), get(xlfMonth), get(xlfDay),
+             get(xlfHour), get(xlfMinute), get(xlfSecond));
+}
+
+///
+@("fromXlOper!DateTime")
+@system unittest {
+    XLOPER12 oper;
+
+    gYears = [2017];
+    gMonths = [12];
+    gDays = [31];
+    gHours = [1];
+    gMinutes = [2];
+    gSeconds = [3];
+
+    const dateTime = oper.fromXlOper!DateTime(theGC);
+
+    dateTime.year.shouldEqual(2017);
+    dateTime.month.shouldEqual(12);
+    dateTime.day.shouldEqual(31);
+    dateTime.hour.shouldEqual(1);
+    dateTime.minute.shouldEqual(2);
+    dateTime.second.shouldEqual(3);
+}
 
 private enum isWorksheetFunction(alias F) =
     isSupportedFunction!(F,
+                         int,
                          double, double[], double[][],
                          string, string[], string[][],
                          Any, Any[], Any[][],
-                         int);
+                         DateTime,
+    );
 
 @safe pure unittest {
     import xlld.test_d_funcs;
@@ -834,6 +928,7 @@ private enum isWorksheetFunction(alias F) =
     static assert(isWorksheetFunction!FuncThrows);
     static assert(isWorksheetFunction!DoubleArrayToAnyArray);
     static assert(isWorksheetFunction!Twice);
+    static assert(isWorksheetFunction!DateTimeToDouble);
 }
 
 /**
@@ -1041,6 +1136,25 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     FuncAsserts(&arg); // should not actually throw
 }
 
+///
+@("Wrap a function that accepts a DateTime")
+@system unittest {
+    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+
+    const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
+    gYears = [dateTime.year];
+    gMonths = [dateTime.month];
+    gDays = [dateTime.day];
+    gHours = [dateTime.hour];
+    gMinutes = [dateTime.minute];
+    gSeconds = [dateTime.second];
+
+    auto arg = dateTime.toXlOper(theGC);
+    const ret = DateTimeToDouble(&arg);
+
+    ret.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeNum);
+    ret.val.num.shouldEqual(2017 * 2);
+}
 
 private enum invalidXlOperType = 0xdeadbeef;
 
