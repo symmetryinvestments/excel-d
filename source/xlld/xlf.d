@@ -44,8 +44,9 @@ int second(double date) @safe @nogc nothrow {
 }
 
 private int datePart(double date, int xlfn) @safe @nogc nothrow {
+    // the Excel APIs for some reason return a double
     try
-        return cast(int)excel12!int(xlfn, date);
+        return cast(int)excel12!double(xlfn, date);
     catch(Exception ex)
         return 0;
 }
@@ -54,7 +55,7 @@ private int datePart(double date, int xlfn) @safe @nogc nothrow {
 double date(int year, int month, int day) @safe @nogc nothrow {
     import xlld.xlcall: xlfDate;
     try
-        return cast(int)excel12!double(xlfDate, year, month, day);
+        return excel12!double(xlfDate, year, month, day);
     catch(Exception ex)
         return 0;
 }

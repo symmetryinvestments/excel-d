@@ -25,9 +25,7 @@ void*[maxCoerce] gCoerced;
 ///
 void*[maxCoerce] gFreed;
 ///
-double[] gDates, gTimes;
-///
-int[] gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
+double[] gDates, gTimes, gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
 
 ///
 static this() {

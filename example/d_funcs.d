@@ -5,6 +5,7 @@
  */
 
 import xlld;
+import std.datetime: DateTime;
 
 @Register(ArgumentText("Array to add"),
           HelpTopic("Adds all cells in an array"),
@@ -144,4 +145,10 @@ string[][] FirstOfTwoAnyArraysToString(Any[][] testarg, Any[][] rhs) nothrow {
     } catch(Exception e) {
         return [[e.msg]];
     }
+}
+
+string DateTimeToString(DateTime dt) @safe {
+    import std.conv: text;
+    return text("year: ", dt.year, ", month: ", dt.month, ", day: ", dt.day,
+                ", hour: ", dt.hour, ", minute: ", dt.minute, ", second: ", dt.second);
 }
