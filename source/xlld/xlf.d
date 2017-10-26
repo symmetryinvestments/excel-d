@@ -63,7 +63,7 @@ double date(int year, int month, int day) @safe @nogc nothrow {
 double time(int year, int month, int day) @safe @nogc nothrow {
     import xlld.xlcall: xlfTime;
     try
-        return cast(int)excel12!double(xlfTime, year, month, day);
+        return excel12!double(xlfTime, year, month, day);
     catch(Exception ex)
         return 0;
 }

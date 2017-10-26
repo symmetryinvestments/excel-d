@@ -9,7 +9,7 @@ import xlld.memorymanager: autoFree;
 import xlld.framework: freeXLOper;
 import xlld.worksheet;
 import xlld.any: Any;
-import std.traits: Unqual;
+import std.traits: Unqual, isIntegral;
 import std.datetime: DateTime;
 
 
@@ -26,7 +26,7 @@ version(unittest) {
 
 
 ///
-XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == int)) {
+XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(isIntegral!T) {
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeInt;
     ret.val.w = val;
@@ -364,11 +364,27 @@ unittest {
 
 
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
-    import xlld.xlf: date, time;
-    XLOPER12 ret;
+    import xlld.framework: Excel12f;
+    XLOPER12 ret, date, time;
+
+    auto year = value.year.toXlOper(allocator);
+    auto month = value.month.toXlOper(allocator);
+    auto day = value.day.toXlOper(allocator);
+
+    const dateCode = () @trusted { return Excel12f(xlfDate, &date, &year, &month, &day); }();
+    assert(dateCode == xlretSuccess);
+    assert(date.xltype == XlType.xltypeNum);
+
+    auto hour = value.hour.toXlOper(allocator);
+    auto minute = value.minute.toXlOper(allocator);
+    auto second = value.second.toXlOper(allocator);
+
+    const timeCode = () @trusted { return Excel12f(xlfTime, &time, &hour, &minute, &second); }();
+    assert(timeCode == xlretSuccess);
+    assert(time.xltype == XlType.xltypeNum);
+
     ret.xltype = XlType.xltypeNum;
-    ret.val.num = date(value.year, value.month, value.day) +
-        time(value.hour, value.minute, value.second);
+    ret.val.num = date.val.num + time.val.num;
     return ret;
 }
 
@@ -854,9 +870,22 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any[][]))
 
 ///
 T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == DateTime)) {
-    import xlld.xlf: year, month, day, hour, minute, second;
-    return T(oper.val.num.year, oper.val.num.month, oper.val.num.day,
-             oper.val.num.hour, oper.val.num.minute, oper.val.num.second);
+    import xlld.framework: Excel12f;
+    import xlld.xlcall: XlType, xlretSuccess, xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
+
+    XLOPER12 ret;
+
+    auto get(int fn) @trusted {
+        const code = Excel12f(fn, &ret, oper);
+        assert(code == xlretSuccess);
+        // for some reason the Excel API returns doubles
+        assert(ret.xltype == XlType.xltypeNum);
+
+        return cast(int)ret.val.num;
+    }
+
+    return T(get(xlfYear), get(xlfMonth), get(xlfDay),
+             get(xlfHour), get(xlfMinute), get(xlfSecond));
 }
 
 ///
