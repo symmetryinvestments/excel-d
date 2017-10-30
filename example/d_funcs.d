@@ -152,3 +152,11 @@ string DateTimeToString(DateTime dt) @safe {
     return text("year: ", dt.year, ", month: ", dt.month, ", day: ", dt.day,
                 ", hour: ", dt.hour, ", minute: ", dt.minute, ", second: ", dt.second);
 }
+
+string DateTimesToString(DateTime[] dts) @safe {
+    import std.conv: text;
+    import std.algorithm: map;
+    import std.string: join;
+    return dts.map!(dt => text("year: ", dt.year, ", month: ", dt.month, ", day: ", dt.day,
+                               ", hour: ", dt.hour, ", minute: ", dt.minute, ", second: ", dt.second)).join("\n");
+}
