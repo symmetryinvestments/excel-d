@@ -124,7 +124,7 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
     }
 }
 
-private int returnGlobalMockFrom(R)(R values, LPXLOPER12 result) if(isInputRange!R) {
+private int returnGlobalMockFrom(R)(ref R values, LPXLOPER12 result) if(isInputRange!R) {
     import xlld.wrap: toXlOper;
     import xlld.xlcall: xlretSuccess;
     import std.array: front, popFront, empty;

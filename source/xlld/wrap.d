@@ -159,7 +159,8 @@ __gshared immutable toXlOperShapeException = new Exception("# of columns must al
 
 ///
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
-    if(is(Unqual!T == double) || is(Unqual!T == string) || is(Unqual!T == Any))
+    if(is(Unqual!T == double) || is(Unqual!T == string) || is(Unqual!T == Any)
+       || is(Unqual!T == int) || is(Unqual!T == DateTime))
 {
     import std.algorithm: map, all;
     import std.array: array;
@@ -238,9 +239,10 @@ private XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
 
 
 ///
-XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(Unqual!T == string[]) || is(Unqual!T == double[])) {
+XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(Unqual!T == string[]) || is(Unqual!T == double[]) ||
+                                                      is(Unqual!T == int[]) || is(Unqual!T == DateTime[])) {
     T[1] realValues = [values];
-    return realValues.toXlOper(allocator);
+    return realValues[].toXlOper(allocator);
 }
 
 
@@ -574,7 +576,9 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any)) {
 
 ///
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator)
-    if(is(T: E[][], E) && (is(E == string) || is(E == double)))
+    if(is(T: E[][], E) &&
+       (is(Unqual!E == string) || is(Unqual!E == double) || is(Unqual!E == int)
+        || is(Unqual!E == Any) || is(Unqual!E == DateTime)))
 {
     return val.fromXlOperMulti!(Dimensions.Two, typeof(T.init[0][0]))(allocator);
 }
@@ -675,7 +679,9 @@ private enum Dimensions {
 
 /// 1D slices
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator)
-    if(is(T: E[], E) && (is(E == string) || is(E == double)))
+    if(is(T: E[], E) &&
+       (is(Unqual!E == string) || is(Unqual!E == double) || is(Unqual!E == int)
+        || is(Unqual!E == Any) || is(Unqual!E == DateTime)))
 {
     return val.fromXlOperMulti!(Dimensions.One, typeof(T.init[0]))(allocator);
 }
@@ -819,6 +825,7 @@ package void apply(T, alias F)(ref XLOPER12 oper) {
                 (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr) ||
                 is(Unqual!T == Any);
 
+
             F(shouldConvert, row, col, cellVal);
         }
     }
@@ -831,13 +838,6 @@ package bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
 }
 
 
-///
-T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any[])) {
-    return oper.fromXlOperMulti!(Dimensions.One, Any)(allocator);
-}
-
-
-///
 @("fromXlOper any 1D array")
 @system unittest {
     import xlld.memorymanager: allocatorContext;
@@ -847,12 +847,6 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any[])) {
         auto back = fromXlOper!(Any[])(oper);
         back.shouldEqual(array);
     }
-}
-
-
-///
-T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any[][])) {
-    return oper.fromXlOperMulti!(Dimensions.Two, typeof(T.init[0][0]))(allocator);
 }
 
 
@@ -916,7 +910,7 @@ private enum isWorksheetFunction(alias F) =
                          double, double[], double[][],
                          string, string[], string[][],
                          Any, Any[], Any[][],
-                         DateTime,
+                         DateTime, DateTime[], DateTime[][],
     );
 
 @safe pure unittest {
@@ -1137,7 +1131,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 }
 
 ///
-@("Wrap a function that accepts a DateTime")
+@("Wrap a function that accepts DateTime")
 @system unittest {
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
@@ -1156,6 +1150,29 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     ret.val.num.shouldEqual(2017 * 2);
 }
 
+///
+@("Wrap a function that accepts DateTime[]")
+@system unittest {
+    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+
+    const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
+    gYears = [2017, 2017];
+    gMonths = [12, 12];
+    gDays = [31, 30];
+    gHours = [1, 1];
+    gMinutes = [2, 2];
+    gSeconds = [3, 3];
+    gDates = [10.0, 20.0];
+    gTimes = [1.0, 2.0];
+
+    auto arg = [DateTime(2017, 12, 31, 1, 2, 3),
+                DateTime(2017, 12, 30, 1, 2, 3)].toXlOper(theGC);
+    auto ret = DateTimesToString(&arg);
+
+    ret.shouldEqualDlang("31, 30");
+}
+
+
 private enum invalidXlOperType = 0xdeadbeef;
 
 /**
@@ -1164,8 +1181,11 @@ private enum invalidXlOperType = 0xdeadbeef;
  whilst Type is the Type that it gets coerced to.
  */
 template dlangToXlOperType(T) {
-    static if(is(Unqual!T == double[][]) || is(Unqual!T == string[][]) ||
-              is(Unqual!T == double[]) || is(Unqual!T == string[])) {
+    static if(is(Unqual!T == string[])   || is(Unqual!T == string[][]) ||
+              is(Unqual!T == double[])   || is(Unqual!T == double[][]) ||
+              is(Unqual!T == int[])      || is(Unqual!T == int[][]) ||
+              is(Unqual!T == DateTime[]) || is(Unqual!T == DateTime[][]))
+    {
         enum InputType = XlType.xltypeSRef;
         enum Type = XlType.xltypeMulti;
     } else static if(is(Unqual!T == double)) {
@@ -1174,6 +1194,9 @@ template dlangToXlOperType(T) {
     } else static if(is(Unqual!T == string)) {
         enum InputType = XlType.xltypeStr;
         enum Type = XlType.xltypeStr;
+    } else static if(is(Unqual!T == DateTime)) {
+        enum InputType = XlType.xltypeNum;
+        enum Type = XlType.xltypeNum;
     } else {
         enum InputType = invalidXlOperType;
         enum Type = invalidXlOperType;

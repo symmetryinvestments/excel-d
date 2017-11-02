@@ -244,3 +244,10 @@ double FuncConstDouble(const double a) @safe nothrow {
 double DateTimeToDouble(DateTime d) @safe nothrow {
     return d.year * 2;
 }
+
+string DateTimesToString(DateTime[] ds) @safe nothrow {
+    import std.algorithm: map;
+    import std.string: join;
+    import std.conv: text;
+    return ds.map!(d => d.day.text).join(", ");
+}
