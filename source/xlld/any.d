@@ -73,6 +73,9 @@ struct Any {
         case XlType.xltypeNum:
             ret ~= () @trusted { return _impl.fromXlOper!double(allocator).to!string; }();
             break;
+        case XlType.xltypeInt:
+            ret ~= () @trusted { return _impl.fromXlOper!int(allocator).to!string; }();
+            break;
         case XlType.xltypeMulti:
             int i;
             ret ~= `[`;
