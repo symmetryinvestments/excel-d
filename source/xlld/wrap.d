@@ -374,16 +374,16 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
     auto day = value.day.toXlOper(allocator);
 
     const dateCode = () @trusted { return Excel12f(xlfDate, &date, &year, &month, &day); }();
-    assert(dateCode == xlretSuccess);
-    assert(date.xltype == XlType.xltypeNum);
+    assert(dateCode == xlretSuccess, "Error calling xlfDate");
+    assert(date.xltype == XlType.xltypeNum, "date is not xltypeNum");
 
     auto hour = value.hour.toXlOper(allocator);
     auto minute = value.minute.toXlOper(allocator);
     auto second = value.second.toXlOper(allocator);
 
     const timeCode = () @trusted { return Excel12f(xlfTime, &time, &hour, &minute, &second); }();
-    assert(timeCode == xlretSuccess);
-    assert(time.xltype == XlType.xltypeNum);
+    assert(timeCode == xlretSuccess, "Error calling xlfTime");
+    assert(time.xltype == XlType.xltypeNum, "time is not xltypeNum");
 
     ret.xltype = XlType.xltypeNum;
     ret.val.num = date.val.num + time.val.num;
@@ -871,10 +871,9 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == DateTime)
 
     auto get(int fn) @trusted {
         const code = Excel12f(fn, &ret, oper);
-        assert(code == xlretSuccess);
+        assert(code == xlretSuccess, "Error calling xlf datetime part function");
         // for some reason the Excel API returns doubles
-        assert(ret.xltype == XlType.xltypeNum);
-
+        assert(ret.xltype == XlType.xltypeNum, "xlf datetime part return not xltypeNum");
         return cast(int)ret.val.num;
     }
 
