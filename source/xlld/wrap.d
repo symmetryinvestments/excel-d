@@ -940,7 +940,8 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     mixin(`import ` ~ moduleName ~ `;`);
     alias module_ = Identity!(mixin(moduleName));
 
-    string ret = `static import ` ~ moduleName ~ ";\n\n";
+    string ret = `static import ` ~ moduleName ~ ";\n\n" ~
+        "import xlld.traits: Async;";
 
     foreach(moduleMemberStr; __traits(allMembers, module_)) {
         alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
@@ -1214,8 +1215,9 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     assert(callingModule != moduleName,
            "Cannot use `wrapAll` with __MODULE__");
 
+    import xlld.traits: Async, Identity;
     import std.array: join;
-    import std.traits: Parameters, functionAttributes, FunctionAttribute, getUDAs;
+    import std.traits: Parameters, functionAttributes, FunctionAttribute, getUDAs, hasUDA;
     import std.conv: to;
     import std.algorithm: map;
     import std.range: iota;
@@ -1223,11 +1225,16 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
 
     mixin("import " ~ moduleName ~ ": " ~ funcName ~ ";");
 
+    alias func = Identity!(mixin(funcName));
+
     const argsLength = Parameters!(mixin(funcName)).length;
     // e.g. LPXLOPER12 arg0, LPXLOPER12 arg1, ...
-    const argsDecl = argsLength.iota.map!(a => `LPXLOPER12 arg` ~ a.to!string).join(", ");
+    auto argsDecl = argsLength.iota.map!(a => `LPXLOPER12 arg` ~ a.to!string).join(", ");
     // e.g. arg0, arg1, ...
-    const argsCall = argsLength.iota.map!(a => `arg` ~ a.to!string).join(", ");
+    auto argsCall = argsLength.iota.map!(a => `arg` ~ a.to!string).join(", ");
+    static if(hasUDA!(func, Async)) {
+        argsDecl ~= ", LPXLOPER12 asyncHandle";
+    }
     const nogc = functionAttributes!(mixin(funcName)) & FunctionAttribute.nogc
         ? "@nogc "
         : "";
@@ -1242,17 +1249,27 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     string register;
     static if(registerAttrs.length)
         register = `@` ~ registerAttrs[0].to!string;
+    string async;
+    static if(hasUDA!(func, Async))
+        async = "@Async";
+
+    const returnType = hasUDA!(func, Async) ? "void" : "LPXLOPER12";
+    const return_ = hasUDA!(func, Async) ? "" : "return ";
 
     return [
         register,
+        async,
         q{
-            extern(Windows) LPXLOPER12 %s(%s) nothrow %s %s {
+            extern(Windows) %s %s(%s) nothrow %s %s {
                 static import %s;
                 import xlld.memorymanager: gTempAllocator;
                 alias wrappedFunc = %s.%s;
-                return wrapModuleFunctionImpl!wrappedFunc(gTempAllocator, %s);
+                %swrapModuleFunctionImpl!wrappedFunc(gTempAllocator, %s);
             }
-        }.format(funcName, argsDecl, nogc, safe, moduleName, moduleName, funcName, argsCall),
+        }.format(returnType, funcName, argsDecl, nogc, safe,
+                 moduleName,
+                 moduleName, funcName,
+                 return_, argsCall),
     ].join("\n");
 }
 
@@ -1728,6 +1745,18 @@ unittest {
     auto oper = (3.0).toSRef(theGC);
     auto arg = () @trusted { return &oper; }();
     FuncConstDouble(arg).shouldEqualDlang(3.0);
+}
+
+
+@("wrapModuleFunctionStr async double -> double")
+@safe unittest {
+    import xlld.traits: Async;
+    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "AsyncDoubleToDouble"));
+
+    auto oper = (3.0).toXlOper(theGC);
+    auto arg = () @trusted { return &oper; }();
+    XLOPER12 asyncHandle;
+    () @trusted { AsyncDoubleToDouble(arg, &asyncHandle); }();
 }
 
 

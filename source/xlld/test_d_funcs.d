@@ -251,3 +251,9 @@ string DateTimesToString(DateTime[] ds) @safe nothrow {
     import std.conv: text;
     return ds.map!(d => d.day.text).join(", ");
 }
+
+
+@Async
+double AsyncDoubleToDouble(double d) @safe nothrow {
+    return d * 2;
+}
