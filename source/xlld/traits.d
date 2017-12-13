@@ -141,7 +141,7 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
 
 
 private wstring getTypeText(alias F)() if(isSomeFunction!F) {
-    import std.traits: ReturnType, Parameters, Unqual;
+    import std.traits: ReturnType, Parameters, Unqual, hasUDA;
 
     wstring typeToString(T)() {
 
@@ -160,8 +160,13 @@ private wstring getTypeText(alias F)() if(isSomeFunction!F) {
     }
 
     auto retType = typeToString!(ReturnType!F);
-    foreach(argType; Parameters!F)
-        retType ~= typeToString!(argType);
+    foreach(i, argType; Parameters!F) {
+        static if(i == Parameters!F.length - 1 && hasUDA!(F, Async))
+            retType ~= "X";
+        else
+            retType ~= typeToString!(argType);
+
+    }
 
     return retType;
 }
@@ -189,6 +194,10 @@ private wstring getTypeText(alias F)() if(isSomeFunction!F) {
 
     void void_(LPXLOPER12, LPXLOPER12);
     getTypeText!void_.to!string.shouldEqual(">UU");
+
+    @Async
+    void async(LPXLOPER12, LPXLOPER12);
+    getTypeText!async.to!string.shouldEqual(">UX");
 }
 
 
@@ -475,3 +484,8 @@ void generateDllDef(string module_ = __MODULE__)(string[] args) {
     foreach(stmt; dllDefFile!module_(libName, description).statements)
         file.writeln(stmt.toString);
 }
+
+/**
+   UDA for functions to be executed asynchronously
+ */
+enum Async;
