@@ -141,15 +141,20 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
 
 
 private wstring getTypeText(alias F)() if(isSomeFunction!F) {
-    import std.traits: ReturnType, Parameters;
+    import std.traits: ReturnType, Parameters, Unqual;
 
     wstring typeToString(T)() {
-        static if(is(T == double))
+
+        alias Type = Unqual!T;
+
+        static if(is(Type == double))
             return "B";
-        else static if(is(T == FP12*))
+        else static if(is(Type == FP12*))
             return "K%";
-        else static if(is(T == LPXLOPER12))
+        else static if(is(Type == LPXLOPER12))
             return "U";
+        else static if(is(Type == void))
+            return ">";
         else
             static assert(false, "Unsupported type " ~ T.stringof);
     }
@@ -181,6 +186,9 @@ private wstring getTypeText(alias F)() if(isSomeFunction!F) {
 
     LPXLOPER12 fun(LPXLOPER12);
     getTypeText!fun.to!string.shouldEqual("UU");
+
+    void void_(LPXLOPER12, LPXLOPER12);
+    getTypeText!void_.to!string.shouldEqual(">UU");
 }
 
 
