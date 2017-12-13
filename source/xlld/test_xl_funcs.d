@@ -10,6 +10,7 @@ version(unittest):
 
 import xlld.xlcall;
 import xlld.worksheet;
+import xlld.traits: Async;
 
 /// extern(C) export means it doesn't have to be explicitly
 /// added to the .def file
@@ -26,4 +27,9 @@ extern(C) export double FuncFP12(FP12* cells) nothrow {
 ///
 extern(C) export LPXLOPER12 FuncFib (LPXLOPER12 n) nothrow {
     return LPXLOPER12.init;
+}
+
+@Async
+void FuncAsync(LPXLOPER12 n, LPXLOPER12 asyncHandle) nothrow {
+
 }

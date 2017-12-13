@@ -58,6 +58,10 @@ version(unittest) {
     WorksheetFunction operToOperFunction(wstring name) @safe pure nothrow {
         return makeWorksheetFunction(name, "UU"w);
     }
+
+    WorksheetFunction asyncFunction(wstring name) @safe pure nothrow {
+        return makeWorksheetFunction(name, ">UX"w);
+    }
 }
 
 /**
@@ -222,7 +226,7 @@ template isSupportedFunction(alias F, T...) {
 
             enum isSupportedFunction =
                 __traits(compiles, F(Tuple!(Parameters!F)().expand)) &&
-                isOneOfSupported!(ReturnType!F) &&
+                (isOneOfSupported!(ReturnType!F) || is(ReturnType!F == void)) &&
                 allSatisfy!(isOneOfSupported, Parameters!F);
 
         } else
@@ -254,6 +258,9 @@ private enum isWorksheetFunction(alias F) = isSupportedFunction!(F, double, FP12
 
     LPXLOPER12 operToOper(LPXLOPER12) nothrow;
     static assert(isWorksheetFunction!operToOper);
+
+    void funcAsync(LPXLOPER12 n, LPXLOPER12 asyncHandle) nothrow;
+    static assert(isWorksheetFunction!funcAsync);
 }
 
 
@@ -288,6 +295,7 @@ WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)() {
             doubleToDoubleFunction("FuncMulByTwo"),
             FP12ToDoubleFunction("FuncFP12"),
             operToOperFunction("FuncFib"),
+            asyncFunction("FuncAsync"),
         ]
     );
 }
@@ -327,6 +335,7 @@ unittest {
             doubleToDoubleFunction("FuncMulByTwo"),
             FP12ToDoubleFunction("FuncFP12"),
             operToOperFunction("FuncFib"),
+            asyncFunction("FuncAsync"),
         ]
     );
 }
@@ -367,6 +376,7 @@ unittest {
             doubleToDoubleFunction("FuncMulByTwo"),
             FP12ToDoubleFunction("FuncFP12"),
             operToOperFunction("FuncFib"),
+            asyncFunction("FuncAsync"),
         ]
     );
 }
@@ -438,7 +448,16 @@ unittest {
         DllDefFile(
             [
                 Statement("LIBRARY", "myxll32.dll"),
-                Statement("EXPORTS", ["xlAutoOpen", "xlAutoClose", "xlAutoFree12", "FuncMulByTwo", "FuncFP12", "FuncFib"]),
+                Statement("EXPORTS",
+                          [
+                              "xlAutoOpen",
+                              "xlAutoClose",
+                              "xlAutoFree12",
+                              "FuncMulByTwo",
+                              "FuncFP12",
+                              "FuncFib",
+                              "FuncAsync",
+                          ]),
             ]
         )
     );
