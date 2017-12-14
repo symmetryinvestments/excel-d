@@ -269,6 +269,42 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 		}
 		VAL val;
 		XlType xltype;
+
+		string toString() @safe const {
+			import xlld.wrap: stripMemoryBitmask;
+			import std.conv: text;
+
+			string ret;
+
+			ret ~= "XLOPER12(";
+			switch(stripMemoryBitmask(xltype)) {
+			default:
+				ret ~= xltype;
+				break;
+
+			case XlType.xltypeNum:
+				ret ~= text(val.num);
+				break;
+
+			case XlType.xltypeStr:
+				() @trusted {
+					const length = val.str[0];
+					ret ~= text(val.str[1 .. length]);
+				}();
+				break;
+
+			case XlType.xltypeInt:
+				ret ~= text(val.w);
+				break;
+
+			case XlType.xltypeBool:
+				ret ~= text(val.bool_);
+				break;
+
+			}
+			ret ~= ")";
+			return ret;
+		}
 	}
 	alias LPXLOPER12=XLOPER12*;
 
@@ -279,7 +315,7 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 	*/
 
 // single enums for XLOPER, proper enum for XLOPER12
-	enum xltypeNum=        0x0001;
+	enum xltypeNum=       0x0001;
 	enum xltypeStr=       0x0002;
 	enum xltypeBool=      0x0004;
 	enum xltypeRef=       0x0008;

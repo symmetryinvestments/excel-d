@@ -24,7 +24,7 @@ import xlld.xlcall: LPXLOPER12;
 
 
 // PASCAL
-alias EXCEL12PROC=extern(Windows) int function (int xlfn, int coper, LPXLOPER12 *rgpxloper12, LPXLOPER12 xloper12Res) nothrow @nogc;
+alias EXCEL12PROC = extern(Windows) int function (int xlfn, int coper, in LPXLOPER12 *rgpxloper12, LPXLOPER12 xloper12Res) nothrow @nogc;
 
 EXCEL12PROC gExcel12;
 
@@ -98,7 +98,8 @@ int Excel12(int xlfn, LPXLOPER12 operRes, LPXLOPER12[] args ...)
 
 }
 
-extern(Windows) int Excel12v(int xlfn, LPXLOPER12 operRes, int count, LPXLOPER12* opers) nothrow @nogc
+extern(Windows) int Excel12v(int xlfn, LPXLOPER12 operRes, int count, in LPXLOPER12* opers)
+    nothrow @nogc
 {
 	import xlld.xlcall: xlretFailed;
 

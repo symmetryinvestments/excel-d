@@ -11,27 +11,27 @@ version(unittest) {
 }
 
 ///
-XLOPER12 coerce(LPXLOPER12 oper) nothrow @nogc @trusted {
+XLOPER12 coerce(in LPXLOPER12 oper) nothrow @nogc @trusted {
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlCoerce;
 
     XLOPER12 coerced;
-    LPXLOPER12[1] arg = [oper];
+    const(XLOPER12)*[1] arg = [oper];
     Excel12f(xlCoerce, &coerced, arg);
     return coerced;
 }
 
 ///
-void free(ref XLOPER12 oper) nothrow @nogc @trusted {
+void free(ref const(XLOPER12) oper) nothrow @nogc @trusted {
     free(&oper);
 }
 
 ///
-void free(LPXLOPER12 oper) nothrow @nogc @trusted {
+void free(in LPXLOPER12 oper) nothrow @nogc @trusted {
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlFree;
 
-    LPXLOPER12[1] arg = [oper];
+    const(XLOPER12)*[1] arg = [oper];
     Excel12f(xlFree, null, arg);
 }
 
@@ -44,7 +44,7 @@ struct Coerced {
     alias oper this;
 
 
-    this(LPXLOPER12 oper) @safe @nogc nothrow {
+    this(inout(XLOPER12)* oper) @safe @nogc nothrow inout {
         this.oper = coerce(oper);
         this.coerced = true;
     }
@@ -57,6 +57,6 @@ struct Coerced {
 /**
    Coerces an oper and returns an RAII struct that automatically frees memory
  */
-auto scopedCoerce(LPXLOPER12 oper) @safe @nogc nothrow {
+auto scopedCoerce(in LPXLOPER12 oper) @safe @nogc nothrow {
     return Coerced(oper);
 }

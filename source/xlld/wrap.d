@@ -1274,6 +1274,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
 }
 
 ///
+@("wrapModuleFunctionStr")
 @system unittest {
     import xlld.worksheet;
     import std.traits: getUDAs;
@@ -1281,6 +1282,43 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "FuncAddEverything"));
     alias registerAttrs = getUDAs!(FuncAddEverything, Register);
     static assert(registerAttrs[0].argumentText.value == "Array to add");
+}
+
+void wrapAsync(alias F, A, T...)(immutable XLOPER12 asyncHandle, ref A allocator, immutable T args) {
+    import std.concurrency: spawn;
+    spawn(&wrapAsyncImpl!(F, A, T), asyncHandle, allocator, args);
+}
+
+void wrapAsyncImpl(alias F, A, T...)(XLOPER12 asyncHandle, ref A allocator, T args) {
+    import xlld.framework: Excel12f;
+    import xlld.xlcall: xlAsyncReturn;
+    import std.stdio;
+
+    auto functionRet = wrapModuleFunctionImpl!F(allocator, args);
+    XLOPER12 xl12ret;
+    const errorCode = () @trusted {
+        return Excel12f(xlAsyncReturn, &xl12ret, &asyncHandle, functionRet);
+    }();
+}
+
+// this has to be a top-level function and can't be declared in the unittest
+version(unittest) private double twice(double d) { return d * 2; }
+
+@("wrapAsync")
+@system unittest {
+    import xlld.test_util: lastAsyncReturn;
+    import std.datetime: Clock;
+    import core.thread;
+
+    const now = Clock.currTime;
+    XLOPER12 asyncHandle;
+    auto oper = (3.2).toXlOper(theGC);
+    wrapAsync!twice(cast(immutable)asyncHandle, theGC, cast(immutable)&oper);
+    const expected = (6.4).toXlOper(theGC);
+    while(lastAsyncReturn != expected && Clock.currTime - now < 1.seconds) {
+        Thread.sleep(10.msecs);
+    }
+    lastAsyncReturn.shouldEqual(expected);
 }
 
 /**

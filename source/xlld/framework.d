@@ -103,7 +103,7 @@ unittest {
    Comments:
 */
 
-int Excel12f(int xlfn, LPXLOPER12 pxResult, LPXLOPER12[] args...) nothrow @nogc
+int Excel12f(int xlfn, LPXLOPER12 pxResult, in LPXLOPER12[] args...) nothrow @nogc
 {
     import xlld.xlcallcpp: Excel12v;
     import std.algorithm: all;
@@ -113,9 +113,9 @@ int Excel12f(int xlfn, LPXLOPER12 pxResult, LPXLOPER12[] args...) nothrow @nogc
 }
 
 ///
-int Excel12f(int xlfn, LPXLOPER12 result, XLOPER12[] args...) nothrow {
+int Excel12f(int xlfn, LPXLOPER12 result, in XLOPER12[] args...) nothrow {
 
-    auto ptrArgs = new LPXLOPER12[args.length];
+    auto ptrArgs = new const(XLOPER12)*[args.length];
 
     foreach(i, ref arg; args)
         ptrArgs[i] = () @trusted { return &arg; }();

@@ -8,6 +8,7 @@ version(unittest):
 import xlld.xlcall: LPXLOPER12, XLOPER12, XlType;
 import unit_threaded;
 import std.range: isInputRange;
+import core.thread: Mutex;
 
 ///
 TestAllocator gTestAllocator;
@@ -21,11 +22,26 @@ int gNumXlFree;
 ///
 enum maxCoerce = 1000;
 ///
-void*[maxCoerce] gCoerced;
+const(void)*[maxCoerce] gCoerced;
 ///
-void*[maxCoerce] gFreed;
+const(void)*[maxCoerce] gFreed;
 ///
 double[] gDates, gTimes, gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
+
+private shared XLOPER12 gLastAsyncReturn;
+private shared Mutex gLastAsyncReturnMutex;
+
+shared static this() {
+    gLastAsyncReturnMutex = new shared Mutex;
+}
+
+XLOPER12 lastAsyncReturn() {
+    gLastAsyncReturnMutex.lock;
+    auto ret = cast(XLOPER12)gLastAsyncReturn;
+    gLastAsyncReturnMutex.unlock;
+    return ret;
+}
+
 
 ///
 static this() {
@@ -43,11 +59,13 @@ static ~this() {
 }
 
 ///
-extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, LPXLOPER12 result) nothrow @nogc {
+extern(Windows) int excel12UnitTest(int xlfn, int numOpers, in LPXLOPER12 *opers, LPXLOPER12 result)
+    nothrow @nogc
+{
 
     import xlld.xlcall;
-    import xlld.wrap: toXlOper;
-    import std.experimental.allocator.mallocator: Mallocator;
+    import xlld.wrap: toXlOper, stripMemoryBitmask;
+    import std.experimental.allocator.gc_allocator: GCAllocator;
     import std.array: front, popFront, empty;
 
     switch(xlfn) {
@@ -62,8 +80,8 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
         gFreed[gNumXlFree++] = oper.val.str;
 
         if(oper.xltype == XlType.xltypeStr) {
-            try
-                *oper = "".toXlOper(Mallocator.instance);
+            try {}
+                //*oper = "".toXlOper(GCAllocator.instance);
             catch(Exception _) {
                 assert(false, "Error converting in excel12UnitTest");
             }
@@ -95,6 +113,16 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
 
             default:
         }
+
+        return xlretSuccess;
+
+    case xlAsyncReturn:
+        assert(numOpers == 2);
+        gLastAsyncReturnMutex.lock_nothrow;
+        auto last = cast(XLOPER12*)(&gLastAsyncReturn);
+        *last = *opers[1];
+        last.xltype = stripMemoryBitmask(gLastAsyncReturn.xltype);
+        gLastAsyncReturnMutex.unlock_nothrow;
 
         return xlretSuccess;
 
