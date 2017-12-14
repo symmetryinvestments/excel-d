@@ -1233,7 +1233,13 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     // e.g. arg0, arg1, ...
     auto argsCall = argsLength.iota.map!(a => `arg` ~ a.to!string).join(", ");
     static if(hasUDA!(func, Async)) {
+        import std.range;
+        import std.conv;
         argsDecl ~= ", LPXLOPER12 asyncHandle";
+        argsCall = "asyncHandle, " ~ argsCall;
+        argsCall = chain(only("*asyncHandle"), argsLength.iota.map!(a => `arg` ~ a.text)).
+            map!(a => `cast(immutable)` ~ a)
+            .join(", ");
     }
     const nogc = functionAttributes!(mixin(funcName)) & FunctionAttribute.nogc
         ? "@nogc "
@@ -1255,6 +1261,9 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
 
     const returnType = hasUDA!(func, Async) ? "void" : "LPXLOPER12";
     const return_ = hasUDA!(func, Async) ? "" : "return ";
+    const wrap = hasUDA!(func, Async)
+        ? q{wrapAsync!wrappedFunc(Mallocator.instance, %s)}.format(argsCall)
+        : q{wrapModuleFunctionImpl!wrappedFunc(gTempAllocator, %s)}.format(argsCall);
 
     return [
         register,
@@ -1263,13 +1272,14 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
             extern(Windows) %s %s(%s) nothrow %s %s {
                 static import %s;
                 import xlld.memorymanager: gTempAllocator;
+                import std.experimental.allocator.mallocator: Mallocator;
                 alias wrappedFunc = %s.%s;
-                %swrapModuleFunctionImpl!wrappedFunc(gTempAllocator, %s);
+                %s%s;
             }
         }.format(returnType, funcName, argsDecl, nogc, safe,
                  moduleName,
                  moduleName, funcName,
-                 return_, argsCall),
+                 return_, wrap),
     ].join("\n");
 }
 
@@ -1284,12 +1294,20 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     static assert(registerAttrs[0].argumentText.value == "Array to add");
 }
 
-void wrapAsync(alias F, A, T...)(immutable XLOPER12 asyncHandle, ref A allocator, immutable T args) {
+void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle, immutable T args) {
+    import xlld.framework: Excel12f;
     import std.concurrency: spawn;
-    spawn(&wrapAsyncImpl!(F, A, T), asyncHandle, allocator, args);
+
+    try
+        spawn(&wrapAsyncImpl!(F, A, T), allocator, asyncHandle, args);
+    catch(Exception ex) {
+        XLOPER12 functionRet, ret;
+        functionRet.xltype = XlType.xltypeErr;
+        Excel12f(xlAsyncReturn, &ret, cast(XLOPER12*)&asyncHandle, &functionRet);
+    }
 }
 
-void wrapAsyncImpl(alias F, A, T...)(XLOPER12 asyncHandle, ref A allocator, T args) {
+void wrapAsyncImpl(alias F, A, T...)(ref A allocator, XLOPER12 asyncHandle, T args) {
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlAsyncReturn;
     import std.stdio;
@@ -1313,7 +1331,7 @@ version(unittest) private double twice(double d) { return d * 2; }
     const now = Clock.currTime;
     XLOPER12 asyncHandle;
     auto oper = (3.2).toXlOper(theGC);
-    wrapAsync!twice(cast(immutable)asyncHandle, theGC, cast(immutable)&oper);
+    wrapAsync!twice(theGC, cast(immutable)asyncHandle, cast(immutable)&oper);
     const expected = (6.4).toXlOper(theGC);
     while(lastAsyncReturn != expected && Clock.currTime - now < 1.seconds) {
         Thread.sleep(10.msecs);
