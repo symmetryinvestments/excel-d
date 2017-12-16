@@ -7,6 +7,29 @@
 import xlld;
 import std.datetime: DateTime;
 
+double[][] dlookup(string[][] haystack, string[] needles, double columnNumberD) nothrow
+{
+    import std.exception;
+    import std.algorithm:map,countUntil;
+    import std.range:repeat,transposed;
+    import std.array:array;
+    import std.conv:to;
+    
+    double toDouble(long pos)
+    {
+        return (pos==-1) ? double.nan : pos.to!double + 1.0;
+    }
+    try
+    {
+        auto columnNumber = columnNumberD.to!int;
+        auto haystackColumn = haystack.map!(row => row[columnNumber-1].to!string).array;
+        return needles.map!( needle => [toDouble(haystackColumn.countUntil(needle).to!long)]).array;
+    }
+    catch(Exception e)
+    {
+        return ([double.nan].repeat(needles.length)).array;
+    }
+}
 @Register(ArgumentText("Array to add"),
           HelpTopic("Adds all cells in an array"),
           FunctionHelp("Adds all cells in an array"),
@@ -160,3 +183,5 @@ string DateTimesToString(DateTime[] dts) @safe {
     return dts.map!(dt => text("year: ", dt.year, ", month: ", dt.month, ", day: ", dt.day,
                                ", hour: ", dt.hour, ", minute: ", dt.minute, ", second: ", dt.second)).join("\n");
 }
+
+
