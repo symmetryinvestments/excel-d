@@ -189,8 +189,8 @@ extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction) {
 version(Windows) {
     extern(Windows) void OutputDebugStringW(const wchar* fmt) nothrow @nogc;
 
-    const(wchar)* toWStringz(in wstring str) nothrow {
-        return (str ~ '\0').ptr;
+    const(wchar)* toWStringz(in wstring str) @safe nothrow {
+        return &(str ~ '\0')[0];
     }
 
     void log(T...)(T args) {
