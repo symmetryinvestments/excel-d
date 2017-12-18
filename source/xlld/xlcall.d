@@ -301,6 +301,10 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 				ret ~= text(val.bool_);
 				break;
 
+			case XlType.xltypeErr:
+				ret ~= "ERROR";
+				break;
+
 			}
 			ret ~= ")";
 			return ret;
