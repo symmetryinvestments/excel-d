@@ -184,4 +184,13 @@ string DateTimesToString(DateTime[] dts) @safe {
                                ", hour: ", dt.hour, ", minute: ", dt.minute, ", second: ", dt.second)).join("\n");
 }
 
+double FuncTwice(double d) @safe nothrow @nogc {
+    return d * 2;
+}
 
+@Async
+double FuncTwiceAsync(double d) {
+    import core.thread;
+    Thread.sleep(5.seconds);
+    return d * 2;
+}
