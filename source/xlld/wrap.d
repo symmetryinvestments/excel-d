@@ -1310,7 +1310,6 @@ void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle
 void wrapAsyncImpl(alias F, A, T...)(ref A allocator, XLOPER12 asyncHandle, T args) {
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlAsyncReturn;
-    import std.stdio;
 
     auto functionRet = wrapModuleFunctionImpl!F(allocator, args);
     XLOPER12 xl12ret;
