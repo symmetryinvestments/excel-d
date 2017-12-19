@@ -16,8 +16,7 @@ XLOPER12 coerce(in LPXLOPER12 oper) nothrow @nogc @trusted {
     import xlld.xlcall: xlCoerce;
 
     XLOPER12 coerced;
-    const(XLOPER12)*[1] arg = [oper];
-    Excel12f(xlCoerce, &coerced, arg);
+    Excel12f(xlCoerce, &coerced, oper);
     return coerced;
 }
 
