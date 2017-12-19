@@ -1231,13 +1231,13 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     // e.g. LPXLOPER12 arg0, LPXLOPER12 arg1, ...
     auto argsDecl = argsLength.iota.map!(a => `LPXLOPER12 arg` ~ a.to!string).join(", ");
     // e.g. arg0, arg1, ...
-    auto argsCall = argsLength.iota.map!(a => `arg` ~ a.to!string).join(", ");
-    static if(hasUDA!(func, Async)) {
-        import std.range;
-        import std.conv;
+    static if(!hasUDA!(func, Async))
+        const argsCall = argsLength.iota.map!(a => `arg` ~ a.to!string).join(", ");
+    else {
+        import std.range: only, chain, iota;
+        import std.conv: text;
         argsDecl ~= ", LPXLOPER12 asyncHandle";
-        argsCall = "asyncHandle, " ~ argsCall;
-        argsCall = chain(only("*asyncHandle"), argsLength.iota.map!(a => `arg` ~ a.text)).
+        const argsCall = chain(only("*asyncHandle"), argsLength.iota.map!(a => `*arg` ~ a.text)).
             map!(a => `cast(immutable)` ~ a)
             .join(", ");
     }
@@ -1311,7 +1311,23 @@ void wrapAsyncImpl(alias F, A, T...)(ref A allocator, XLOPER12 asyncHandle, T ar
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlAsyncReturn;
 
-    auto functionRet = wrapModuleFunctionImpl!F(allocator, args);
+    string wrapFunctionStr() {
+        import std.string: join;
+        import std.conv: text;
+        import std.format: format;
+
+        string[] args;
+        foreach(i; 0 .. T.length) {
+            args ~= text("&args[", i, "]");
+        }
+
+        return q{auto functionRet = wrapModuleFunctionImpl!F(allocator, %s);}.format(args.join(", "));
+    }
+
+    // we can't call wrapModuleFunctionImpl directly - it takes pointers, not values
+    // so we mixin the code to do that
+    mixin(wrapFunctionStr);
+
     XLOPER12 xl12ret;
     const errorCode = () @trusted {
         return Excel12f(xlAsyncReturn, &xl12ret, &asyncHandle, functionRet);
@@ -1352,8 +1368,11 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 
     static XLOPER12 ret;
 
-    XLOPER12[T.length] realArgs;
+    // for debugging purposes
+    import std.traits: functionAttributes, FunctionAttribute;
+    enum nogc = functionAttributes!wrappedFunc & FunctionAttribute.nogc;
 
+    XLOPER12[T.length] realArgs;
     // must 1st convert each argument to the "real" type.
     // 2D arrays are passed in as SRefs, for instance
     foreach(i, InputType; Parameters!wrappedFunc) {
