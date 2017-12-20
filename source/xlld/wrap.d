@@ -1371,7 +1371,7 @@ version(unittest) private double twice(double d) { return d * 2; }
     const now = Clock.currTime;
     XLOPER12 asyncHandle;
     auto oper = (3.2).toXlOper(theGC);
-    wrapAsync!twice(theGC, cast(immutable)asyncHandle, cast(immutable)&oper);
+    wrapAsync!twice(theGC, cast(immutable)asyncHandle, oper);
     const expected = (6.4).toXlOper(theGC);
     while(lastAsyncReturn != expected && Clock.currTime - now < 1.seconds) {
         Thread.sleep(10.msecs);
@@ -1413,6 +1413,7 @@ private auto toDArgs(alias wrappedFunc, A, T...)
                     (ref A allocator, T args)
 {
     import xlld.xl: coerce, free;
+    import xlld.xlcall: XlType;
     import std.traits: Parameters;
     import std.typecons: Tuple;
     import std.meta: staticMap;
@@ -1423,7 +1424,7 @@ private auto toDArgs(alias wrappedFunc, A, T...)
     // must 1st convert each argument to the "real" type.
     // 2D arrays are passed in as SRefs, for instance
     foreach(i, InputType; Parameters!wrappedFunc) {
-        if(args[i].xltype == xltypeMissing) {
+        if(args[i].xltype == XlType.xltypeMissing) {
             realArgs[i] = *args[i];
             continue;
         }
