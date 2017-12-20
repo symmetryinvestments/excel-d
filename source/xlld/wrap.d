@@ -1294,12 +1294,41 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     static assert(registerAttrs[0].argumentText.value == "Array to add");
 }
 
-void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle, immutable T args) {
+void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle, T args) {
     import xlld.framework: Excel12f;
     import std.concurrency: spawn;
+    import std.format: format;
+
+    string toDArgsStr() {
+        import std.string: join;
+        import std.conv: text;
+
+        string[] pointers;
+        foreach(i; 0 .. T.length) {
+            pointers ~= text("&args[", i, "]");
+        }
+
+        return q{toDArgs!F(allocator, %s)}.format(pointers.join(", "));
+    }
+
+    mixin(q{alias DArgs = typeof(%s);}.format(toDArgsStr));
+    DArgs dArgs;
+
+    // Convert all Excel types to D types. This needs to be done here because the
+    // asynchronous part of the computation can't call back into Excel, and converting
+    // to D types requires calling coerce.
+    try {
+        mixin(q{dArgs = %s;}.format(toDArgsStr));
+    } catch(Throwable t) {
+        static if(isGC!F) {
+            import xlld.xll: log;
+            log("ERROR: Could not convert to D args for asynchronous function " ~
+                __traits(identifier, F));
+        }
+    }
 
     try
-        spawn(&wrapAsyncImpl!(F, A, T), allocator, asyncHandle, args);
+        spawn(&wrapAsyncImpl!(F, A, DArgs), allocator, asyncHandle, cast(immutable)dArgs);
     catch(Exception ex) {
         XLOPER12 functionRet, ret;
         functionRet.xltype = XlType.xltypeErr;
@@ -1307,31 +1336,27 @@ void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle
     }
 }
 
-void wrapAsyncImpl(alias F, A, T...)(ref A allocator, XLOPER12 asyncHandle, T args) {
+void wrapAsyncImpl(alias F, A, T)(ref A allocator, XLOPER12 asyncHandle, T dArgs) {
     import xlld.framework: Excel12f;
     import xlld.xlcall: xlAsyncReturn;
+    import std.traits: Unqual;
 
-    string wrapFunctionStr() {
-        import std.string: join;
-        import std.conv: text;
-        import std.format: format;
+    // get rid of the temporary memory allocations for the conversions
+    scope(exit) freeDArgs(allocator, cast(Unqual!T)dArgs);
 
-        string[] args;
-        foreach(i; 0 .. T.length) {
-            args ~= text("&args[", i, "]");
-        }
-
-        return q{auto functionRet = wrapModuleFunctionImpl!F(allocator, %s);}.format(args.join(", "));
-    }
-
-    // we can't call wrapModuleFunctionImpl directly - it takes pointers, not values
-    // so we mixin the code to do that
-    mixin(wrapFunctionStr);
+    auto functionRet = callWrapped!F(dArgs);
 
     XLOPER12 xl12ret;
     const errorCode = () @trusted {
         return Excel12f(xlAsyncReturn, &xl12ret, &asyncHandle, functionRet);
     }();
+}
+
+// if a function is not @nogc, i.e. it uses the GC
+private bool isGC(alias F)() {
+    import std.traits: functionAttributes, FunctionAttribute;
+    enum nogc = functionAttributes!F & FunctionAttribute.nogc;
+    return !nogc;
 }
 
 // this has to be a top-level function and can't be declared in the unittest
@@ -1358,27 +1383,49 @@ version(unittest) private double twice(double d) { return d * 2; }
  Implement a wrapper for a regular D function
  */
 LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
-                                  (ref A tempAllocator, auto ref T args) {
+                                  (ref A allocator, T args) {
+    static XLOPER12 ret;
+
+    alias DArgs = typeof(toDArgs!wrappedFunc(allocator, args));
+    DArgs dArgs;
+    // convert all Excel types to D types
+    try {
+        dArgs = toDArgs!wrappedFunc(allocator, args);
+    } catch(Exception ex) {
+        ret = stringOper("#ERROR converting argument to call " ~ __traits(identifier, wrappedFunc));
+        return &ret;
+    } catch(Throwable t) {
+        ret = stringOper("#FATAL ERROR converting argument to call " ~ __traits(identifier, wrappedFunc));
+        return &ret;
+    }
+
+    // get rid of the temporary memory allocations for the conversions
+    scope(exit) freeDArgs(allocator, dArgs);
+
+    return callWrapped!wrappedFunc(dArgs);
+}
+
+/**
+   Converts a variadic number of XLOPER12* to their equivalent D types
+   and returns a tuple
+ */
+private auto toDArgs(alias wrappedFunc, A, T...)
+                    (ref A allocator, T args)
+{
     import xlld.xl: coerce, free;
-    import xlld.worksheet: Dispose;
     import std.traits: Parameters;
     import std.typecons: Tuple;
-    import std.traits: hasUDA, getUDAs;
     import std.meta: staticMap;
 
     static XLOPER12 ret;
-
-    // for debugging purposes
-    import std.traits: functionAttributes, FunctionAttribute;
-    enum nogc = functionAttributes!wrappedFunc & FunctionAttribute.nogc;
 
     XLOPER12[T.length] realArgs;
     // must 1st convert each argument to the "real" type.
     // 2D arrays are passed in as SRefs, for instance
     foreach(i, InputType; Parameters!wrappedFunc) {
         if(args[i].xltype == xltypeMissing) {
-             realArgs[i] = *args[i];
-             continue;
+            realArgs[i] = *args[i];
+            continue;
         }
         realArgs[i] = coerce(args[i]);
     }
@@ -1392,53 +1439,25 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     // the D types to pass to the wrapped function
     Tuple!(staticMap!(Unqual, Parameters!wrappedFunc)) dArgs;
 
-    void freeAll() {
-        static if(__traits(compiles, tempAllocator.deallocateAll))
-            tempAllocator.deallocateAll;
-        else {
-            foreach(ref dArg; dArgs) {
-                import std.traits: isPointer, isArray;
-                static if(isArray!(typeof(dArg)))
-                {
-                    import std.experimental.allocator: disposeMultidimensionalArray;
-                    tempAllocator.disposeMultidimensionalArray(dArg[]);
-                }
-                else
-                static if(isPointer!(typeof(dArg)))
-                {
-                    import std.experimental.allocator: dispose;
-                    tempAllocator.dispose(dArg);
-                }
-            }
-        }
-    }
-
-    // get rid of the temporary memory allocations for the conversions
-    scope(exit) freeAll;
-
-    void setRetToError(in string msg) {
-        try
-            ret = msg.toAutoFreeOper;
-        catch(Exception _) {
-            ret.xltype = XlType.xltypeErr;
-        }
-    }
-
     // convert all Excel types to D types
     foreach(i, InputType; Parameters!wrappedFunc) {
-        try {
-            dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], tempAllocator); }();
-        } catch(Exception ex) {
-            setRetToError("#ERROR converting argument to call " ~ __traits(identifier, wrappedFunc));
-            return &ret;
-        } catch(Throwable t) {
-            setRetToError("#FATAL ERROR converting argument to call " ~ __traits(identifier, wrappedFunc));
-            return &ret;
-        }
+        dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], allocator); }();
     }
 
-    try {
+    return dArgs;
+}
 
+
+// Takes a tuple returned by `toDArgs`, calls the wrapped function and returns
+// the XLOPER12 result
+private LPXLOPER12 callWrapped(alias wrappedFunc, T)(T dArgs) {
+
+    import xlld.worksheet: Dispose;
+    import std.traits: hasUDA, getUDAs;
+
+    static XLOPER12 ret;
+
+     try {
         // call the wrapped function with D types
         auto wrappedRet = wrappedFunc(dArgs.expand);
         ret = excelRet(wrappedRet);
@@ -1450,16 +1469,29 @@ LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
             disposes[0].dispose(wrappedRet);
         }
 
-    } catch(Exception ex) {
-        setRetToError("#ERROR calling " ~ __traits(identifier, wrappedFunc));
         return &ret;
-    } catch(Throwable t) {
-        setRetToError("#FATAL ERROR calling " ~ __traits(identifier, wrappedFunc));
-        return &ret;
-    }
 
-    return &ret;
+    } catch(Exception ex) {
+         ret = stringOper("#ERROR calling " ~ __traits(identifier, wrappedFunc));
+         return &ret;
+    } catch(Throwable t) {
+         ret = stringOper("#FATAL ERROR calling " ~ __traits(identifier, wrappedFunc));
+         return &ret;
+    }
 }
+
+
+private XLOPER12 stringOper(in string msg) @safe @nogc nothrow {
+    try
+        return () @trusted { return msg.toAutoFreeOper; }();
+    catch(Exception _) {
+        XLOPER12 ret;
+        ret.xltype = XlType.xltypeErr;
+        return ret;
+    }
+}
+
+
 
 // get excel return value from D return value of wrapped function
 private XLOPER12 excelRet(T)(T wrappedRet) {
@@ -1482,6 +1514,28 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
     // convert the return value to an Excel type, tell Excel to call
     // us back to free it afterwards
     return toAutoFreeOper(wrappedRet);
+}
+
+
+private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
+    static if(__traits(compiles, allocator.deallocateAll))
+        allocator.deallocateAll;
+    else {
+        foreach(ref dArg; dArgs) {
+            import std.traits: isPointer, isArray;
+            static if(isArray!(typeof(dArg)))
+            {
+                import std.experimental.allocator: disposeMultidimensionalArray;
+                allocator.disposeMultidimensionalArray(dArg[]);
+            }
+            else
+                static if(isPointer!(typeof(dArg)))
+                {
+                    import std.experimental.allocator: dispose;
+                    allocator.dispose(dArg);
+                }
+        }
+    }
 }
 
 ///
