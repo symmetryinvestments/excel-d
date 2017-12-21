@@ -63,6 +63,12 @@ and then in Excel:
 Future functionality will include creating menu items and dialogue boxes.  Pull requests welcomed.
 
 
+Asynchronous functions
+----------------------
+
+A D function can be decorated with the `@Async` UDA and will be executed asynchronously.
+Please see [the Microsoft documentation](https://msdn.microsoft.com/en-us/library/office/ff796219(v=office.14).aspx).
+
 Optional custom memory allocation and `@nogc`
 ---------------------------------------------
 
