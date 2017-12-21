@@ -275,6 +275,10 @@ private enum isWorksheetFunctionModuloLinkage(alias F) =
 
     extern(Windows) void funcAsync(LPXLOPER12 n, LPXLOPER12 asyncHandle) nothrow;
     static assert(isWorksheetFunction!funcAsync);
+
+    LPXLOPER12 operToOperWrongLinkage(LPXLOPER12) nothrow;
+    static assert(isWorksheetFunctionModuloLinkage!operToOperWrongLinkage);
+    static assert(!isWorksheetFunction!operToOperWrongLinkage);
 }
 
 
