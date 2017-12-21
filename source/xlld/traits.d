@@ -101,17 +101,17 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
 ///
 @("getWorksheetFunction for double -> double functions with no extra attributes")
 @safe pure unittest {
-    double foo(double) nothrow @nogc { return 0; }
+    extern(Windows) double foo(double) nothrow @nogc { return 0; }
     getWorksheetFunction!foo.shouldEqual(doubleToDoubleFunction("foo"));
 
-    double bar(double) nothrow @nogc { return 0; }
+    extern(Windows) double bar(double) nothrow @nogc { return 0; }
     getWorksheetFunction!bar.shouldEqual(doubleToDoubleFunction("bar"));
 }
 
 ///
 @("getWorksheetFunction for double -> int functions should fail")
 @safe pure unittest {
-    double foo(int) { return 0; }
+    extern(Windows) double foo(int) { return 0; }
     getWorksheetFunction!foo.shouldThrowWithMessage("Unsupported function type double(int) for foo");
 }
 
@@ -120,7 +120,7 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
 @safe pure unittest {
 
     @Register(ArgumentText("my arg txt"), MacroType("macro"))
-    double foo(double) nothrow;
+    extern(Windows) double foo(double) nothrow;
 
     auto expected = doubleToDoubleFunction("foo");
     expected.argumentText = ArgumentText("my arg txt");
@@ -134,7 +134,7 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
 @safe pure unittest {
 
     @Register(HelpTopic("I need somebody"), ArgumentText("my arg txt"))
-    double foo(double) nothrow;
+    extern(Windows) double foo(double) nothrow;
 
     auto expected = doubleToDoubleFunction("foo");
     expected.argumentText = ArgumentText("my arg txt");
@@ -217,7 +217,7 @@ private alias Identity(alias T) = T;
    of the function.
 */
 template isSupportedFunction(alias F, T...) {
-    import std.traits: isSomeFunction, ReturnType, Parameters;
+    import std.traits: isSomeFunction, ReturnType, Parameters, functionLinkage;
     import std.meta: AliasSeq, allSatisfy;
     import std.typecons: Tuple;
 
@@ -233,7 +233,6 @@ template isSupportedFunction(alias F, T...) {
                 __traits(compiles, F(Tuple!(Parameters!F)().expand)) &&
                 (isOneOfSupported!(ReturnType!F) || is(ReturnType!F == void)) &&
                 allSatisfy!(isOneOfSupported, Parameters!F);
-
         } else
             enum isSupportedFunction = false;
     } else
@@ -255,16 +254,22 @@ private template isSupportedType(T, U...) {
 }
 
 // whether or not this is a function that can be called from Excel
-private enum isWorksheetFunction(alias F) = isSupportedFunction!(F, double, FP12*, LPXLOPER12);
+private template isWorksheetFunction(alias F) {
+    static if(isSupportedFunction!(F, double, FP12*, LPXLOPER12)) {
+        import std.traits: functionLinkage;
+        enum isWorksheetFunction = functionLinkage!F == "Windows";
+    } else
+        enum isWorksheetFunction = false;
+}
 
 @safe pure unittest {
-    double doubleToDouble(double) nothrow;
+    extern(Windows) double doubleToDouble(double) nothrow;
     static assert(isWorksheetFunction!doubleToDouble);
 
-    LPXLOPER12 operToOper(LPXLOPER12) nothrow;
+    extern(Windows) LPXLOPER12 operToOper(LPXLOPER12) nothrow;
     static assert(isWorksheetFunction!operToOper);
 
-    void funcAsync(LPXLOPER12 n, LPXLOPER12 asyncHandle) nothrow;
+    extern(Windows) void funcAsync(LPXLOPER12 n, LPXLOPER12 asyncHandle) nothrow;
     static assert(isWorksheetFunction!funcAsync);
 }
 

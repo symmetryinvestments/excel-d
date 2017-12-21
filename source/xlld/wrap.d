@@ -22,7 +22,8 @@ version(unittest) {
     import xlld.any: any;
     alias theMallocator = Mallocator.instance;
     alias theGC = GCAllocator.instance;
-}
+} else
+      enum HiddenTest;
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(isIntegral!T) {
@@ -1384,6 +1385,7 @@ private bool isGC(alias F)() {
 // this has to be a top-level function and can't be declared in the unittest
 version(unittest) private double twice(double d) { return d * 2; }
 
+@HiddenTest("flaky")
 @("wrapAsync")
 @system unittest {
     import xlld.test_util: asyncReturn, newAsyncHandle;
