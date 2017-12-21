@@ -8,7 +8,6 @@ version(unittest):
 import xlld.xlcall: LPXLOPER12, XLOPER12, XlType;
 import unit_threaded;
 import std.range: isInputRange;
-import core.thread: Mutex;
 
 ///
 TestAllocator gTestAllocator;
@@ -28,18 +27,14 @@ const(void)*[maxCoerce] gFreed;
 ///
 double[] gDates, gTimes, gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
 
-private shared XLOPER12 gLastAsyncReturn;
-private shared Mutex gLastAsyncReturnMutex;
+private shared AA!(XLOPER12, XLOPER12) gAsyncReturns = void;
 
 shared static this() {
-    gLastAsyncReturnMutex = new shared Mutex;
+    gAsyncReturns = AA!(XLOPER12, XLOPER12).create;
 }
 
-XLOPER12 lastAsyncReturn() {
-    gLastAsyncReturnMutex.lock;
-    auto ret = cast(XLOPER12)gLastAsyncReturn;
-    gLastAsyncReturnMutex.unlock;
-    return ret;
+XLOPER12 asyncReturn(XLOPER12 asyncHandle) @safe {
+    return gAsyncReturns[asyncHandle];
 }
 
 
@@ -119,12 +114,7 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
 
     case xlAsyncReturn:
         assert(numOpers == 2);
-        gLastAsyncReturnMutex.lock_nothrow;
-        auto last = cast(XLOPER12*)(&gLastAsyncReturn);
-        *last = *opers[1];
-        last.xltype = stripMemoryBitmask(gLastAsyncReturn.xltype);
-        gLastAsyncReturnMutex.unlock_nothrow;
-
+        gAsyncReturns[*opers[0]] = *opers[1];
         return xlretSuccess;
 
     case xlfDate:
@@ -365,4 +355,78 @@ struct TestAllocator {
         buffer[index++] = 0; // null terminate
         return index;
     }
+}
+
+
+/**
+   @nogc associative array
+ */
+struct AA(K, V, int N = 100) {
+    import core.thread: Mutex;
+
+    Entry[N] entries;
+    size_t index;
+    Mutex mutex;
+
+    static struct Entry {
+        K key;
+        V value;
+    }
+
+    @disable this();
+
+    static shared(AA) create() @trusted {
+        shared AA aa = void;
+        aa.index = 0;
+        aa.mutex = new shared Mutex;
+        return aa;
+    }
+
+    V opIndex(in K key) shared {
+        import std.algorithm: find;
+        import std.array: front, empty;
+
+        mutex.lock_nothrow;
+        scope(exit) mutex.unlock_nothrow;
+
+        auto fromKey = () @trusted { return entries[].find!(e => cast(K)e.key == key); }();
+        return fromKey.empty
+            ? V.init
+            : cast(V)fromKey.front.value;
+    }
+
+    void opIndexAssign(V value, K key) shared {
+        import core.atomic: atomicOp;
+
+        mutex.lock_nothrow;
+        scope(exit) mutex.unlock_nothrow;
+
+        assert(index < N - 1, "No more space");
+        entries[index] = Entry(key, value);
+        index.atomicOp!"+="(1);
+    }
+}
+
+@("AA")
+@safe unittest {
+    import core.exception: AssertError;
+    auto aa = AA!(string, int).create;
+    aa["foo"] = 5;
+    aa["foo"].shouldEqual(5);
+    aa["bar"].shouldEqual(0);
+}
+
+
+XLOPER12 newAsyncHandle() @safe nothrow {
+    import xlld.xlcall: XlType;
+    import core.atomic: atomicOp;
+
+    static shared typeof(XLOPER12.val.w) index = 1;
+    XLOPER12 asyncHandle;
+
+    asyncHandle.xltype = XlType.xltypeBigData;
+    () @trusted { asyncHandle.val.bigdata.h.hdata = cast(void*)index; }();
+    index.atomicOp!"+="(1);
+
+    return asyncHandle;
 }

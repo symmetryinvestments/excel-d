@@ -305,6 +305,14 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 				ret ~= "ERROR";
 				break;
 
+			case XlType.xltypeBigData:
+				() @trusted {
+					ret ~= "BIG(";
+					ret ~= text(val.bigdata.h.hdata);
+					ret ~= ", ";
+					ret ~= text(val.bigdata.cbData);
+					ret ~= ")";
+				}();
 			}
 			ret ~= ")";
 			return ret;
