@@ -1366,15 +1366,15 @@ version(unittest) private double twice(double d) { return d * 2; }
 @("wrapAsync")
 @system unittest {
     import xlld.test_util: lastAsyncReturn;
-    import std.datetime: Clock;
+    import core.time: MonoTime;
     import core.thread;
 
-    const now = Clock.currTime;
+    const start = MonoTime.currTime;
     XLOPER12 asyncHandle;
     auto oper = (3.2).toXlOper(theGC);
     wrapAsync!twice(theGC, cast(immutable)asyncHandle, oper);
     const expected = (6.4).toXlOper(theGC);
-    while(lastAsyncReturn != expected && Clock.currTime - now < 1.seconds) {
+    while(lastAsyncReturn != expected && MonoTime.currTime - start < 1.seconds) {
         Thread.sleep(10.msecs);
     }
     lastAsyncReturn.shouldEqual(expected);
