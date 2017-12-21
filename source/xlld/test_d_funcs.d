@@ -257,3 +257,14 @@ string DateTimesToString(DateTime[] ds) @safe nothrow {
 double AsyncDoubleToDouble(double d) @safe nothrow {
     return d * 2;
 }
+
+import core.stdc.stdio;
+double Overloaded(double d) @safe @nogc nothrow {
+    () @trusted { printf("double\n"); }();
+    return d * 2;
+}
+
+double Overloaded(string s) @safe @nogc nothrow {
+    () @trusted { printf("string\n"); }();
+    return s.length;
+}

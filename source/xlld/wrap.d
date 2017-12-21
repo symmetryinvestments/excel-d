@@ -965,11 +965,18 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     string ret = `static import ` ~ moduleName ~ ";\n\n" ~
         "import xlld.traits: Async;";
 
+    pragma(msg, "moduleName: ", moduleName);
     foreach(moduleMemberStr; __traits(allMembers, module_)) {
+
         alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
 
         static if(isWorksheetFunction!moduleMember) {
-            ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
+            enum numOverloads = __traits(getOverloads, mixin(moduleName), moduleMemberStr).length;
+            static if(numOverloads == 1)
+                ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
+            else
+                pragma(msg, "excel-d WARNING: Not wrapping ", moduleMemberStr, " due to it having ",
+                       numOverloads, " overloads");
         }
     }
 
@@ -2020,4 +2027,17 @@ unittest {
     opers[3].shouldEqualDlang(4.0);
     opers[4].shouldEqualDlang(5.0);
     opers[5].shouldEqualDlang(6.0);
+}
+
+///
+@("wrapAll overloaded functions are not wrapped")
+unittest {
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+
+    mixin(wrapAll!("xlld.test_d_funcs"));
+
+    auto double_ = (42.0).toXlOper(theGC);
+    auto string_ = "foobar".toXlOper(theGC);
+    static assert(!__traits(compiles, Overloaded(&double_).shouldEqualDlang(84.0)));
+    static assert(!__traits(compiles, Overloaded(&string_).shouldEqualDlang(84.0)));
 }
