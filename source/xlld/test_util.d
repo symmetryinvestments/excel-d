@@ -59,13 +59,14 @@ static ~this() {
 }
 
 ///
-extern(Windows) int excel12UnitTest(int xlfn, int numOpers, in LPXLOPER12 *opers, LPXLOPER12 result)
+extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, LPXLOPER12 result)
     nothrow @nogc
 {
 
     import xlld.xlcall;
     import xlld.wrap: toXlOper, stripMemoryBitmask;
     import std.experimental.allocator.gc_allocator: GCAllocator;
+    import std.experimental.allocator.mallocator: Mallocator;
     import std.array: front, popFront, empty;
 
     switch(xlfn) {
@@ -80,8 +81,8 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, in LPXLOPER12 *opers
         gFreed[gNumXlFree++] = oper.val.str;
 
         if(oper.xltype == XlType.xltypeStr) {
-            try {}
-                //*oper = "".toXlOper(GCAllocator.instance);
+            try
+                *oper = "".toXlOper(Mallocator.instance);
             catch(Exception _) {
                 assert(false, "Error converting in excel12UnitTest");
             }
