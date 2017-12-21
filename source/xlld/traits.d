@@ -210,7 +210,12 @@ private wstring getTypeText(alias F)() if(isSomeFunction!F) {
 private alias Identity(alias T) = T;
 
 
-/// whether or not this is a function that has the "right" types
+/**
+   Whether or not this is a function that has the "right" types.
+   T are all the types that are valid return or parameter types.
+   void is a special type that is always valid for the return type
+   of the function.
+*/
 template isSupportedFunction(alias F, T...) {
     import std.traits: isSomeFunction, ReturnType, Parameters;
     import std.meta: AliasSeq, allSatisfy;
