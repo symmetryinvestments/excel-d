@@ -22,8 +22,7 @@ version(unittest) {
     import xlld.any: any;
     alias theMallocator = Mallocator.instance;
     alias theGC = GCAllocator.instance;
-} else
-      enum HiddenTest;
+}
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(isIntegral!T) {
@@ -1345,7 +1344,6 @@ void wrapAsyncImpl(alias F, A, T)(ref A allocator, XLOPER12 asyncHandle, T dArgs
     scope(exit) freeDArgs(allocator, cast(Unqual!T)dArgs);
 
     auto functionRet = callWrapped!F(dArgs);
-
     XLOPER12 xl12ret;
     const errorCode = () @trusted {
         return Excel12f(xlAsyncReturn, &xl12ret, &asyncHandle, functionRet);
@@ -1362,22 +1360,23 @@ private bool isGC(alias F)() {
 // this has to be a top-level function and can't be declared in the unittest
 version(unittest) private double twice(double d) { return d * 2; }
 
-@HiddenTest("flaky")
 @("wrapAsync")
 @system unittest {
-    import xlld.test_util: lastAsyncReturn;
+    import xlld.test_util: asyncReturn, newAsyncHandle;
     import core.time: MonoTime;
     import core.thread;
 
     const start = MonoTime.currTime;
-    XLOPER12 asyncHandle;
+    auto asyncHandle = newAsyncHandle;
     auto oper = (3.2).toXlOper(theGC);
     wrapAsync!twice(theGC, cast(immutable)asyncHandle, oper);
-    const expected = (6.4).toXlOper(theGC);
-    while(lastAsyncReturn != expected && MonoTime.currTime - start < 1.seconds) {
+    const expected = 6.4;
+    while(asyncReturn(asyncHandle).fromXlOper!double(theGC) != expected &&
+          MonoTime.currTime - start < 1.seconds)
+    {
         Thread.sleep(10.msecs);
     }
-    lastAsyncReturn.shouldEqual(expected);
+    asyncReturn(asyncHandle).shouldEqualDlang(expected);
 }
 
 /**
@@ -1879,14 +1878,27 @@ unittest {
 
 
 @("wrapModuleFunctionStr async double -> double")
-@safe unittest {
+unittest {
     import xlld.traits: Async;
+    import xlld.test_util: asyncReturn, newAsyncHandle;
+    import core.time: MonoTime;
+    import core.thread;
+
     mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "AsyncDoubleToDouble"));
 
     auto oper = (3.0).toXlOper(theGC);
     auto arg = () @trusted { return &oper; }();
-    XLOPER12 asyncHandle;
+    auto asyncHandle = newAsyncHandle;
     () @trusted { AsyncDoubleToDouble(arg, &asyncHandle); }();
+
+    const start = MonoTime.currTime;
+    const expected = 6.0;
+    while(asyncReturn(asyncHandle).fromXlOper!double(theGC) != expected &&
+          MonoTime.currTime - start < 1.seconds)
+    {
+        Thread.sleep(10.msecs);
+    }
+    asyncReturn(asyncHandle).shouldEqualDlang(expected);
 }
 
 
