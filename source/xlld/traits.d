@@ -255,12 +255,16 @@ private template isSupportedType(T, U...) {
 
 // whether or not this is a function that can be called from Excel
 private template isWorksheetFunction(alias F) {
-    static if(isSupportedFunction!(F, double, FP12*, LPXLOPER12)) {
+    static if(isWorksheetFunctionModuloLinkage!F) {
         import std.traits: functionLinkage;
         enum isWorksheetFunction = functionLinkage!F == "Windows";
     } else
         enum isWorksheetFunction = false;
 }
+
+/// if the types match for a worksheet function but without checking the linkage
+private enum isWorksheetFunctionModuloLinkage(alias F) =
+    isSupportedFunction!(F, double, FP12*, LPXLOPER12);
 
 @safe pure unittest {
     extern(Windows) double doubleToDouble(double) nothrow;
