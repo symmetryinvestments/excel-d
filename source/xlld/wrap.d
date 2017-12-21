@@ -43,9 +43,22 @@ unittest {
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == double)) {
+    import xlld.xlcall: XlType;
+    import std.math: isNaN;
+
+    if(val.isNaN) {
+        try
+            return "#NaN".toXlOper(allocator);
+        catch(Exception ex) {
+            auto ret = XLOPER12();
+            ret.xltype = XlType.xltypeErr;
+        }
+    }
+
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeNum;
     ret.val.num = val;
+
     return ret;
 }
 
@@ -55,6 +68,14 @@ unittest {
     auto oper = (42.0).toXlOper(theMallocator);
     oper.xltype.shouldEqual(XlType.xltypeNum);
     oper.val.num.shouldEqual(42.0);
+}
+
+@("toExcelOper(NaN)")
+unittest {
+    double d; // NaN
+    auto oper = d.toXlOper(theGC);
+    oper.xltype.shouldEqual(XlType.xltypeStr);
+    oper.shouldEqualDlang("#NaN");
 }
 
 ///
@@ -67,7 +88,8 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
 {
     import std.utf: byWchar;
 
-    auto wval = cast(wchar*)allocator.allocate(numOperStringBytes(val)).ptr;
+    const numBytes = numOperStringBytes(val);
+    auto wval = () @trusted { return cast(wchar[])allocator.allocate(numBytes); }();
     if(wval is null)
         throw toXlOperMemoryException;
 
@@ -80,7 +102,7 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
 
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeStr;
-    ret.val.str = cast(XCHAR*)wval;
+    () @trusted { ret.val.str = cast(XCHAR*)&wval[0]; }();
 
     return ret;
 }
@@ -1135,6 +1157,8 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
 
     const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
+    gDates = [42.0];
+    gTimes = [33.0];
     gYears = [dateTime.year];
     gMonths = [dateTime.month];
     gDays = [dateTime.day];

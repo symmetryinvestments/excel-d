@@ -144,9 +144,18 @@ T excel12(T, A...)(int xlfn, auto ref A args) @trusted {
     import xlld.memorymanager: gTempAllocator, autoFreeAllocator;
     import xlld.wrap: toXlOper, fromXlOper;
     import xlld.xlcall: xlretSuccess;
+    import std.meta: allSatisfy;
+    import std.traits: Unqual;
     import std.experimental.allocator.gc_allocator: GCAllocator;
+    import std.experimental.allocator.mallocator: Mallocator;
 
-    alias allocator = GCAllocator.instance;
+    // doubles never need the allocator anyway, so we use Mallocator
+    // to guarantee @nogc when needed
+    enum nogc(T) = is(Unqual!T == double);
+    static if(allSatisfy!(nogc, A))
+        alias allocator = Mallocator.instance;
+    else
+        alias allocator = GCAllocator.instance;
 
     XLOPER12[A.length] operArgs;
     LPXLOPER12[A.length] operArgPtrs;

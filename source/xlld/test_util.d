@@ -159,7 +159,13 @@ private int returnGlobalMockFrom(R)(ref R values, LPXLOPER12 result) if(isInputR
 }
 
 /// automatically converts from oper to compare with a D type
-void shouldEqualDlang(U)(LPXLOPER12 actual, U expected, string file = __FILE__, size_t line = __LINE__) @trusted {
+void shouldEqualDlang(U)
+                     (XLOPER12* actual,
+                      U expected,
+                      string file = __FILE__,
+                      size_t line = __LINE__)
+    @trusted
+{
     import xlld.memorymanager: allocator;
     import xlld.wrap: fromXlOper, stripMemoryBitmask;
     import xlld.xlcall: XlType;
