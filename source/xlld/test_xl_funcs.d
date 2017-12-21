@@ -12,16 +12,16 @@ import xlld.xlcall;
 import xlld.worksheet;
 import xlld.traits: Async;
 
-extern(Windows) export double FuncMulByTwo(double n) nothrow {
+extern(Windows) double FuncMulByTwo(double n) nothrow {
     return n * 2;
 }
 
-extern(Windows) export double FuncFP12(FP12* cells) nothrow {
+extern(Windows) double FuncFP12(FP12* cells) nothrow {
     return 0;
 }
 
 
-extern(Windows) export LPXLOPER12 FuncFib (LPXLOPER12 n) nothrow {
+extern(Windows) LPXLOPER12 FuncFib (LPXLOPER12 n) nothrow {
     return LPXLOPER12.init;
 }
 

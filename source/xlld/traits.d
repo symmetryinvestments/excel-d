@@ -300,6 +300,11 @@ WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)() {
                 ret ~= getWorksheetFunction!moduleMember;
             catch(Exception ex)
                 assert(0); //can't happen
+        } else static if(isWorksheetFunctionModuloLinkage!moduleMember) {
+            import std.traits: functionLinkage;
+            pragma(msg, "!!!!! excel-d warning: function " ~ __traits(identifier, moduleMember) ~
+                   " has the right types to be callable from Excel but isn't due to having " ~
+                   functionLinkage!moduleMember ~ " linkage instead of the required 'Windows'");
         }
     }
 
