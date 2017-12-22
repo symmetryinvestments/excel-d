@@ -63,10 +63,41 @@ and then in Excel:
 Future functionality will include creating menu items and dialogue boxes.  Pull requests welcomed.
 
 
+Variant type `Any`
+---------------------
+
+Sometimes it is useful for a D function to take in any type that Excel supports. Typically
+this will happen when receiving a matrix of values where the types might differ
+(e.g. the columns are date, string, double). To get the expected D type from an `Any` value,
+use `xlld.wrap.fromXlOper`. An example:
+
+```d
+double Func(Any[][] values) {
+    import xlld.wrap: fromXlOper;
+    import std.experimental.allocator: theAllocator;
+    foreach(row; values) {
+        auto date = row[0].fromXlOper!DateTime(theAllocator);
+        auto string_ = row[1].fromXlOper!DateTime(theAllocator);
+        auto double_ = row[2].fromXlOper!double(theAllocator);
+        // ...
+    }
+    return ret;
+}
+```
+
+
 Asynchronous functions
 ----------------------
 
-A D function can be decorated with the `@Async` UDA and will be executed asynchronously.
+A D function can be decorated with the `@Async` UDA and will be executed asynchronously:
+
+```d
+@Async
+double AsyncFunc(double d) {
+    // long-running task
+}
+```
+
 Please see [the Microsoft documentation](https://msdn.microsoft.com/en-us/library/office/ff796219(v=office.14).aspx).
 
 Optional custom memory allocation and `@nogc`
