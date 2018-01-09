@@ -1036,8 +1036,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     mixin(`import ` ~ moduleName ~ `;`);
     alias module_ = Identity!(mixin(moduleName));
 
-    string ret = `static import ` ~ moduleName ~ ";\n\n" ~
-        "import xlld.traits: Async;";
+    string ret;
 
     foreach(moduleMemberStr; __traits(allMembers, module_)) {
 
@@ -1062,7 +1061,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @system unittest {
     import xlld.memorymanager: allocator;
 
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
 
     auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncAddEverything(&arg).shouldEqualDlang(60.0);
@@ -1076,7 +1075,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @system unittest {
     import xlld.memorymanager: allocator;
 
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
 
     auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncTripleEverything(&arg).shouldEqualDlang(cast(double[][])[[3, 6, 9, 12], [33, 36, 39, 42]]);
@@ -1092,7 +1091,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 
     import xlld.memorymanager: allocator;
 
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
 
     auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncAllLengths(&arg).shouldEqualDlang(29.0);
@@ -1107,7 +1106,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 
     import xlld.memorymanager: allocator;
 
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
 
     auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncLengths(&arg).shouldEqualDlang(cast(double[][])[[3, 3, 3, 4], [4, 4, 4, 4]]);
@@ -1122,7 +1121,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 
     import xlld.memorymanager: allocator;
 
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
 
     auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncBob(&arg).shouldEqualDlang([["foobob", "barbob", "bazbob", "quuxbob"],
@@ -1134,7 +1133,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @system unittest {
     import xlld.memorymanager: allocator;
 
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg = toSRef([["foo", "bar"], ["baz", "quux"]], allocator);
     FuncStringSlice(&arg).shouldEqualDlang(4.0);
 }
@@ -1143,7 +1142,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap double[] -> double")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], allocator);
     FuncDoubleSlice(&arg).shouldEqualDlang(6.0);
 }
@@ -1152,7 +1151,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap double[] -> double[]")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], allocator);
     FuncSliceTimes3(&arg).shouldEqualDlang([3.0, 6.0, 9.0, 12.0, 15.0, 18.0]);
 }
@@ -1161,7 +1160,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap string[] -> string[]")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg = toSRef(["quux", "toto"], allocator);
     StringsToStrings(&arg).shouldEqualDlang(["quuxfoo", "totofoo"]);
 }
@@ -1170,7 +1169,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap string[] -> string")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg = toSRef(["quux", "toto"], allocator);
     StringsToString(&arg).shouldEqualDlang("quux, toto");
 }
@@ -1179,7 +1178,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap string -> string")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg = toXlOper("foo", allocator);
     StringToString(&arg).shouldEqualDlang("foobar");
 }
@@ -1188,7 +1187,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap string, string, string -> string")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg0 = toXlOper("foo", allocator);
     auto arg1 = toXlOper("bar", allocator);
     auto arg2 = toXlOper("baz", allocator);
@@ -1199,7 +1198,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("nothrow functions")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg = toXlOper(2.0, allocator);
     static assert(__traits(compiles, FuncThrows(&arg)));
 }
@@ -1210,7 +1209,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     import std.experimental.allocator.mallocator: Mallocator;
     import xlld.framework: freeXLOper;
 
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg = toXlOper(2.0, Mallocator.instance);
     scope(exit) freeXLOper(&arg, Mallocator.instance);
     FuncAddEverything(&arg);
@@ -1219,7 +1218,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 ///
 @("Wrap a function that throws")
 @system unittest {
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg = toSRef(33.3, theGC);
     FuncThrows(&arg); // should not actually throw
 }
@@ -1227,7 +1226,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 ///
 @("Wrap a function that asserts")
 @system unittest {
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
     auto arg = toSRef(33.3, theGC);
     FuncAsserts(&arg); // should not actually throw
 }
@@ -1235,7 +1234,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 ///
 @("Wrap a function that accepts DateTime")
 @system unittest {
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
 
     const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
     gDates = [42.0];
@@ -1257,7 +1256,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 ///
 @("Wrap a function that accepts DateTime[]")
 @system unittest {
-    mixin(wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs");
+    mixin(wrapTestFuncsString);
 
     const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
     gYears = [2017, 2017];
@@ -1853,7 +1852,7 @@ unittest  {
     import xlld.memorymanager: allocator;
     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
-    mixin(wrapAll!("xlld.test_d_funcs"));
+    mixin(wrapAllTestFuncsString);
     auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncAddEverything(&arg).shouldEqualDlang(60.0);
 }
@@ -1941,7 +1940,7 @@ unittest {
     // on its destructor
     scope(exit) gTestAllocator.verify;
 
-    mixin(wrapAll!("xlld.test_d_funcs"));
+    mixin(wrapAllTestFuncsString);
     double[4] args = [1.0, 2.0, 3.0, 4.0];
     auto oper = args[].toSRef(gTempAllocator); // don't use TestAllocator
     auto arg = () @trusted { return &oper; }();
@@ -2023,7 +2022,7 @@ unittest {
 @safe unittest {
     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
-    mixin(wrapAll!("xlld.test_d_funcs"));
+    mixin(wrapAllTestFuncsString);
 
     auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theMallocator);
     auto arg = () @trusted { return &oper; }();
@@ -2043,7 +2042,7 @@ unittest {
     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
     import xlld.memorymanager: allocatorContext;
 
-    mixin(wrapAll!("xlld.test_d_funcs"));
+    mixin(wrapAllTestFuncsString);
 
     LPXLOPER12 ret;
     with(allocatorContext(theMallocator)) {
@@ -2065,7 +2064,7 @@ unittest {
     import xlld.memorymanager: allocatorContext;
     import xlld.any: Any;
 
-    mixin(wrapAll!("xlld.test_d_funcs"));
+    mixin(wrapAllTestFuncsString);
 
     LPXLOPER12 ret;
     with(allocatorContext(theMallocator)) {
@@ -2092,7 +2091,7 @@ unittest {
     import xlld.memorymanager: allocatorContext;
     import xlld.any: Any;
 
-    mixin(wrapAll!("xlld.test_d_funcs"));
+    mixin(wrapAllTestFuncsString);
 
     LPXLOPER12 ret;
     with(allocatorContext(theMallocator)) {
@@ -2117,10 +2116,22 @@ unittest {
 unittest {
     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
-    mixin(wrapAll!("xlld.test_d_funcs"));
+    mixin(wrapAllTestFuncsString);
 
     auto double_ = (42.0).toXlOper(theGC);
     auto string_ = "foobar".toXlOper(theGC);
     static assert(!__traits(compiles, Overloaded(&double_).shouldEqualDlang(84.0)));
     static assert(!__traits(compiles, Overloaded(&string_).shouldEqualDlang(84.0)));
+}
+
+
+version(unittest):
+
+string wrapTestFuncsString() {
+    return "import xlld.traits: Async;\n" ~
+        wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs";
+}
+
+string wrapAllTestFuncsString() {
+    return "import xlld.traits: Async;\n" ~ wrapAll!"xlld.test_d_funcs";
 }
