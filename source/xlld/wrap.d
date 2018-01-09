@@ -471,6 +471,8 @@ unittest {
 
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
     import xlld.framework: Excel12f;
+    import nogc.conv: text;
+
     XLOPER12 ret, date, time;
 
     auto year = value.year.toXlOper(allocator);
@@ -479,7 +481,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
 
     const dateCode = () @trusted { return Excel12f(xlfDate, &date, &year, &month, &day); }();
     assert(dateCode == xlretSuccess, "Error calling xlfDate");
-    assert(date.xltype == XlType.xltypeNum, "date is not xltypeNum");
+    () @trusted { assert(date.xltype == XlType.xltypeNum, text("date is not xltypeNum but ", date.xltype)); }();
 
     auto hour = value.hour.toXlOper(allocator);
     auto minute = value.minute.toXlOper(allocator);
@@ -487,7 +489,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
 
     const timeCode = () @trusted { return Excel12f(xlfTime, &time, &hour, &minute, &second); }();
     assert(timeCode == xlretSuccess, "Error calling xlfTime");
-    assert(time.xltype == XlType.xltypeNum, "time is not xltypeNum");
+    () @trusted { assert(time.xltype == XlType.xltypeNum, text("time is not xltypeNum but ", time.xltype)); }();
 
     ret.xltype = XlType.xltypeNum;
     ret.val.num = date.val.num + time.val.num;
