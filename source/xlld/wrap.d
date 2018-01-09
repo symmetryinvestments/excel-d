@@ -1039,7 +1039,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     string ret = `static import ` ~ moduleName ~ ";\n\n" ~
         "import xlld.traits: Async;";
 
-    pragma(msg, "moduleName: ", moduleName);
     foreach(moduleMemberStr; __traits(allMembers, module_)) {
 
         alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
