@@ -4,6 +4,8 @@
 
 module xlld.static_;
 
+version(unittest):
+
 ///
 shared static this() {
     import xlld.xlcall: XLOPER12;
