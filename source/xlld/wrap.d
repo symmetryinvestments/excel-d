@@ -127,16 +127,6 @@ unittest {
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == double)) {
     import xlld.xlcall: XlType;
-    import std.math: isNaN;
-
-    if(val.isNaN) {
-        try
-            return "#NaN".toXlOper(allocator);
-        catch(Exception ex) {
-            auto ret = XLOPER12();
-            ret.xltype = XlType.xltypeErr;
-        }
-    }
 
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeNum;
@@ -153,13 +143,6 @@ unittest {
     oper.val.num.shouldEqual(42.0);
 }
 
-@("toExcelOper(NaN)")
-unittest {
-    double d; // NaN
-    auto oper = d.toXlOper(theGC);
-    oper.xltype.shouldEqual(XlType.xltypeStr);
-    oper.shouldEqualDlang("#NaN");
-}
 
 ///
 __gshared immutable toXlOperMemoryException = new Exception("Failed to allocate memory for string oper");
@@ -611,9 +594,16 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(Unqual!T == string)
         return cast(string)ret;
     } else {
         // if a double, try to convert it to a string
+        import std.math: isNaN;
         import core.stdc.stdio: snprintf;
+
         char[1024] buffer;
-        const numChars = snprintf(&buffer[0], buffer.length, "%lf", val.val.num);
+        const numChars = {
+            if(val.val.num.isNaN)
+                return snprintf(&buffer[0], buffer.length, "#NaN");
+            else
+                return snprintf(&buffer[0], buffer.length, "%lf", val.val.num);
+        }();
         if(numChars > buffer.length - 1)
             throw fromXlOperConvException;
         auto ret = allocator.makeArray!char(numChars);
@@ -2020,6 +2010,13 @@ unittest {
     }
     asyncReturn(asyncHandle).shouldEqualDlang(expected);
 }
+
+@("wrapModuleFunctionStr () -> NaN")
+unittest {
+    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "NaN"));
+    NaN().shouldEqualDlang("#NaN");
+}
+
 
 
 ///

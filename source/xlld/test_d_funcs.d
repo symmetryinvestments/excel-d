@@ -268,3 +268,7 @@ double Overloaded(string s) @safe @nogc nothrow {
     () @trusted { printf("string\n"); }();
     return s.length;
 }
+
+double NaN() {
+    return double.init;
+}
