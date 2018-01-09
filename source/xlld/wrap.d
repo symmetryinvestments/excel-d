@@ -23,7 +23,7 @@ version(unittest) {
     alias theMallocator = Mallocator.instance;
     alias theGC = GCAllocator.instance;
 } else
-      enum HiddenTest;
+      enum Flaky;
 
 
 /**
@@ -1465,7 +1465,7 @@ private bool isGC(alias F)() {
 // this has to be a top-level function and can't be declared in the unittest
 version(unittest) private double twice(double d) { return d * 2; }
 
-@HiddenTest("flaky")
+@Flaky
 @("wrapAsync")
 @system unittest {
     import xlld.test_util: asyncReturn, newAsyncHandle;

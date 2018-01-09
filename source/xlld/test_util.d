@@ -395,7 +395,6 @@ struct AA(K, V, int N = 100) {
     }
 }
 
-@HiddenTest
 @("AA")
 @safe unittest {
     import core.exception: AssertError;
