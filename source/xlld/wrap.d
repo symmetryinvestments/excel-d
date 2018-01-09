@@ -22,8 +22,10 @@ version(unittest) {
     import xlld.any: any;
     alias theMallocator = Mallocator.instance;
     alias theGC = GCAllocator.instance;
-} else
-      enum Flaky;
+}
+
+static if(!is(Flaky))
+    enum Flaky;
 
 
 /**
