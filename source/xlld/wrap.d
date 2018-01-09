@@ -976,7 +976,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
                 ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
             else
                 pragma(msg, "excel-d WARNING: Not wrapping ", moduleMemberStr, " due to it having ",
-                       numOverloads, " overloads");
+                       cast(int)numOverloads, " overloads");
         }
     }
 
