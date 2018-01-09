@@ -29,29 +29,11 @@ double[] gDates, gTimes, gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
 
 private shared AA!(XLOPER12, XLOPER12) gAsyncReturns = void;
 
-shared static this() {
-    gAsyncReturns = AA!(XLOPER12, XLOPER12).create;
-}
 
 XLOPER12 asyncReturn(XLOPER12 asyncHandle) @safe {
     return gAsyncReturns[asyncHandle];
 }
 
-
-///
-static this() {
-    import xlld.xlcallcpp: SetExcel12EntryPt;
-    // this effectively "implements" the Excel12v function
-    // so that the code can be unit tested without needing to link
-    // with the Excel SDK
-    SetExcel12EntryPt(&excel12UnitTest);
-}
-
-///
-static ~this() {
-    import unit_threaded.should: shouldBeSameSetAs;
-    gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
-}
 
 ///
 extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, LPXLOPER12 result)
@@ -413,6 +395,7 @@ struct AA(K, V, int N = 100) {
     }
 }
 
+@HiddenTest
 @("AA")
 @safe unittest {
     import core.exception: AssertError;

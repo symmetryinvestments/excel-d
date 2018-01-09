@@ -11,7 +11,7 @@ import xlld.worksheet;
 import xlld.any: Any;
 import std.traits: Unqual, isIntegral;
 import std.datetime: DateTime;
-
+import std.experimental.allocator: theAllocator;
 
 version(unittest) {
     import unit_threaded;
@@ -24,6 +24,88 @@ version(unittest) {
     alias theGC = GCAllocator.instance;
 } else
       enum HiddenTest;
+
+
+/**
+   Deep copy of an oper
+ */
+XLOPER12 dup(A)(XLOPER12 oper, ref A allocator) @safe {
+
+    import xlld.xlcall: XlType;
+    import std.experimental.allocator: makeArray;
+
+    XLOPER12 ret;
+
+    ret.xltype = oper.xltype;
+
+    switch(stripMemoryBitmask(oper.xltype)) with(XlType) {
+
+        default:
+            ret = oper;
+            return ret;
+
+        case xltypeStr:
+            const length = operStringLength(oper) + 1;
+
+            () @trusted {
+                ret.val.str = allocator.makeArray!wchar(length).ptr;
+                if(ret.val.str is null)
+                    throw toXlOperMemoryException;
+            }();
+
+            () @trusted { ret.val.str[0 .. length] = oper.val.str[0 .. length]; }();
+            return ret;
+
+        case xltypeMulti:
+            () @trusted {
+                ret.val.array.rows = oper.val.array.rows;
+                ret.val.array.columns = oper.val.array.columns;
+                const length = oper.val.array.rows * oper.val.array.columns;
+                ret.val.array.lparray = allocator.makeArray!XLOPER12(length).ptr;
+
+                if(ret.val.array.lparray is null)
+                    throw toXlOperMemoryException;
+
+                foreach(i; 0 .. length) {
+                    ret.val.array.lparray[i] = oper.val.array.lparray[i].dup(allocator);
+                }
+            }();
+
+            return ret;
+    }
+
+    assert(0);
+}
+
+
+///
+@("dup")
+@safe unittest {
+    auto int_ = 42.toXlOper(theGC);
+    int_.dup(theGC).shouldEqualDlang(42);
+
+    auto double_ = (33.3).toXlOper(theGC);
+    double_.dup(theGC).shouldEqualDlang(33.3);
+
+    auto string_ = "foobar".toXlOper(theGC);
+    string_.dup(theGC).shouldEqualDlang("foobar");
+
+    auto array = () @trusted {
+        return [
+            ["foo", "bar", "baz"],
+            ["quux", "toto", "brzz"]
+        ]
+        .toXlOper(theGC);
+    }();
+
+    array.dup(theGC).shouldEqualDlang(
+        [
+            ["foo", "bar", "baz"],
+            ["quux", "toto", "brzz"],
+        ]
+    );
+}
+
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(isIntegral!T) {
@@ -279,7 +361,7 @@ XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(Unqual!T == string[]) |
 
 ///
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any)) {
-    return value._impl;
+    return value.dup(allocator);
 }
 
 ///
@@ -579,8 +661,7 @@ package XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
 
 ///
 T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == Any)) {
-    // FIXME: deep copy
-    return Any(*oper);
+    return Any((*oper).dup(allocator));
 }
 
 ///
@@ -810,7 +891,8 @@ __gshared immutable applyTypeException = new Exception("apply failed - oper not 
 
 // apply a function to an oper of type xltypeMulti
 // the function must take a boolean value indicating if the cell value
-// is to be converted or not, and a reference to the cell value itself
+// is to be converted or not, the row index, the column index,
+// and a reference to the cell value itself
 package void apply(T, alias F)(ref XLOPER12 oper) {
     import xlld.xlcall: XlType;
     import xlld.xl: coerce, free;
@@ -1653,7 +1735,10 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
     auto testAllocator = TestAllocator();
 
     with(allocatorContext(theGC)) {
-        auto dArg = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]];
+        auto dArg = [
+            [ any(1.0), any("foo"), any(3.0) ],
+            [ any(4.0), any(5.0),   any(6.0) ],
+        ];
         auto arg = toXlOper(dArg);
         auto oper = wrapModuleFunctionImpl!FirstOfTwoAnyArrays(testAllocator, &arg, &arg);
         oper.shouldEqualDlang(dArg);
