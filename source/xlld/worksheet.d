@@ -104,6 +104,7 @@ struct Optional {
     the function with the spreadsheet.
 */
 alias Register = Optional;
+alias Excel = Optional;
 
 
 ///

@@ -41,10 +41,10 @@ Sample code (see the [example](example) directory for more):
 ```d
     import xlld;
 
-    @Register(ArgumentText("Array to add"),
-              HelpTopic("Adds all cells in an array"),
-              FunctionHelp("Adds all cells in an array"),
-              ArgumentHelp(["The array to add"]))
+    @Excel(ArgumentText("Array to add"),
+           HelpTopic("Adds all cells in an array"),
+           FunctionHelp("Adds all cells in an array"),
+           ArgumentHelp(["The array to add"]))
     double FuncAddEverything(double[][] args) nothrow @nogc { // nothrow and @nogc are optional
         import std.algorithm: fold;
         import std.math: isNaN;
