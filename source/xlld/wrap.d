@@ -1069,6 +1069,17 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
             else
                 pragma(msg, "excel-d WARNING: Not wrapping ", moduleMemberStr, " due to it having ",
                        cast(int)numOverloads, " overloads");
+        } else {
+            /// trying to get a pointer to something is a good way of making sure we can
+            /// attempt to evaluate `isSomeFunction` - it's not always possible
+            enum canGetPointerToIt = __traits(compiles, &moduleMember);
+            static if(canGetPointerToIt) {
+                import xlld.worksheet: Register;
+                import std.traits: getUDAs;
+                alias registerAttrs = getUDAs!(moduleMember, Register);
+                static assert(registerAttrs.length == 0,
+                              "excel-d ERROR: Function `" ~ moduleMemberStr ~ "` not eligible for wrapping");
+            }
         }
     }
 
