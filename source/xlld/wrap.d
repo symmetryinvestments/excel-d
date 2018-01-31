@@ -839,14 +839,38 @@ unittest {
 }
 
 ///
-__gshared immutable fromXlOperMultiOperException = new Exception("oper not of multi type");
+__gshared immutable fromXlOperMultiOperException = new Exception("fromXlOper: oper not of multi type");
 ///
-__gshared immutable fromXlOperMultiMemoryException = new Exception("Could not allocate memory in fromXlOperMulti");
+__gshared immutable fromXlOperMultiMemoryException = new Exception("fromXlOper: Could not allocate memory in fromXlOperMulti");
 
 private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocator) {
     import xlld.xl: coerce, free;
     import xlld.memorymanager: makeArray2D;
+    import xlld.xlcall: XlType;
     import std.experimental.allocator: makeArray;
+
+    if(stripMemoryBitmask(val.xltype) == XlType.xltypeNil) {
+        static if(dim == Dimensions.Two)
+            return T[][].init;
+        else static if(dim == Dimensions.One)
+            return T[].init;
+        else
+            static assert(0, "Unknown number of dimensions in fromXlOperMulti");
+    }
+
+    if(stripMemoryBitmask(val.xltype) == XlType.xltypeNum) {
+        static if(dim == Dimensions.Two) {
+            import std.experimental.allocator: makeMultidimensionalArray;
+            auto ret = allocator.makeMultidimensionalArray!T(1, 1);
+            ret[0][0] = val.fromXlOper!T(allocator);
+            return ret;
+        } else static if(dim == Dimensions.One) {
+            auto ret = allocator.makeArray!T(1);
+            ret[0] = val.fromXlOper!T(allocator);
+            return ret;
+        } else
+            static assert(0, "Unknown number of dimensions in fromXlOperMulti");
+    }
 
     if(!isMulti(*val)) {
         throw fromXlOperMultiOperException;
@@ -880,22 +904,16 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(LPXLOPER12 val, ref A allocat
     return ret;
 }
 
-///
-__gshared immutable applyTypeException = new Exception("apply failed - oper not of multi type");
 
 // apply a function to an oper of type xltypeMulti
 // the function must take a boolean value indicating if the cell value
 // is to be converted or not, the row index, the column index,
 // and a reference to the cell value itself
-package void apply(T, alias F)(ref XLOPER12 oper) {
+private void apply(T, alias F)(ref XLOPER12 oper) {
     import xlld.xlcall: XlType;
     import xlld.xl: coerce, free;
-    import xlld.wrap: dlangToXlOperType, isMulti, numOperStringBytes;
     import xlld.any: Any;
     version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
-
-    if(!isMulti(oper))
-        throw applyTypeException;
 
     const rows = oper.val.array.rows;
     const cols = oper.val.array.columns;
@@ -1556,6 +1574,26 @@ private auto toDArgs(alias wrappedFunc, A, T...)
 }
 
 
+@("xltypeNum can convert to array")
+unittest {
+    import std.typecons: tuple;
+
+    void fun(double[] arg) {}
+    auto arg = 33.3.toSRef(theGC);
+    toDArgs!fun(theGC, &arg).shouldEqual(tuple([33.3]));
+}
+
+@("xltypeNil can convert to array")
+unittest {
+    import std.typecons: tuple;
+
+    void fun(double[] arg) {}
+    XLOPER12 arg;
+    arg.xltype = XlType.xltypeNil;
+    double[] empty;
+    toDArgs!fun(theGC, &arg).shouldEqual(tuple(empty));
+}
+
 // Takes a tuple returned by `toDArgs`, calls the wrapped function and returns
 // the XLOPER12 result
 private LPXLOPER12 callWrapped(alias wrappedFunc, T)(T dArgs) {
@@ -1927,7 +1965,7 @@ unittest {
     double[][] doubles = [[1, 2, 3, 4], [11, 12, 13, 14]];
     auto doublesOper = toSRef(doubles, theGC);
     doublesOper.fromXlOper!(double[][])(theGC).shouldThrowWithMessage(
-        "oper not of multi type");
+        "fromXlOper: oper not of multi type");
     doublesOper.fromXlOperCoerce!(double[][]).shouldEqual(doubles);
 }
 
