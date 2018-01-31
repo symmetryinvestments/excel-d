@@ -272,3 +272,7 @@ double Overloaded(string s) @safe @nogc nothrow {
 double NaN() {
     return double.init;
 }
+
+int BoolToInt(bool b) {
+    return cast(int)b;
+}

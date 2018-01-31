@@ -501,6 +501,33 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
     oper.val.num.shouldEqual(37.0);
 }
 
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == bool)) {
+    import xlld.xlcall: XlType;
+    XLOPER12 ret;
+    ret.xltype = XlType.xltypeBool;
+    ret.val.bool_ = cast(typeof(ret.val.bool_)) value;
+    return ret;
+}
+
+///
+@("toXlOper!bool when bool")
+@system unittest {
+    import xlld.xlcall: XlType;
+    {
+        const oper = true.toXlOper(theGC);
+        oper.xltype.shouldEqual(XlType.xltypeBool);
+        oper.val.bool_.shouldEqual(1);
+    }
+
+    {
+        const oper = false.toXlOper(theGC);
+        oper.xltype.shouldEqual(XlType.xltypeBool);
+        oper.val.bool_.shouldEqual(0);
+    }
+}
+
+
 ///
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
     return (&val).fromXlOper!T(allocator);
@@ -574,6 +601,7 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(Unqual!T == int)) {
     oper.xltype = XlType.xltypeMissing;
     oper.fromXlOper!int(theGC).shouldEqual(0);
 }
+
 
 ///
 __gshared immutable fromXlOperMemoryException = new Exception("Could not allocate memory for array of char");
@@ -1031,8 +1059,58 @@ T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == DateTime)
     dateTime.second.shouldEqual(3);
 }
 
+T fromXlOper(T, A)(LPXLOPER12 oper, ref A allocator) if(is(Unqual!T == bool)) {
+
+    import xlld.xlcall: XlType;
+    import std.uni: toLower;
+
+    if(oper.xltype == XlType.xltypeStr) {
+        return oper.fromXlOper!string(allocator).toLower == "true";
+    }
+
+    return cast(T)oper.val.bool_;
+}
+
+@("fromXlOper!bool when bool")
+@system unittest {
+    import xlld.xlcall: XLOPER12, XlType;
+    XLOPER12 oper;
+    oper.xltype = XlType.xltypeBool;
+    oper.val.bool_ = 1;
+    oper.fromXlOper!bool(theGC).shouldEqual(true);
+
+    oper.val.bool_ = 0;
+    oper.fromXlOper!bool(theGC).shouldEqual(false);
+
+    oper.val.bool_ = 2;
+    oper.fromXlOper!bool(theGC).shouldEqual(true);
+}
+
+@("fromXlOper!bool when int")
+@system unittest {
+    42.toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(true);
+    0.toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(false);
+}
+
+@("fromXlOper!bool when double")
+@system unittest {
+    33.3.toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(true);
+    0.0.toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(false);
+}
+
+
+@("fromXlOper!bool when string")
+@system unittest {
+    "true".toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(true);
+    "True".toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(true);
+    "TRUE".toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(true);
+    "false".toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(false);
+}
+
+
 private enum isWorksheetFunction(alias F) =
     isSupportedFunction!(F,
+                         bool,
                          int,
                          double, double[], double[][],
                          string, string[], string[][],
@@ -1050,6 +1128,7 @@ private enum isWorksheetFunction(alias F) =
     static assert(isWorksheetFunction!DoubleArrayToAnyArray);
     static assert(isWorksheetFunction!Twice);
     static assert(isWorksheetFunction!DateTimeToDouble);
+    static assert(isWorksheetFunction!BoolToInt);
 }
 
 /**
@@ -2185,6 +2264,16 @@ unittest {
     auto string_ = "foobar".toXlOper(theGC);
     static assert(!__traits(compiles, Overloaded(&double_).shouldEqualDlang(84.0)));
     static assert(!__traits(compiles, Overloaded(&string_).shouldEqualDlang(84.0)));
+}
+
+///
+@("wrapAll bool -> int")
+@safe unittest {
+    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+
+    mixin(wrapAllTestFuncsString);
+    auto string_ = "true".toXlOper(theGC);
+    () @trusted { BoolToInt(&string_).shouldEqualDlang(1); }();
 }
 
 
