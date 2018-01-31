@@ -544,18 +544,30 @@ auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(Unqual!T == double)
 
 ///
 auto fromXlOper(T, A)(LPXLOPER12 val, ref A allocator) if(is(Unqual!T == int)) {
-    if(val.xltype == xltypeMissing)
+    import xlld.xlcall: XlType;
+
+    if(val.xltype == XlType.xltypeMissing)
         return int.init;
+
+    if(val.xltype == XlType.xltypeNum)
+        return cast(typeof(return))val.val.num;
 
     return val.val.w;
 }
 
 ///
+@("fromXlOper!int")
 @system unittest {
     42.toXlOper(theGC).fromXlOper!int(theGC).shouldEqual(42);
 }
-///
 
+///
+@("fromXlOper!int when given xltypeNum")
+@system unittest {
+    42.0.toXlOper(theGC).fromXlOper!int(theGC).shouldEqual(42);
+}
+
+///
 @("0 for fromXlOper!int missing oper")
 @system unittest {
     XLOPER12 oper;
