@@ -14,7 +14,7 @@ double[][] dlookup(string[][] haystack, string[] needles, double columnNumberD) 
     import std.range:repeat,transposed;
     import std.array:array;
     import std.conv:to;
-    
+
     double toDouble(long pos)
     {
         return (pos==-1) ? double.nan : pos.to!double + 1.0;
@@ -193,4 +193,26 @@ double FuncTwiceAsync(double d) {
     import core.thread;
     Thread.sleep(5.seconds);
     return d * 2;
+}
+
+double IntToDouble(int i) {
+    import xlld.xll: log;
+    log("IntToDouble(", i, ")");
+    return i * 2;
+}
+
+int DoubleToInt(double d) {
+    return cast(int)(d * 2);
+}
+
+int IntToInt(int i) @safe nothrow @nogc {
+    return i * 2;
+}
+
+DateTime[] DateTimes(int year, int month, int day) {
+    return [
+        DateTime(year, month, day),
+        DateTime(year + 1, month + 1, day + 1),
+        DateTime(year + 2, month + 2, day + 2),
+    ];
 }
