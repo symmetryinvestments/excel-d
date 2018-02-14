@@ -5,10 +5,6 @@ module xlld.xl;
 
 import xlld.xlcall: XLOPER12, LPXLOPER12;
 
-version(unittest) {
-
-
-}
 
 ///
 XLOPER12 coerce(in LPXLOPER12 oper) nothrow @nogc @trusted {
@@ -80,18 +76,3 @@ struct ScopedOper {
         if(_free) free(oper);
     }
 }
-
-
-/**
-   Coerces an oper and returns an RAII struct that automatically frees memory
- */
-auto scopedCoerce(in LPXLOPER12 oper) @safe @nogc nothrow {
-    return Coerced(oper);
-}
-
-auto scopedCoerce(in XLOPER12 oper) @trusted @nogc nothrow {
-    return Coerced(oper);
-}
-
-
-alias coerced = scopedCoerce;

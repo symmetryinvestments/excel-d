@@ -284,8 +284,8 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 				break;
 
 			case XlType.xltypeSRef:
-				import xlld.xl: coerced;
-				auto oper = coerced(&this);
+				import xlld.xl: Coerced;
+				auto oper = Coerced(&this);
 				return "SRef[ " ~ oper.toString ~ " ]";
 
 			case XlType.xltypeNum:
