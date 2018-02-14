@@ -27,6 +27,11 @@ const(void)*[maxCoerce] gFreed;
 ///
 double[] gDates, gTimes, gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
 
+/**
+   This stores what Excel12f(int) should return for each integer XL function
+ */
+XLOPER12[int] gXlFuncResults;
+
 private shared AA!(XLOPER12, XLOPER12) gAsyncReturns = void;
 
 
@@ -49,7 +54,11 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
     switch(xlfn) {
 
     default:
-        return xlretFailed;
+        if(auto xlfnResult = xlfn in gXlFuncResults) {
+            *result = *xlfnResult;
+            return xlretSuccess;
+        } else
+            return xlretFailed;
 
     case xlFree:
         assert(numOpers == 1);
@@ -417,4 +426,21 @@ XLOPER12 newAsyncHandle() @safe nothrow {
     index.atomicOp!"+="(1);
 
     return asyncHandle;
+}
+
+struct MockXlFunction {
+    int xlFunction;
+
+    this(int xlFunction, XLOPER12 result) {
+        this.xlFunction = xlFunction;
+        gXlFuncResults[xlFunction] = result;
+    }
+
+    ~this() {
+        gXlFuncResults.remove(xlFunction);
+    }
+}
+
+auto mockXlFunction(int xlFunction, XLOPER12 result) {
+    return MockXlFunction(xlFunction, result);
 }

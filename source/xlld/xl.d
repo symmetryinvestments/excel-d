@@ -48,6 +48,11 @@ struct Coerced {
         this.coerced = true;
     }
 
+    this(inout(XLOPER12) oper) @safe @nogc nothrow inout {
+        this.oper = () @trusted { return coerce(&oper); }();
+        this.coerced = true;
+    }
+
     ~this() @safe @nogc nothrow {
         if(coerced) free(oper);
     }
@@ -59,3 +64,10 @@ struct Coerced {
 auto scopedCoerce(in LPXLOPER12 oper) @safe @nogc nothrow {
     return Coerced(oper);
 }
+
+auto scopedCoerce(in XLOPER12 oper) @trusted @nogc nothrow {
+    return Coerced(oper);
+}
+
+
+alias coerced = scopedCoerce;

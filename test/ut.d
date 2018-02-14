@@ -12,5 +12,6 @@ int main(string[] args)
         "xlld.xll",
         "xlld.memorymanager",
         "xlld.test_util",
+        "xlld.xlf",
     );
 }
