@@ -217,13 +217,12 @@ DateTime[] DateTimes(int year, int month, int day) {
     ];
 }
 
-string FuncCaller(Any _) {
+string FuncCaller() @safe {
     import xlld.xlf: caller;
     import xlld.xlcall: XlType;
     import xlld.xl: free;
 
     auto res = caller;
-    scope(exit) free(res);
 
     switch(res.xltype) with(XlType) {
     default:
@@ -233,4 +232,13 @@ string FuncCaller(Any _) {
     case xltypeRef:
         return "Called from a multi-cell array formula";
     }
+}
+
+string FuncCallerCell() @safe {
+    import xlld.xlf: callerCell;
+    import xlld.xl: free;
+
+    auto caller = callerCell;
+
+    return "Was called from a cell";
 }

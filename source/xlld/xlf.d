@@ -98,31 +98,31 @@ int rtd(XLOPER12 comId,
 
 __gshared immutable callerException = new Exception("Error calling xlfCaller");
 
-XLOPER12 caller() {
+auto caller() @safe {
     import xlld.xlcall: xlfCaller, xlretSuccess;
     import xlld.framework: Excel12f;
-    import xlld.xlcallcpp: Excel12v;
+    import xlld.xl: ScopedOper;
 
     XLOPER12 result;
-    if(Excel12f(xlfCaller, &result) != xlretSuccess) {
-        throw callerException;
-    }
+    () @trusted {
+        if(Excel12f(xlfCaller, &result) != xlretSuccess) {
+            throw callerException;
+        }
+    }();
 
-    writelnUt("result: ", result);
-
-    return result;
+    return ScopedOper(result);
 }
 
-auto callerCell() {
+auto callerCell() @safe {
     import xlld.xlcall: XlType;
-    import xlld.xl: coerced;
+    import xlld.xl: coerce, free, Coerced;
 
     auto oper = caller();
 
     if(oper.xltype != XlType.xltypeSRef)
         throw new Exception("Caller not a cell");
 
-    return oper.coerced;
+    return Coerced(oper);
 }
 
 @("callerCell throws if caller is string")
@@ -141,6 +141,7 @@ unittest {
     import xlld.xlcall: xlfCaller;
 
     with(mockXlFunction(xlfCaller, "foobar".toSRef(theGC))) {
-        callerCell.shouldEqualDlang("foobar");
+        auto oper = callerCell;
+        oper.shouldEqualDlang("foobar");
     }
 }

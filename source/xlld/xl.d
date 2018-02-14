@@ -42,7 +42,6 @@ struct Coerced {
 
     alias oper this;
 
-
     this(inout(XLOPER12)* oper) @safe @nogc nothrow inout {
         this.oper = coerce(oper);
         this.coerced = true;
@@ -57,6 +56,31 @@ struct Coerced {
         if(coerced) free(oper);
     }
 }
+
+/**
+   Automatically calls xlfFree when destroyed
+ */
+struct ScopedOper {
+    XLOPER12 oper;
+    private bool _free;
+
+    alias oper this;
+
+    this(inout(XLOPER12) oper) @safe @nogc nothrow inout {
+        this.oper = oper;
+        _free = true;
+    }
+
+    this(inout(XLOPER12*) oper) @safe @nogc nothrow inout {
+        this.oper = *oper;
+        _free = true;
+    }
+
+    ~this() @safe @nogc nothrow {
+        if(_free) free(oper);
+    }
+}
+
 
 /**
    Coerces an oper and returns an RAII struct that automatically frees memory
