@@ -88,3 +88,19 @@ int rtd(XLOPER12 comId,
     return Excel12f(xlfRtd, &result, comId, server,
                     topic0, topic1, topic2, topic3, topic4, topic5, topic6, topic7, topic8, topic9);
 }
+
+__gshared immutable callerException = new Exception("Error calling xlfCaller");
+
+XLOPER12 caller() {
+    import xlld.xlcall: xlfCaller, xlretSuccess;
+    import xlld.framework: Excel12f;
+    import xlld.xlcallcpp: Excel12v;
+
+    XLOPER12 result;
+    //if(Excel12f(xlfCaller, &result) != xlretSuccess) {
+    if(Excel12v(xlfCaller, &result, 0, null) != xlretSuccess) {
+        throw callerException;
+    }
+
+    return result;
+}

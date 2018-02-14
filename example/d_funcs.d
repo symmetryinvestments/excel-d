@@ -216,3 +216,21 @@ DateTime[] DateTimes(int year, int month, int day) {
         DateTime(year + 2, month + 2, day + 2),
     ];
 }
+
+string FuncCaller(Any _) {
+    import xlld.xlf: caller;
+    import xlld.xlcall: XlType;
+    import xlld.xl: free;
+
+    auto res = caller;
+    scope(exit) free(res);
+
+    switch(res.xltype) with(XlType) {
+    default:
+        return "Unknown caller type";
+    case xltypeSRef:
+        return "Called from a cell";
+    case xltypeRef:
+        return "Called from a multi-cell array formula";
+    }
+}
