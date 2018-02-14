@@ -97,8 +97,7 @@ XLOPER12 caller() {
     import xlld.xlcallcpp: Excel12v;
 
     XLOPER12 result;
-    //if(Excel12f(xlfCaller, &result) != xlretSuccess) {
-    if(Excel12v(xlfCaller, &result, 0, null) != xlretSuccess) {
+    if(Excel12f(xlfCaller, &result) != xlretSuccess) {
         throw callerException;
     }
 
