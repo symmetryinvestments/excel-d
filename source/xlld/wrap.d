@@ -651,10 +651,13 @@ private XLOPER12 stringOper(in string msg) @safe @nogc nothrow {
 private XLOPER12 excelRet(T)(T wrappedRet) {
 
     import xlld.conv: toAutoFreeOper;
+    import xlld.conv: stripMemoryBitmask;
+    import xlld.xlcall: XlType;
     import std.traits: isArray;
 
-    // Excel crashes if it's returned an empty array, so stop that from happening
     static if(isArray!(typeof(wrappedRet))) {
+
+        // Excel crashes if it's returned an empty array, so stop that from happening
         if(wrappedRet.length == 0) {
             return "#ERROR: empty result".toAutoFreeOper;
         }
@@ -668,8 +671,101 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 
     // convert the return value to an Excel type, tell Excel to call
     // us back to free it afterwards
-    return toAutoFreeOper(wrappedRet);
+    auto ret = toAutoFreeOper(wrappedRet);
+
+    // convert 1D arrays called from a column into a column instead of the default row
+    static if(isArray!(typeof(wrappedRet))) {
+        static if(!isArray!(typeof(wrappedRet[0]))) { // 1D array
+            import xlld.xlf: xlfCaller = caller;
+            import std.algorithm: swap;
+
+            try {
+                auto caller = xlfCaller;
+                if(caller.xltype.stripMemoryBitmask == XlType.xltypeSRef) {
+                    const isColumnCaller = caller.val.sref.ref_.colLast == caller.val.sref.ref_.colFirst;
+                    if(isColumnCaller) swap(ret.val.array.rows, ret.val.array.columns);
+                }
+            } catch(Exception _) {}
+        }
+    }
+
+    return ret;
 }
+
+@("excelRet!double[] from row caller")
+unittest {
+    import xlld.xlcall: XlType, xlfCaller;
+    import xlld.conv: stripMemoryBitmask;
+    import xlld.test_util: mockXlFunction;
+    import xlld.memorymanager: autoFree;
+
+    XLOPER12 caller;
+    caller.xltype = XlType.xltypeSRef;
+    caller.val.sref.ref_.rwFirst = 1;
+    caller.val.sref.ref_.rwLast = 1;
+    caller.val.sref.ref_.colFirst = 2;
+    caller.val.sref.ref_.colLast = 4;
+
+    with(mockXlFunction(xlfCaller, caller)) {
+        auto doubles = [1.0, 2.0, 3.0, 4.0];
+        auto oper = excelRet(doubles);
+        scope(exit) autoFree(&oper);
+
+        oper.shouldEqualDlang(doubles);
+        oper.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeMulti);
+        oper.val.array.rows.shouldEqual(1);
+        oper.val.array.columns.shouldEqual(4);
+    }
+}
+
+@("excelRet!double[] from column caller")
+unittest {
+    import xlld.xlcall: XlType, xlfCaller;
+    import xlld.conv: stripMemoryBitmask;
+    import xlld.test_util: mockXlFunction;
+    import xlld.memorymanager: autoFree;
+
+    XLOPER12 caller;
+    caller.xltype = XlType.xltypeSRef;
+    caller.val.sref.ref_.rwFirst = 1;
+    caller.val.sref.ref_.rwLast = 4;
+    caller.val.sref.ref_.colFirst = 5;
+    caller.val.sref.ref_.colLast = 5;
+
+    with(mockXlFunction(xlfCaller, caller)) {
+        auto doubles = [1.0, 2.0, 3.0, 4.0];
+        auto oper = excelRet(doubles);
+        scope(exit) autoFree(&oper);
+
+        oper.shouldEqualDlang(doubles);
+        oper.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeMulti);
+        oper.val.array.rows.shouldEqual(4);
+        oper.val.array.columns.shouldEqual(1);
+    }
+}
+
+@("excelRet!double[] from other caller")
+unittest {
+    import xlld.xlcall: XlType, xlfCaller;
+    import xlld.conv: stripMemoryBitmask;
+    import xlld.test_util: mockXlFunction;
+    import xlld.memorymanager: autoFree;
+
+    XLOPER12 caller;
+    caller.xltype = XlType.xltypeErr;
+
+    with(mockXlFunction(xlfCaller, caller)) {
+        auto doubles = [1.0, 2.0, 3.0, 4.0];
+        auto oper = excelRet(doubles);
+        scope(exit) autoFree(&oper);
+
+        oper.shouldEqualDlang(doubles);
+        oper.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeMulti);
+        oper.val.array.rows.shouldEqual(1);
+        oper.val.array.columns.shouldEqual(4);
+    }
+}
+
 
 
 private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {

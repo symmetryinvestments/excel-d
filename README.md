@@ -62,12 +62,6 @@ and then in Excel:
 
 Future functionality will include creating menu items and dialogue boxes.  Pull requests welcomed.
 
-1D Array return values
-----------------------
-
-If a function returns e.g. double[], the wrapped Excel function will return an array with one row
-and several columns. That means that 1D arrays are always "horizontal".
-
 
 Variant type `Any`
 ---------------------

@@ -9,7 +9,7 @@ version(unittest) {
     import xlld.any: any;
     import xlld.framework: freeXLOper;
     import xlld.memorymanager: autoFree;
-    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef, gDates, gTimes,
+    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef, mockXlFunction, gDates, gTimes,
         gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
     import unit_threaded;
     import std.experimental.allocator.gc_allocator: GCAllocator;
@@ -828,15 +828,31 @@ unittest {
 }
 
 ///
+@("fromXlOper!double[] from row")
+unittest {
+    import xlld.xlcall: xlfCaller;
+
+    XLOPER12 caller;
+    caller.xltype = XlType.xltypeSRef;
+    caller.val.sref.ref_.rwFirst = 1;
+    caller.val.sref.ref_.rwLast = 1;
+    caller.val.sref.ref_.colFirst = 2;
+    caller.val.sref.ref_.colLast = 4;
+
+    with(mockXlFunction(xlfCaller, caller)) {
+        auto doubles = [1.0, 2.0, 3.0, 4.0];
+        auto oper = doubles.toXlOper(theGC);
+        oper.shouldEqualDlang(doubles);
+    }
+}
+
+///
 @("fromXlOper!double[]")
 unittest {
-    import xlld.memorymanager: allocator;
-
     auto doubles = [1.0, 2.0, 3.0, 4.0];
-    auto oper = doubles.toXlOper(allocator);
-    scope(exit) freeXLOper(&oper, allocator);
-    oper.fromXlOper!(double[])(allocator).shouldEqual(doubles);
+    doubles.toXlOper(theGC).fromXlOper!(double[])(theGC).shouldEqual(doubles);
 }
+
 
 ///
 @("fromXlOper!string[] TestAllocator")
