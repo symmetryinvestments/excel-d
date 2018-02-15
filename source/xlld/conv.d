@@ -9,8 +9,8 @@ version(unittest) {
     import xlld.any: any;
     import xlld.framework: freeXLOper;
     import xlld.memorymanager: autoFree;
-    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef, MockXlFunction, gDates, gTimes,
-        gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
+    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef,
+        MockXlFunction, MockDateTime;
     import unit_threaded;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     alias theGC = GCAllocator.instance;
@@ -470,24 +470,31 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
     return ret;
 }
 
-@("toExcelOper!DateTime")
+@("toXlOper!DateTime")
 @safe unittest {
-    gDates = [42.0];
-    gTimes = [3.0];
+
+    import xlld.xlcall: xlfDate, xlfTime;
 
     const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
-    auto oper = dateTime.toXlOper(theGC);
+    {
+        auto mockDate = MockXlFunction(xlfDate, 0.1.toXlOper(theGC));
+        auto mockTime = MockXlFunction(xlfTime, 0.2.toXlOper(theGC));
 
-    oper.xltype.shouldEqual(XlType.xltypeNum);
-    oper.val.num.shouldEqual(45.0);
+        auto oper = dateTime.toXlOper(theGC);
 
-    gDates = [33.0];
-    gTimes = [4.0];
+        oper.xltype.shouldEqual(XlType.xltypeNum);
+        oper.val.num.shouldApproxEqual(0.3);
+    }
 
-    oper = dateTime.toXlOper(theGC);
+    {
+        auto mockDate = MockXlFunction(xlfDate, 1.1.toXlOper(theGC));
+        auto mockTime = MockXlFunction(xlfTime, 1.2.toXlOper(theGC));
 
-    oper.xltype.shouldEqual(XlType.xltypeNum);
-    oper.val.num.shouldEqual(37.0);
+        auto oper = dateTime.toXlOper(theGC);
+
+        oper.xltype.shouldEqual(XlType.xltypeNum);
+        oper.val.num.shouldApproxEqual(2.3);
+    }
 }
 
 
@@ -1047,13 +1054,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime))
 @("fromXlOper!DateTime")
 @system unittest {
     XLOPER12 oper;
-
-    gYears = [2017];
-    gMonths = [12];
-    gDays = [31];
-    gHours = [1];
-    gMinutes = [2];
-    gSeconds = [3];
+    auto mockDateTime = MockDateTime(2017, 12, 31, 1, 2, 3);
 
     const dateTime = oper.fromXlOper!DateTime(theGC);
 

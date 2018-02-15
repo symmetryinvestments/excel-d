@@ -8,6 +8,9 @@ version(unittest):
 import xlld.xlcall: LPXLOPER12, XLOPER12, XlType;
 import unit_threaded;
 import std.range: isInputRange;
+import std.experimental.allocator.gc_allocator: GCAllocator;
+alias theGC = GCAllocator.instance;
+
 
 ///
 TestAllocator gTestAllocator;
@@ -24,13 +27,13 @@ enum maxAllocTrack = 1000;
 const(void)*[maxAllocTrack] gAllocated;
 ///
 const(void)*[maxAllocTrack] gFreed;
-///
-double[] gDates, gTimes, gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
+
+alias XlFunction = int;
 
 /**
-   This stores what Excel12f(int) should return for each integer XL function
+   This stores what Excel12f should "return" for each integer XL "function"
  */
-XLOPER12[int] gXlFuncResults;
+XLOPER12[][XlFunction] gXlFuncResults;
 
 private shared AA!(XLOPER12, XLOPER12) gAsyncReturns = void;
 
@@ -39,8 +42,16 @@ XLOPER12 asyncReturn(XLOPER12 asyncHandle) @safe {
     return gAsyncReturns[asyncHandle];
 }
 
+private void fakeAllocate(XLOPER12 oper) @nogc nothrow {
+    fakeAllocate(&oper);
+}
+
 private void fakeAllocate(XLOPER12* oper) @nogc nothrow {
     gAllocated[gNumXlAllocated++] = oper.val.str;
+}
+
+private void fakeFree(XLOPER12 oper) @nogc nothrow {
+    fakeFree(&oper);
 }
 
 private void fakeFree(XLOPER12* oper) @nogc nothrow {
@@ -58,11 +69,17 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
     import std.experimental.allocator.mallocator: Mallocator;
     import std.array: front, popFront, empty;
 
-    if(auto xlfnResult = xlfn in gXlFuncResults) {
+    if(auto xlfnResults = xlfn in gXlFuncResults) {
+
+        assert(!(*xlfnResults).empty, "No results to return for xlfn");
+
+        auto mockResult = (*xlfnResults).front;
+        (*xlfnResults).popFront;
+
         if(xlfn == xlfCaller) {
-            fakeAllocate(xlfnResult);
+            fakeAllocate(mockResult);
         }
-        *result = *xlfnResult;
+        *result = mockResult;
         return xlretSuccess;
     }
 
@@ -118,47 +135,9 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
         assert(numOpers == 2);
         gAsyncReturns[*opers[0]] = *opers[1];
         return xlretSuccess;
-
-    case xlfDate:
-        return returnGlobalMockFrom(gDates, result);
-
-    case xlfTime:
-        return returnGlobalMockFrom(gTimes, result);
-
-    case xlfYear:
-        return returnGlobalMockFrom(gYears, result);
-
-    case xlfMonth:
-        return returnGlobalMockFrom(gMonths, result);
-
-    case xlfDay:
-        return returnGlobalMockFrom(gDays, result);
-
-    case xlfHour:
-        return returnGlobalMockFrom(gHours, result);
-
-    case xlfMinute:
-        return returnGlobalMockFrom(gMinutes, result);
-
-    case xlfSecond:
-        return returnGlobalMockFrom(gSeconds, result);
     }
 }
 
-private int returnGlobalMockFrom(R)(ref R values, LPXLOPER12 result) if(isInputRange!R) {
-    import xlld.conv: toXlOper;
-    import xlld.xlcall: xlretSuccess;
-    import std.array: front, popFront, empty;
-    import std.experimental.allocator.mallocator: Mallocator;
-    import std.range: ElementType;
-
-    const ret = values.empty ? ElementType!R.init : values.front;
-    if(!values.empty) values.popFront;
-
-    *result = ret.toXlOper(Mallocator.instance);
-    return xlretSuccess;
-
-}
 
 /// automatically converts from oper to compare with a D type
 void shouldEqualDlang(U)
@@ -387,6 +366,9 @@ struct AA(K, V, int N = 100) {
         shared AA aa = void;
         aa.index = 0;
         aa.mutex = new shared Mutex;
+        foreach(ref entry; aa.entries[]) {
+            entry = typeof(entry).init;
+        }
         return aa;
     }
 
@@ -440,14 +422,52 @@ XLOPER12 newAsyncHandle() @safe nothrow {
 }
 
 struct MockXlFunction {
-    int xlFunction;
 
-    this(int xlFunction, XLOPER12 result) {
-        this.xlFunction = xlFunction;
-        gXlFuncResults[xlFunction] = result;
+    XlFunction xlFunction;
+    typeof(gXlFuncResults) oldResults;
+
+    this(int xlFunction, XLOPER12 result) @safe {
+        this(xlFunction, [result]);
     }
 
-    ~this() {
-        gXlFuncResults.remove(xlFunction);
+    this(int xlFunction, XLOPER12[] results) @safe {
+        this.xlFunction = xlFunction;
+        this.oldResults = gXlFuncResults.dup;
+        gXlFuncResults[xlFunction] ~= results;
+    }
+
+    ~this() @safe {
+        gXlFuncResults = oldResults;
+    }
+}
+
+struct MockDateTime {
+
+    import xlld.xlcall: xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
+
+    MockXlFunction year, month, day, hour, minute, second;
+
+    this(int year, int month, int day, int hour, int minute, int second) @safe {
+        import xlld.conv: toXlOper;
+
+        this.year   = MockXlFunction(xlfYear,   double(year).toXlOper(theGC));
+        this.month  = MockXlFunction(xlfMonth,  double(month).toXlOper(theGC));
+        this.day    = MockXlFunction(xlfDay,    double(day).toXlOper(theGC));
+        this.hour   = MockXlFunction(xlfHour,   double(hour).toXlOper(theGC));
+        this.minute = MockXlFunction(xlfMinute, double(minute).toXlOper(theGC));
+        this.second = MockXlFunction(xlfSecond, double(second).toXlOper(theGC));
+    }
+}
+
+struct MockDateTimes {
+
+    import std.datetime: DateTime;
+
+    MockDateTime[] mocks;
+
+    this(DateTime[] dateTimes...) @safe {
+        foreach(dateTime; dateTimes)
+            mocks ~= MockDateTime(dateTime.year, dateTime.month, dateTime.day,
+                                  dateTime.hour, dateTime.minute, dateTime.second);
     }
 }

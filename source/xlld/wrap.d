@@ -16,8 +16,8 @@ import std.experimental.allocator: theAllocator;
 version(unittest) {
     import xlld.conv: toXlOper;
     import xlld.any: any;
-    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef, gDates, gTimes,
-        gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
+    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef,
+        MockXlFunction, MockDateTime, MockDateTimes;
 
     import unit_threaded;
     import std.experimental.allocator.mallocator: Mallocator;
@@ -283,24 +283,24 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @system unittest {
     import xlld.xlcall: XlType;
     import xlld.conv: stripMemoryBitmask;
+    import std.conv: text;
 
     mixin(wrapTestFuncsString);
 
-    const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
-    gDates = [42.0];
-    gTimes = [33.0];
-    gYears = [dateTime.year];
-    gMonths = [dateTime.month];
-    gDays = [dateTime.day];
-    gHours = [dateTime.hour];
-    gMinutes = [dateTime.minute];
-    gSeconds = [dateTime.second];
+    // the argument doesn't matter since we mock extracting the year from it
+    // but it does have to be of double type (DateTime for Excel)
+    auto arg = 33.3.toXlOper(theGC);
 
-    auto arg = dateTime.toXlOper(theGC);
+    const year = 2017;
+    const mock = MockDateTime(year, 1, 2, 3, 4, 5);
     const ret = DateTimeToDouble(&arg);
 
-    ret.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeNum);
-    ret.val.num.shouldEqual(2017 * 2);
+    try
+        ret.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeNum);
+    catch(Exception _)
+        assert(false, text("Expected xltypeNum, got ", *ret));
+
+    ret.val.num.shouldEqual(year * 2);
 }
 
 ///
@@ -308,18 +308,13 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @system unittest {
     mixin(wrapTestFuncsString);
 
-    const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
-    gYears = [2017, 2017];
-    gMonths = [12, 12];
-    gDays = [31, 30];
-    gHours = [1, 1];
-    gMinutes = [2, 2];
-    gSeconds = [3, 3];
-    gDates = [10.0, 20.0];
-    gTimes = [1.0, 2.0];
+    //the arguments don't matter since we mock extracting year, etc. from them
+    //they just need to be double (DateTime to Excel)
+    auto arg = [0.1, 0.2].toXlOper(theGC);
 
-    auto arg = [DateTime(2017, 12, 31, 1, 2, 3),
-                DateTime(2017, 12, 30, 1, 2, 3)].toXlOper(theGC);
+    auto mockDateTimes = MockDateTimes(DateTime(1, 1, 31),
+                                       DateTime(1, 1, 30));
+
     auto ret = DateTimesToString(&arg);
 
     ret.shouldEqualDlang("31, 30");
@@ -697,7 +692,6 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 unittest {
     import xlld.xlcall: XlType, xlfCaller;
     import xlld.conv: stripMemoryBitmask;
-    import xlld.test_util: MockXlFunction;
     import xlld.memorymanager: autoFree;
 
     XLOPER12 caller;
@@ -723,7 +717,6 @@ unittest {
 unittest {
     import xlld.xlcall: XlType, xlfCaller;
     import xlld.conv: stripMemoryBitmask;
-    import xlld.test_util: MockXlFunction;
     import xlld.memorymanager: autoFree;
 
     XLOPER12 caller;
@@ -749,7 +742,6 @@ unittest {
 unittest {
     import xlld.xlcall: XlType, xlfCaller;
     import xlld.conv: stripMemoryBitmask;
-    import xlld.test_util: MockXlFunction;
     import xlld.memorymanager: autoFree;
 
     XLOPER12 caller;
