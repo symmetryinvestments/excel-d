@@ -274,6 +274,7 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 		string toString() @safe const {
 			import xlld.conv: stripMemoryBitmask;
 			import std.conv: text;
+            import std.format: format;
 
 			string ret;
 
@@ -289,7 +290,7 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 				return "SRef[ " ~ oper.toString ~ " ]";
 
 			case XlType.xltypeNum:
-				ret ~= text(val.num);
+				ret ~= format!"%.6f"(val.num);
 				break;
 
 			case XlType.xltypeStr:
