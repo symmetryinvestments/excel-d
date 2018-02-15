@@ -696,7 +696,7 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 unittest {
     import xlld.xlcall: XlType, xlfCaller;
     import xlld.conv: stripMemoryBitmask;
-    import xlld.test_util: mockXlFunction;
+    import xlld.test_util: MockXlFunction;
     import xlld.memorymanager: autoFree;
 
     XLOPER12 caller;
@@ -706,7 +706,7 @@ unittest {
     caller.val.sref.ref_.colFirst = 2;
     caller.val.sref.ref_.colLast = 4;
 
-    with(mockXlFunction(xlfCaller, caller)) {
+    with(MockXlFunction(xlfCaller, caller)) {
         auto doubles = [1.0, 2.0, 3.0, 4.0];
         auto oper = excelRet(doubles);
         scope(exit) autoFree(&oper);
@@ -722,7 +722,7 @@ unittest {
 unittest {
     import xlld.xlcall: XlType, xlfCaller;
     import xlld.conv: stripMemoryBitmask;
-    import xlld.test_util: mockXlFunction;
+    import xlld.test_util: MockXlFunction;
     import xlld.memorymanager: autoFree;
 
     XLOPER12 caller;
@@ -732,7 +732,7 @@ unittest {
     caller.val.sref.ref_.colFirst = 5;
     caller.val.sref.ref_.colLast = 5;
 
-    with(mockXlFunction(xlfCaller, caller)) {
+    with(MockXlFunction(xlfCaller, caller)) {
         auto doubles = [1.0, 2.0, 3.0, 4.0];
         auto oper = excelRet(doubles);
         scope(exit) autoFree(&oper);
@@ -748,13 +748,13 @@ unittest {
 unittest {
     import xlld.xlcall: XlType, xlfCaller;
     import xlld.conv: stripMemoryBitmask;
-    import xlld.test_util: mockXlFunction;
+    import xlld.test_util: MockXlFunction;
     import xlld.memorymanager: autoFree;
 
     XLOPER12 caller;
     caller.xltype = XlType.xltypeErr;
 
-    with(mockXlFunction(xlfCaller, caller)) {
+    with(MockXlFunction(xlfCaller, caller)) {
         auto doubles = [1.0, 2.0, 3.0, 4.0];
         auto oper = excelRet(doubles);
         scope(exit) autoFree(&oper);

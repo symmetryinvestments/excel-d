@@ -130,7 +130,7 @@ unittest {
     import xlld.xlcall: xlfCaller;
     import xlld.wrap: toXlOper;
 
-    with(mockXlFunction(xlfCaller, "foobar".toXlOper(theGC))) {
+    with(MockXlFunction(xlfCaller, "foobar".toXlOper(theGC))) {
         callerCell.shouldThrowWithMessage("Caller not a cell");
     }
 }
@@ -140,7 +140,7 @@ unittest {
 unittest {
     import xlld.xlcall: xlfCaller;
 
-    with(mockXlFunction(xlfCaller, "foobar".toSRef(theGC))) {
+    with(MockXlFunction(xlfCaller, "foobar".toSRef(theGC))) {
         auto oper = callerCell;
         oper.shouldEqualDlang("foobar");
     }

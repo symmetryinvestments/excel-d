@@ -9,7 +9,7 @@ version(unittest) {
     import xlld.any: any;
     import xlld.framework: freeXLOper;
     import xlld.memorymanager: autoFree;
-    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef, mockXlFunction, gDates, gTimes,
+    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef, MockXlFunction, gDates, gTimes,
         gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
     import unit_threaded;
     import std.experimental.allocator.gc_allocator: GCAllocator;
@@ -839,7 +839,7 @@ unittest {
     caller.val.sref.ref_.colFirst = 2;
     caller.val.sref.ref_.colLast = 4;
 
-    with(mockXlFunction(xlfCaller, caller)) {
+    with(MockXlFunction(xlfCaller, caller)) {
         auto doubles = [1.0, 2.0, 3.0, 4.0];
         auto oper = doubles.toXlOper(theGC);
         oper.shouldEqualDlang(doubles);

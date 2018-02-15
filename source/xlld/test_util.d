@@ -451,7 +451,3 @@ struct MockXlFunction {
         gXlFuncResults.remove(xlFunction);
     }
 }
-
-auto mockXlFunction(int xlFunction, XLOPER12 result) {
-    return MockXlFunction(xlFunction, result);
-}
