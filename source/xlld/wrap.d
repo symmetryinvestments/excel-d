@@ -42,6 +42,7 @@ private enum isWorksheetFunction(alias F) =
                          DateTime, DateTime[], DateTime[][],
     );
 
+@("isWorksheetFunction")
 @safe pure unittest {
     import xlld.test_d_funcs;
     // the line below checks that the code still compiles even with a private function
@@ -992,7 +993,7 @@ string wrapAll(Modules...)(in string mainModule = __MODULE__) {
 }
 
 ///
-@("wrapAll")
+@("wrapAll FuncAddEverything")
 unittest  {
     import xlld.memorymanager: allocator;
     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
@@ -1005,7 +1006,7 @@ unittest  {
 
 
 ///
-@("wrap function with @Dispose")
+@("wrapAll FuncReturnArrayNoGC")
 @safe unittest {
     import xlld.test_util: gTestAllocator;
     import xlld.memorymanager: gTempAllocator;
