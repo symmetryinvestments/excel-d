@@ -463,16 +463,16 @@ struct MockXlFunction {
 
     XlFunction xlFunction;
 
-    this(int xlFunction, XLOPER12 result) {
+    this(int xlFunction, XLOPER12 result) @safe {
         this(xlFunction, [result]);
     }
 
-    this(int xlFunction, XLOPER12[] results) {
+    this(int xlFunction, XLOPER12[] results) @safe {
         this.xlFunction = xlFunction;
         gXlFuncResults[xlFunction] ~= results;
     }
 
-    ~this() {
+    ~this() @safe {
         gXlFuncResults.remove(xlFunction);
     }
 }
@@ -481,7 +481,7 @@ struct MockDateTime {
 
     MockXlFunction year, month, day, hour, minute, second;
 
-    this(int year, int month, int day, int hour, int minute, int second) {
+    this(int year, int month, int day, int hour, int minute, int second) @safe {
         import xlld.xlcall: xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
         import xlld.conv: toXlOper;
 
@@ -500,7 +500,7 @@ struct MockDateTimes {
 
     MockDateTime[] mocks;
 
-    this(DateTime[] dateTimes...) {
+    this(DateTime[] dateTimes...) @safe {
         foreach(dateTime; dateTimes)
             mocks ~= MockDateTime(dateTime.year, dateTime.month, dateTime.day,
                                   dateTime.hour, dateTime.minute, dateTime.second);
