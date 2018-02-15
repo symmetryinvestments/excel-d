@@ -4,13 +4,12 @@
 */
 module xlld.wrap;
 
-import xlld.xlcall;
+import xlld.worksheet;
+import xlld.xlcall: XLOPER12;
 import xlld.traits: isSupportedFunction;
 import xlld.memorymanager: autoFree;
 import xlld.framework: freeXLOper;
-import xlld.worksheet;
 import xlld.any: Any;
-import std.traits: Unqual, isIntegral;
 import std.datetime: DateTime;
 import std.experimental.allocator: theAllocator;
 
@@ -281,7 +280,9 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 ///
 @("Wrap a function that accepts DateTime")
 @system unittest {
+    import xlld.xlcall: XlType;
     import xlld.conv: stripMemoryBitmask;
+
     mixin(wrapTestFuncsString);
 
     const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
@@ -337,6 +338,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
            "Cannot use `wrapAll` with __MODULE__");
 
     import xlld.traits: Async, Identity;
+    import xlld.worksheet: Register;
     import std.array: join;
     import std.traits: Parameters, functionAttributes, FunctionAttribute, getUDAs, hasUDA;
     import std.conv: to;
@@ -349,15 +351,15 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     alias func = Identity!(mixin(funcName));
 
     const argsLength = Parameters!(mixin(funcName)).length;
-    // e.g. LPXLOPER12 arg0, LPXLOPER12 arg1, ...
-    auto argsDecl = argsLength.iota.map!(a => `LPXLOPER12 arg` ~ a.to!string).join(", ");
+    // e.g. XLOPER12* arg0, XLOPER12* arg1, ...
+    auto argsDecl = argsLength.iota.map!(a => `XLOPER12* arg` ~ a.to!string).join(", ");
     // e.g. arg0, arg1, ...
     static if(!hasUDA!(func, Async))
         const argsCall = argsLength.iota.map!(a => `arg` ~ a.to!string).join(", ");
     else {
         import std.range: only, chain, iota;
         import std.conv: text;
-        argsDecl ~= ", LPXLOPER12 asyncHandle";
+        argsDecl ~= ", XLOPER12* asyncHandle";
         const argsCall = chain(only("*asyncHandle"), argsLength.iota.map!(a => `*arg` ~ a.text)).
             map!(a => `cast(immutable)` ~ a)
             .join(", ");
@@ -380,7 +382,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     static if(hasUDA!(func, Async))
         async = "@Async";
 
-    const returnType = hasUDA!(func, Async) ? "void" : "LPXLOPER12";
+    const returnType = hasUDA!(func, Async) ? "void" : "XLOPER12*";
     const return_ = hasUDA!(func, Async) ? "" : "return ";
     const wrap = hasUDA!(func, Async)
         ? q{wrapAsync!wrappedFunc(Mallocator.instance, %s)}.format(argsCall)
@@ -416,6 +418,8 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
 }
 
 void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle, T args) {
+
+    import xlld.xlcall: XlType, xlAsyncReturn;
     import xlld.framework: Excel12f;
     import std.concurrency: spawn;
     import std.format: format;
@@ -506,7 +510,7 @@ version(unittest) private double twice(double d) { return d * 2; }
 /**
  Implement a wrapper for a regular D function
  */
-LPXLOPER12 wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
+XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
                                   (ref A allocator, T args) {
     static XLOPER12 ret;
 
@@ -539,7 +543,7 @@ private auto toDArgs(alias wrappedFunc, A, T...)
     import xlld.xl: coerce, free;
     import xlld.xlcall: XlType;
     import xlld.conv: fromXlOper;
-    import std.traits: Parameters;
+    import std.traits: Parameters, Unqual;
     import std.typecons: Tuple;
     import std.meta: staticMap;
 
@@ -585,6 +589,7 @@ unittest {
 
 @("xltypeNil can convert to array")
 unittest {
+    import xlld.xlcall: XlType;
     import std.typecons: tuple;
 
     void fun(double[] arg) {}
@@ -596,7 +601,7 @@ unittest {
 
 // Takes a tuple returned by `toDArgs`, calls the wrapped function and returns
 // the XLOPER12 result
-private LPXLOPER12 callWrapped(alias wrappedFunc, T)(T dArgs) {
+private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs) {
 
     import xlld.worksheet: Dispose;
     import std.traits: hasUDA, getUDAs;
@@ -629,6 +634,8 @@ private LPXLOPER12 callWrapped(alias wrappedFunc, T)(T dArgs) {
 
 private XLOPER12 stringOper(in string msg) @safe @nogc nothrow {
     import xlld.conv: toAutoFreeOper;
+    import xlld.xlcall: XlType;
+
     try
         return () @trusted { return msg.toAutoFreeOper; }();
     catch(Exception _) {
@@ -689,11 +696,11 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 ///
 @("No memory allocation bugs in wrapModuleFunctionImpl for double return Mallocator")
 @system unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
     import xlld.test_d_funcs: FuncAddEverything;
+    import xlld.xlcall: xlbitDLLFree;
 
     TestAllocator allocator;
-    auto arg = toSRef([1.0, 2.0], Mallocator.instance);
+    auto arg = toSRef([1.0, 2.0], theMallocator);
     auto oper = wrapModuleFunctionImpl!FuncAddEverything(allocator, &arg);
     (oper.xltype & xlbitDLLFree).shouldBeTrue;
     allocator.numAllocations.shouldEqual(2);
@@ -704,14 +711,14 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 ///
 @("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return Mallocator")
 @system unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
     import xlld.test_d_funcs: FuncTripleEverything;
+    import xlld.xlcall: xlbitDLLFree, XlType;
 
     TestAllocator allocator;
-    auto arg = toSRef([1.0, 2.0, 3.0], Mallocator.instance);
+    auto arg = toSRef([1.0, 2.0, 3.0], theMallocator);
     auto oper = wrapModuleFunctionImpl!FuncTripleEverything(allocator, &arg);
     (oper.xltype & xlbitDLLFree).shouldBeTrue;
-    (oper.xltype & ~xlbitDLLFree).shouldEqual(xltypeMulti);
+    (oper.xltype & ~xlbitDLLFree).shouldEqual(XlType.xltypeMulti);
     allocator.numAllocations.shouldEqual(2);
     oper.shouldEqualDlang([[3.0, 6.0, 9.0]]);
     autoFree(oper); // normally this is done by Excel
@@ -925,7 +932,7 @@ unittest  {
 @safe unittest {
     mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "DoubleArrayToAnyArray"));
 
-    auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theMallocator);
+    auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theGC);
     auto arg = () @trusted { return &oper; }();
     auto ret = DoubleArrayToAnyArray(arg);
 
@@ -997,7 +1004,7 @@ unittest {
 
     mixin(wrapAllTestFuncsString);
 
-    auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theMallocator);
+    auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theGC);
     auto arg = () @trusted { return &oper; }();
     auto ret = DoubleArrayToAnyArray(arg);
     scope(exit) () @trusted { autoFree(ret); }(); // usually done by Excel
@@ -1017,9 +1024,9 @@ unittest {
 
     mixin(wrapAllTestFuncsString);
 
-    LPXLOPER12 ret;
-    with(allocatorContext(theMallocator)) {
-        auto oper = [[any(1.0), any(2.0)], [any(3.0), any(4.0)], [any("foo"), any("bar")]].toXlOper(theMallocator);
+    XLOPER12* ret;
+    with(allocatorContext(theGC)) {
+        auto oper = [[any(1.0), any(2.0)], [any(3.0), any(4.0)], [any("foo"), any("bar")]].toXlOper(theGC);
         auto arg = () @trusted { return &oper; }();
         ret = AnyArrayToDoubleArray(arg);
     }
@@ -1039,9 +1046,9 @@ unittest {
 
     mixin(wrapAllTestFuncsString);
 
-    LPXLOPER12 ret;
-    with(allocatorContext(theMallocator)) {
-        auto oper = [[any(1.0), any(2.0)], [any(3.0), any(4.0)], [any("foo"), any("bar")]].toXlOper(theMallocator);
+    XLOPER12* ret;
+    with(allocatorContext(theGC)) {
+        auto oper = [[any(1.0), any(2.0)], [any(3.0), any(4.0)], [any("foo"), any("bar")]].toXlOper(theGC);
         auto arg = () @trusted { return &oper; }();
         ret = AnyArrayToAnyArray(arg);
     }
@@ -1066,9 +1073,9 @@ unittest {
 
     mixin(wrapAllTestFuncsString);
 
-    LPXLOPER12 ret;
-    with(allocatorContext(theMallocator)) {
-        auto oper = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]].toXlOper(theMallocator);
+    XLOPER12* ret;
+    with(allocatorContext(theGC)) {
+        auto oper = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]].toXlOper(theGC);
         auto arg = () @trusted { return &oper; }();
         ret = FirstOfTwoAnyArrays(arg, arg);
     }
