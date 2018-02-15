@@ -34,7 +34,7 @@ double[][] dlookup(string[][] haystack, string[] needles, double columnNumberD) 
           HelpTopic("Adds all cells in an array"),
           FunctionHelp("Adds all cells in an array"),
           ArgumentHelp(["The array to add"]))
-double FuncAddEverything(double[][] args) nothrow @nogc {
+double FuncAddEverything(double[][] args) nothrow /*@nogc*/ {
     import std.algorithm: fold;
     import std.math: isNaN;
 
@@ -52,7 +52,7 @@ double FuncAddEverything(double[][] args) nothrow @nogc {
     import std.experimental.allocator: dispose;
     Mallocator.instance.dispose(ret);
 })
-double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
+double[] FuncReturnArrayNoGc(double[] numbers) /*@nogc*/ @safe nothrow {
     import std.experimental.allocator.mallocator: Mallocator;
     import std.experimental.allocator: makeArray;
     import std.algorithm: map;
@@ -79,7 +79,7 @@ double[][] FuncTripleEverything(double[][] args) nothrow {
     return ret;
 }
 
-double FuncAllLengths(string[][] args) nothrow @nogc {
+double FuncAllLengths(string[][] args) nothrow /*@nogc*/ {
     import std.algorithm: fold;
 
     double ret = 0;
@@ -116,11 +116,11 @@ string[][] FuncBob(string[][] args) nothrow {
 }
 
 
-double FuncDoubleSlice(double[] arg) nothrow @nogc {
+double FuncDoubleSlice(double[] arg) nothrow /*@nogc*/ {
     return arg.length;
 }
 
-double FuncStringSlice(string[] arg) nothrow @nogc {
+double FuncStringSlice(string[] arg) nothrow /*@nogc*/ {
     return arg.length;
 }
 
@@ -184,7 +184,7 @@ string DateTimesToString(DateTime[] dts) @safe {
                                ", hour: ", dt.hour, ", minute: ", dt.minute, ", second: ", dt.second)).join("\n");
 }
 
-double FuncTwice(double d) @safe nothrow @nogc {
+double FuncTwice(double d) @safe nothrow /*@nogc*/ {
     return d * 2;
 }
 
@@ -205,7 +205,7 @@ int DoubleToInt(double d) {
     return cast(int)(d * 2);
 }
 
-int IntToInt(int i) @safe nothrow @nogc {
+int IntToInt(int i) @safe nothrow /*@nogc*/ {
     return i * 2;
 }
 
@@ -248,4 +248,8 @@ string FuncCallerAdjacent() @safe {
 
     auto coerced = Coerced(res);
     return "Guy next to me: " ~ coerced.toString;
+}
+
+double[] Doubles() @safe {
+    return [33.3, 123.0];
 }
