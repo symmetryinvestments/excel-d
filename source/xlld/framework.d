@@ -142,7 +142,7 @@ __gshared immutable excel12Exception = new Exception("Error calling Excel12f");
  */
 T excel12(T, A...)(int xlfn, auto ref A args) @trusted {
     import xlld.memorymanager: gTempAllocator, autoFreeAllocator;
-    import xlld.wrap: toXlOper, fromXlOper;
+    import xlld.conv: toXlOper, fromXlOper;
     import xlld.xlcall: xlretSuccess;
     import std.meta: allSatisfy;
     import std.traits: Unqual;

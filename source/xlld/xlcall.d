@@ -272,7 +272,7 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 
 		// can't be pure because to!double isn't pure
 		string toString() @safe const {
-			import xlld.wrap: stripMemoryBitmask;
+			import xlld.conv: stripMemoryBitmask;
 			import std.conv: text;
 
 			string ret;

@@ -17,7 +17,7 @@ struct Any {
         ///
         bool opEquals(Any other) @trusted const {
             import xlld.xlcall: XlType;
-            import xlld.wrap: fromXlOper;
+            import xlld.conv: fromXlOper;
 
             switch(_impl.xltype) {
 
@@ -55,7 +55,7 @@ struct Any {
     string toString() @safe const {
         import std.conv: text, to;
         import xlld.xlcall: XlType;
-        import xlld.wrap: fromXlOper;
+        import xlld.conv: fromXlOper;
         import xlld.xlcall: xlbitXLFree, xlbitDLLFree;
         import std.experimental.allocator.gc_allocator: GCAllocator;
 
@@ -99,6 +99,6 @@ struct Any {
 
 ///
 auto any(T, A)(auto ref T value, auto ref A allocator) @trusted {
-    import xlld.wrap: toXlOper;
+    import xlld.conv: toXlOper;
     return Any(value.toXlOper(allocator));
 }

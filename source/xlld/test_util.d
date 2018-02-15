@@ -53,7 +53,7 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
 {
 
     import xlld.xlcall;
-    import xlld.wrap: toXlOper, stripMemoryBitmask;
+    import xlld.conv: toXlOper, stripMemoryBitmask;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     import std.experimental.allocator.mallocator: Mallocator;
     import std.array: front, popFront, empty;
@@ -146,7 +146,7 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
 }
 
 private int returnGlobalMockFrom(R)(ref R values, LPXLOPER12 result) if(isInputRange!R) {
-    import xlld.wrap: toXlOper;
+    import xlld.conv: toXlOper;
     import xlld.xlcall: xlretSuccess;
     import std.array: front, popFront, empty;
     import std.experimental.allocator.mallocator: Mallocator;
@@ -169,7 +169,7 @@ void shouldEqualDlang(U)
     @trusted
 {
     import xlld.memorymanager: allocator;
-    import xlld.wrap: fromXlOper, stripMemoryBitmask;
+    import xlld.conv: fromXlOper, stripMemoryBitmask;
     import xlld.xlcall: XlType;
     import std.traits: Unqual;
     import std.conv: text;
@@ -202,7 +202,7 @@ void shouldEqualDlang(U)(XLOPER12 actual, U expected, string file = __FILE__, si
 
 ///
 XLOPER12 toSRef(T, A)(T val, ref A allocator) @trusted {
-    import xlld.wrap: toXlOper;
+    import xlld.conv: toXlOper;
 
     auto ret = toXlOper(val, allocator);
     //hide real type somewhere to retrieve it

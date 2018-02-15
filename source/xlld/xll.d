@@ -157,7 +157,7 @@ extern(Windows) int xlAutoFree12(LPXLOPER12 arg) nothrow {
 
 extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction) {
     import xlld.xlcall: XLOPER12, XlType, xltypeInt, xlCoerce, xlerrValue;
-    import xlld.wrap: toAutoFreeOper;
+    import xlld.conv: toAutoFreeOper;
     import xlld.framework: Excel12f;
 
     static XLOPER12 xInfo, xIntAction;
