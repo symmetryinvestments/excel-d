@@ -5,15 +5,25 @@ dependency "excel-d" path=".."  # normally this would be version="~>0.0.1" or si
 sourceFiles "myxll.d" "d_funcs.d"
 targetType "dynamicLibrary"
 
-configuration "dynamicLibrary" {
+configuration "xll" {
     preBuildCommands "dub run -c def --nodeps -q -- myxll.def"
     sourceFiles "myxll.def"
     # must have the appropriate 32/64 bit Excel SDK xlcall32.lib in the path of the app
     # unfortunately they're both called xlcall32.lib
 
     libs "xlcall32"
-    postBuildCommands "copy myxll.dll myxll.xll"
+    postBuildCommands "copy /y myxll.dll myxll.xll"
 }
+
+configuration "justxll" {
+    sourceFiles "myxll.def"
+    # must have the appropriate 32/64 bit Excel SDK xlcall32.lib in the path of the app
+    # unfortunately they're both called xlcall32.lib
+
+    libs "xlcall32"
+    postBuildCommands "copy /y myxll.dll myxll.xll"
+}
+
 
 // This builds a binary that writes out the necessary .def file
 // to export the functions

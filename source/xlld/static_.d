@@ -26,7 +26,7 @@ static this() {
 
 ///
 static ~this() {
-    import xlld.test_util: gCoerced, gFreed, gNumXlCoerce, gNumXlFree;
+    import xlld.test_util: gAllocated, gFreed, gNumXlAllocated, gNumXlFree;
     import unit_threaded.should: shouldBeSameSetAs;
-    gCoerced[0 .. gNumXlCoerce].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
+    gAllocated[0 .. gNumXlAllocated].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
 }

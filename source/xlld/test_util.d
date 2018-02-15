@@ -15,17 +15,22 @@ TestAllocator gTestAllocator;
 XlType gReferencedType;
 
 // tracks calls to `coerce` and `free` to make sure memory allocations/deallocations match
-int gNumXlCoerce;
+int gNumXlAllocated;
 ///
 int gNumXlFree;
 ///
-enum maxCoerce = 1000;
+enum maxAllocTrack = 1000;
 ///
-const(void)*[maxCoerce] gCoerced;
+const(void)*[maxAllocTrack] gAllocated;
 ///
-const(void)*[maxCoerce] gFreed;
+const(void)*[maxAllocTrack] gFreed;
 ///
 double[] gDates, gTimes, gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
+
+/**
+   This stores what Excel12f(int) should return for each integer XL function
+ */
+XLOPER12[int] gXlFuncResults;
 
 private shared AA!(XLOPER12, XLOPER12) gAsyncReturns = void;
 
@@ -34,6 +39,13 @@ XLOPER12 asyncReturn(XLOPER12 asyncHandle) @safe {
     return gAsyncReturns[asyncHandle];
 }
 
+private void fakeAllocate(XLOPER12* oper) @nogc nothrow {
+    gAllocated[gNumXlAllocated++] = oper.val.str;
+}
+
+private void fakeFree(XLOPER12* oper) @nogc nothrow {
+    gFreed[gNumXlFree++] = oper.val.str;
+}
 
 ///
 extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, LPXLOPER12 result)
@@ -46,6 +58,14 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
     import std.experimental.allocator.mallocator: Mallocator;
     import std.array: front, popFront, empty;
 
+    if(auto xlfnResult = xlfn in gXlFuncResults) {
+        if(xlfn == xlfCaller) {
+            fakeAllocate(xlfnResult);
+        }
+        *result = *xlfnResult;
+        return xlretSuccess;
+    }
+
     switch(xlfn) {
 
     default:
@@ -55,7 +75,7 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
         assert(numOpers == 1);
         auto oper = opers[0];
 
-        gFreed[gNumXlFree++] = oper.val.str;
+        fakeFree(oper);
 
         if(oper.xltype == XlType.xltypeStr) {
             try
@@ -71,7 +91,7 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
         assert(numOpers == 1);
 
         auto oper = opers[0];
-        gCoerced[gNumXlCoerce++] = oper.val.str;
+        fakeAllocate(oper);
         *result = *oper;
 
         switch(oper.xltype) with(XlType) {
@@ -417,4 +437,21 @@ XLOPER12 newAsyncHandle() @safe nothrow {
     index.atomicOp!"+="(1);
 
     return asyncHandle;
+}
+
+struct MockXlFunction {
+    int xlFunction;
+
+    this(int xlFunction, XLOPER12 result) {
+        this.xlFunction = xlFunction;
+        gXlFuncResults[xlFunction] = result;
+    }
+
+    ~this() {
+        gXlFuncResults.remove(xlFunction);
+    }
+}
+
+auto mockXlFunction(int xlFunction, XLOPER12 result) {
+    return MockXlFunction(xlFunction, result);
 }

@@ -216,3 +216,45 @@ DateTime[] DateTimes(int year, int month, int day) {
         DateTime(year + 2, month + 2, day + 2),
     ];
 }
+
+string FuncCaller() @safe {
+    import xlld.xlf: caller;
+    import xlld.xlcall: XlType;
+
+    auto res = caller;
+
+    switch(res.xltype) with(XlType) {
+    default:
+        return "Unknown caller type";
+    case xltypeSRef:
+        return "Called from a cell";
+    case xltypeRef:
+        return "Called from a multi-cell array formula";
+    }
+}
+
+string FuncCallerAdjacent() @safe {
+    import xlld.xl: Coerced;
+    import xlld.xlf: caller;
+    import xlld.xlcall: XlType;
+    import std.exception: enforce;
+
+    auto res = caller;
+
+    enforce(res.xltype == XlType.xltypeSRef);
+
+    ++res.val.sref.ref_.colFirst;
+    ++res.val.sref.ref_.colLast;
+
+    auto coerced = Coerced(res);
+    return "Guy next to me: " ~ coerced.toString;
+}
+
+string FuncCallerCell() @safe {
+    import xlld.xlf: callerCell;
+    import xlld.xl: free;
+
+    auto caller = callerCell;
+
+    return "Was called from a cell";
+}

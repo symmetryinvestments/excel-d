@@ -270,6 +270,7 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 		VAL val;
 		XlType xltype;
 
+		// can't be pure because to!double isn't pure
 		string toString() @safe const {
 			import xlld.wrap: stripMemoryBitmask;
 			import std.conv: text;
@@ -279,18 +280,25 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 			ret ~= "XLOPER12(";
 			switch(stripMemoryBitmask(xltype)) {
 			default:
-				ret ~= xltype;
+				ret ~= xltype.text;
 				break;
+
+			case XlType.xltypeSRef:
+				import xlld.xl: Coerced;
+				auto oper = Coerced(&this);
+				return "SRef[ " ~ oper.toString ~ " ]";
 
 			case XlType.xltypeNum:
 				ret ~= text(val.num);
 				break;
 
 			case XlType.xltypeStr:
+				ret ~= `"`;
 				() @trusted {
-					const length = val.str[0];
-					ret ~= text(val.str[1 .. length]);
+					const ulong length = val.str[0];
+					ret ~= text(val.str[1 .. 1 + length]);
 				}();
+				ret ~= `"`;
 				break;
 
 			case XlType.xltypeInt:

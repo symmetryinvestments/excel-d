@@ -6,6 +6,13 @@ module xlld.xlf;
 import xlld.framework: excel12;
 import xlld.xlcall: XLOPER12;
 
+version(testingExcelD) {
+    import unit_threaded;
+    import xlld.test_util;
+    import std.experimental.allocator.gc_allocator: GCAllocator;
+    alias theGC = GCAllocator.instance;
+}
+
 
 // should be pure but can't due to calling Excel12
 int year(double date) @safe @nogc nothrow {
@@ -87,4 +94,54 @@ int rtd(XLOPER12 comId,
     XLOPER12 result;
     return Excel12f(xlfRtd, &result, comId, server,
                     topic0, topic1, topic2, topic3, topic4, topic5, topic6, topic7, topic8, topic9);
+}
+
+__gshared immutable callerException = new Exception("Error calling xlfCaller");
+
+auto caller() @safe {
+    import xlld.xlcall: xlfCaller, xlretSuccess;
+    import xlld.framework: Excel12f;
+    import xlld.xl: ScopedOper;
+
+    XLOPER12 result;
+    () @trusted {
+        if(Excel12f(xlfCaller, &result) != xlretSuccess) {
+            throw callerException;
+        }
+    }();
+
+    return ScopedOper(result);
+}
+
+private auto callerCell() @safe {
+    import xlld.xlcall: XlType;
+    import xlld.xl: coerce, free, Coerced;
+
+    auto oper = caller();
+
+    if(oper.xltype != XlType.xltypeSRef)
+        throw new Exception("Caller not a cell");
+
+    return Coerced(oper);
+}
+
+@("callerCell throws if caller is string")
+unittest {
+    import xlld.xlcall: xlfCaller;
+    import xlld.wrap: toXlOper;
+
+    with(mockXlFunction(xlfCaller, "foobar".toXlOper(theGC))) {
+        callerCell.shouldThrowWithMessage("Caller not a cell");
+    }
+}
+
+
+@("callerCell with SRef")
+unittest {
+    import xlld.xlcall: xlfCaller;
+
+    with(mockXlFunction(xlfCaller, "foobar".toSRef(theGC))) {
+        auto oper = callerCell;
+        oper.shouldEqualDlang("foobar");
+    }
 }

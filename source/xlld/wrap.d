@@ -953,7 +953,7 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
     import xlld.xlcall: XlType;
     import xlld.xl: coerce, free;
     import xlld.any: Any;
-    version(unittest) import xlld.test_util: gNumXlCoerce, gNumXlFree;
+    version(unittest) import xlld.test_util: gNumXlAllocated, gNumXlFree;
 
     const rows = oper.val.array.rows;
     const cols = oper.val.array.columns;
@@ -966,7 +966,7 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
 
             // Issue 22's unittest ends up coercing more than test_util can handle
             // so we undo the side-effect here
-            version(unittest) --gNumXlCoerce; // ignore this for testing
+            version(unittest) --gNumXlAllocated; // ignore this for testing
 
             scope(exit) {
                 free(&cellVal);
@@ -1881,15 +1881,15 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @("Correct number of coercions and frees in wrapModuleFunctionImpl")
 @system unittest {
     import xlld.test_d_funcs: FuncAddEverything;
-    import xlld.test_util: gNumXlCoerce, gNumXlFree;
+    import xlld.test_util: gNumXlAllocated, gNumXlFree;
 
-    const oldNumCoerce = gNumXlCoerce;
+    const oldNumAllocated = gNumXlAllocated;
     const oldNumFree = gNumXlFree;
 
     auto arg = toSRef([1.0, 2.0], theGC);
     auto oper = wrapModuleFunctionImpl!FuncAddEverything(theGC, &arg);
 
-    (gNumXlCoerce - oldNumCoerce).shouldEqual(1);
+    (gNumXlAllocated - oldNumAllocated).shouldEqual(1);
     (gNumXlFree   - oldNumFree).shouldEqual(1);
 }
 
