@@ -27,8 +27,6 @@ enum maxAllocTrack = 1000;
 const(void)*[maxAllocTrack] gAllocated;
 ///
 const(void)*[maxAllocTrack] gFreed;
-///
-double[] gDates, gTimes, gYears, gMonths, gDays, gHours, gMinutes, gSeconds;
 
 alias XlFunction = int;
 
@@ -137,47 +135,9 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
         assert(numOpers == 2);
         gAsyncReturns[*opers[0]] = *opers[1];
         return xlretSuccess;
-
-    case xlfDate:
-        return returnGlobalMockFrom(gDates, result);
-
-    case xlfTime:
-        return returnGlobalMockFrom(gTimes, result);
-
-    case xlfYear:
-        return returnGlobalMockFrom(gYears, result);
-
-    case xlfMonth:
-        return returnGlobalMockFrom(gMonths, result);
-
-    case xlfDay:
-        return returnGlobalMockFrom(gDays, result);
-
-    case xlfHour:
-        return returnGlobalMockFrom(gHours, result);
-
-    case xlfMinute:
-        return returnGlobalMockFrom(gMinutes, result);
-
-    case xlfSecond:
-        return returnGlobalMockFrom(gSeconds, result);
     }
 }
 
-private int returnGlobalMockFrom(R)(ref R values, LPXLOPER12 result) if(isInputRange!R) {
-    import xlld.conv: toXlOper;
-    import xlld.xlcall: xlretSuccess;
-    import std.array: front, popFront, empty;
-    import std.experimental.allocator.mallocator: Mallocator;
-    import std.range: ElementType;
-
-    const ret = values.empty ? ElementType!R.init : values.front;
-    if(!values.empty) values.popFront;
-
-    *result = ret.toXlOper(Mallocator.instance);
-    return xlretSuccess;
-
-}
 
 /// automatically converts from oper to compare with a D type
 void shouldEqualDlang(U)
