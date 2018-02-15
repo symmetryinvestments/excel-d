@@ -113,7 +113,7 @@ auto caller() @safe {
     return ScopedOper(result);
 }
 
-auto callerCell() @safe {
+private auto callerCell() @safe {
     import xlld.xlcall: XlType;
     import xlld.xl: coerce, free, Coerced;
 
