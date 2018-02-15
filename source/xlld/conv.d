@@ -398,7 +398,6 @@ unittest {
     auto opers = oper.val.array.lparray[0 .. rows * cols];
     opers[0].shouldEqualDlang(1.0);
     opers[1].shouldEqualDlang("foo");
-    autoFree(&oper); // normally this is done by Excel
 }
 
 ///
@@ -439,7 +438,6 @@ unittest {
     opers[1].shouldEqualDlang(2.0);
     opers[2].shouldEqualDlang("foo");
     opers[3].shouldEqualDlang("bar");
-    autoFree(&oper); // normally this is done by Excel
 }
 
 
