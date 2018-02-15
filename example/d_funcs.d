@@ -218,16 +218,22 @@ DateTime[] DateTimes(int year, int month, int day) {
 }
 
 string FuncCaller() @safe {
-    import xlld.xlf: caller;
+    import xlld.xlf: xlfCaller = caller;
     import xlld.xlcall: XlType;
+    import std.conv: text;
 
-    auto res = caller;
+    auto caller = xlfCaller;
 
-    switch(res.xltype) with(XlType) {
+    switch(caller.xltype) with(XlType) {
+
     default:
         return "Unknown caller type";
+
     case xltypeSRef:
-        return "Called from a cell";
+        return text("Called from cell. Rows: ",
+                    caller.val.sref.ref_.rwFirst, " .. ", caller.val.sref.ref_.rwLast,
+                    "  Cols: ", caller.val.sref.ref_.colFirst, " .. ", caller.val.sref.ref_.colLast);
+
     case xltypeRef:
         return "Called from a multi-cell array formula";
     }
