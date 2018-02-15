@@ -366,6 +366,9 @@ struct AA(K, V, int N = 100) {
         shared AA aa = void;
         aa.index = 0;
         aa.mutex = new shared Mutex;
+        foreach(ref entry; aa.entries[]) {
+            entry = typeof(entry).init;
+        }
         return aa;
     }
 
@@ -394,7 +397,6 @@ struct AA(K, V, int N = 100) {
     }
 }
 
-@HiddenTest
 @("AA")
 @safe unittest {
     import core.exception: AssertError;
@@ -422,6 +424,7 @@ XLOPER12 newAsyncHandle() @safe nothrow {
 struct MockXlFunction {
 
     XlFunction xlFunction;
+    typeof(gXlFuncResults) oldResults;
 
     this(int xlFunction, XLOPER12 result) @safe {
         this(xlFunction, [result]);
@@ -429,26 +432,28 @@ struct MockXlFunction {
 
     this(int xlFunction, XLOPER12[] results) @safe {
         this.xlFunction = xlFunction;
+        this.oldResults = gXlFuncResults.dup;
         gXlFuncResults[xlFunction] ~= results;
     }
 
     ~this() @safe {
-        gXlFuncResults.remove(xlFunction);
+        gXlFuncResults = oldResults;
     }
 }
 
 struct MockDateTime {
 
+    import xlld.xlcall: xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
+
     MockXlFunction year, month, day, hour, minute, second;
 
     this(int year, int month, int day, int hour, int minute, int second) @safe {
-        import xlld.xlcall: xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
         import xlld.conv: toXlOper;
 
-        this.year = MockXlFunction(xlfYear, double(year).toXlOper(theGC));
-        this.month = MockXlFunction(xlfMonth, double(month).toXlOper(theGC));
-        this.day = MockXlFunction(xlfDay, double(day).toXlOper(theGC));
-        this.hour = MockXlFunction(xlfHour, double(hour).toXlOper(theGC));
+        this.year   = MockXlFunction(xlfYear,   double(year).toXlOper(theGC));
+        this.month  = MockXlFunction(xlfMonth,  double(month).toXlOper(theGC));
+        this.day    = MockXlFunction(xlfDay,    double(day).toXlOper(theGC));
+        this.hour   = MockXlFunction(xlfHour,   double(hour).toXlOper(theGC));
         this.minute = MockXlFunction(xlfMinute, double(minute).toXlOper(theGC));
         this.second = MockXlFunction(xlfSecond, double(second).toXlOper(theGC));
     }
