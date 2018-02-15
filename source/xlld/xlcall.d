@@ -280,7 +280,7 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 			ret ~= "XLOPER12(";
 			switch(stripMemoryBitmask(xltype)) {
 			default:
-				ret ~= xltype.text;
+				ret ~= xltype.stripMemoryBitmask.text;
 				break;
 
 			case XlType.xltypeSRef:
