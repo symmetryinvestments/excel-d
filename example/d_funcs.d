@@ -249,12 +249,3 @@ string FuncCallerAdjacent() @safe {
     auto coerced = Coerced(res);
     return "Guy next to me: " ~ coerced.toString;
 }
-
-string FuncCallerCell() @safe {
-    import xlld.xlf: callerCell;
-    import xlld.xl: free;
-
-    auto caller = callerCell;
-
-    return "Was called from a cell";
-}

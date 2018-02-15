@@ -112,7 +112,7 @@ private void registerAllWorkSheetFunctions() {
     import xlld.memorymanager: allocator;
     import xlld.framework: Excel12f, freeXLOper;
     import xlld.xlcall: xlGetName, xlfRegister, XLOPER12;
-    import xlld.wrap: toXlOper;
+    import xlld.conv: toXlOper;
     import std.algorithm: map;
     import std.array: array;
 
