@@ -100,14 +100,14 @@ XLOPER12 dup(A)(XLOPER12 oper, ref A allocator) @safe {
 @("dup string allocator fails")
 @safe unittest {
     auto allocator = FailingAllocator();
-    "foo".toXlOper(theGC).dup(allocator).shouldThrowWithMessage("Can never allocate");
+    "foo".toXlOper(theGC).dup(allocator).shouldThrowWithMessage("Failed to allocate memory for string oper");
 }
 
 @("dup multi allocator fails")
 @safe unittest {
     auto allocator = FailingAllocator();
     auto oper = () @trusted { return [33.3].toXlOper(theGC); }();
-    oper.dup(allocator).shouldThrowWithMessage("Can never allocate");
+    oper.dup(allocator).shouldThrowWithMessage("Failed to allocate memory for string oper");
 }
 
 
@@ -233,7 +233,7 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
 @("toXlOper!string failing allocator")
 @safe unittest {
     auto allocator = FailingAllocator();
-    "foo".toXlOper(theGC).dup(allocator).shouldThrowWithMessage("Can never allocate");
+    "foo".toXlOper(theGC).dup(allocator).shouldThrowWithMessage("Failed to allocate memory for string oper");
 }
 
 /// the number of bytes required to store `str` as an XLOPER12 string
@@ -314,7 +314,7 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
 @("toXlOper!double[][] failing allocation")
 @safe unittest {
     auto allocator = FailingAllocator();
-    [33.3].toXlOper(allocator).shouldThrowWithMessage("Can never allocate");
+    [33.3].toXlOper(allocator).shouldThrowWithMessage("Failed to allocate memory for multi oper");
 }
 
 @("toXlOper!double[][] wrong shape")
@@ -343,7 +343,7 @@ private XLOPER12 multi(A)(int rows, int cols, ref A allocator) @trusted {
 @("multi")
 @safe unittest {
     auto allocator = FailingAllocator();
-    multi(2, 3, allocator).shouldThrowWithMessage("Can never allocate");
+    multi(2, 3, allocator).shouldThrowWithMessage("Failed to allocate memory for multi oper");
 }
 
 ///

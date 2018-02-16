@@ -474,11 +474,11 @@ struct MockDateTimes {
 
 
 struct FailingAllocator {
-    void[] allocate(size_t numBytes) @safe {
-        throw new Exception("Can never allocate");
+    void[] allocate(size_t numBytes) @safe @nogc pure nothrow {
+        return null;
     }
 
-    bool deallocate(void[] bytes) @safe {
-        throw new Exception("Can never deallocate");
+    bool deallocate(void[] bytes) @safe @nogc pure nothrow {
+        assert(false);
     }
 }
