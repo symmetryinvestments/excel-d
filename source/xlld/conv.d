@@ -647,25 +647,25 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
 
     if(stripType == XlType.xltypeStr) {
 
-        auto chars = val.val.str[1 .. val.val.str[0] + 1].byChar;
+        auto chars = () @trusted { return val.val.str[1 .. val.val.str[0] + 1].byChar; }();
         const length = chars.save.walkLength;
-        auto ret = allocator.makeArray!char(length);
+        auto ret = () @trusted { return allocator.makeArray!char(length); }();
 
         if(ret is null && length > 0)
             throw fromXlOperMemoryException;
 
         int i;
-        foreach(ch; val.val.str[1 .. val.val.str[0] + 1].byChar)
+        foreach(ch; () @trusted { return val.val.str[1 .. val.val.str[0] + 1].byChar; }())
             ret[i++] = ch;
 
-        return cast(string)ret;
+        return () @trusted {  return cast(string)ret; }();
     } else {
         // if a double, try to convert it to a string
         import std.math: isNaN;
         import core.stdc.stdio: snprintf;
 
         char[1024] buffer;
-        const numChars = {
+        const numChars = () @trusted {
             if(val.val.num.isNaN)
                 return snprintf(&buffer[0], buffer.length, "#NaN");
             else
@@ -673,13 +673,13 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
         }();
         if(numChars > buffer.length - 1)
             throw fromXlOperConvException;
-        auto ret = allocator.makeArray!char(numChars);
+        auto ret = () @trusted { return allocator.makeArray!char(numChars); }();
 
         if(ret is null && numChars > 0)
             throw fromXlOperMemoryException;
 
         ret[] = buffer[0 .. numChars];
-        return cast(string)ret;
+        return () @trusted { return cast(string)ret; }();
     }
 }
 
@@ -713,6 +713,19 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
     auto str = fromXlOper!string(&oper, theGC);
     str.shouldEqual("é");
 }
+
+@("fromXlOper!string allocation failure")
+@system unittest {
+    auto allocator = FailingAllocator();
+    "foo".toXlOper(theGC).fromXlOper!string(allocator).shouldThrowWithMessage("Could not allocate memory for array of char");
+}
+
+@("fromXlOper!string conversion failure")
+@system unittest {
+    auto allocator = FailingAllocator();
+    33.3.toXlOper(theGC).fromXlOper!string(allocator).shouldThrowWithMessage("Could not allocate memory for array of char");
+}
+
 
 package XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
     import xlld.xlcall: xlbitXLFree, xlbitDLLFree;
