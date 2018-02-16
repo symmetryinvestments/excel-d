@@ -224,7 +224,7 @@ template isSupportedFunction(alias F, T...) {
     /// trying to get a pointer to something is a good way of making sure we can
     /// attempt to evaluate `isSomeFunction` - it's not always possible
     enum canGetPointerToIt = __traits(compiles, &F);
-    enum isOneOfSupported(U) = isSupportedType!(U, T);
+    enum isOneOfSupported(U) = isSupportedType!(U, T) || is(U == enum);
 
     static if(canGetPointerToIt) {
         static if(isSomeFunction!F) {
@@ -263,8 +263,24 @@ private template isWorksheetFunction(alias F) {
 }
 
 /// if the types match for a worksheet function but without checking the linkage
-private enum isWorksheetFunctionModuloLinkage(alias F) =
-    isSupportedFunction!(F, double, FP12*, LPXLOPER12);
+private template isWorksheetFunctionModuloLinkage(alias F) {
+    import std.traits: ReturnType, Parameters, isCallable;
+    import std.meta: anySatisfy;
+
+    static if(!isCallable!F)
+        enum isWorksheetFunctionModuloLinkage = false;
+    else {
+
+        enum isEnum(T) = is(T == enum);
+
+        enum isWorksheetFunctionModuloLinkage =
+            isSupportedFunction!(F, double, FP12*, LPXLOPER12) &&
+            !is(ReturnType!F == enum) &&
+            !anySatisfy!(isEnum, Parameters!F);
+    }
+
+}
+
 
 @safe pure unittest {
     extern(Windows) double doubleToDouble(double) nothrow;
@@ -279,6 +295,14 @@ private enum isWorksheetFunctionModuloLinkage(alias F) =
     LPXLOPER12 operToOperWrongLinkage(LPXLOPER12) nothrow;
     static assert(isWorksheetFunctionModuloLinkage!operToOperWrongLinkage);
     static assert(!isWorksheetFunction!operToOperWrongLinkage);
+
+    enum MyEnum { foo, bar, baz, }
+
+    extern(Windows) MyEnum FuncEnumRet(LPXLOPER12 n) nothrow;
+    static assert(!isWorksheetFunction!FuncEnumRet);
+
+    extern(Windows) LPXLOPER12 FuncEnumArg(MyEnum _) nothrow;
+    static assert(!isWorksheetFunction!FuncEnumArg);
 }
 
 
