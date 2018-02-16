@@ -317,6 +317,11 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     [33.3].toXlOper(allocator).shouldThrowWithMessage("Can never allocate");
 }
 
+@("toXlOper!double[][] wrong shape")
+@safe unittest {
+    [[33.3], [1.0, 2.0]].toXlOper(theGC).shouldThrowWithMessage("# of columns must all be the same and aren't");
+}
+
 ///
 __gshared immutable multiMemoryException = new Exception("Failed to allocate memory for multi oper");
 
