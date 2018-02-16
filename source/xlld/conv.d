@@ -552,6 +552,28 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == bool)) {
     }
 }
 
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(T == enum)) {
+
+    import std.conv: text;
+    import core.memory: GC;
+
+    auto str = text(value);
+    auto ret = str.toXlOper(allocator);
+    () @trusted { GC.free(cast(void*)str.ptr); }();
+    return ret;
+}
+
+@("toXlOper!enum")
+@safe unittest {
+
+    enum Enum {
+        foo,
+        bar,
+        baz,
+    }
+
+    Enum.bar.toXlOper(theGC).shouldEqualDlang("bar");
+}
 
 ///
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
@@ -1162,6 +1184,20 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
     "True".toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(true);
     "TRUE".toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(true);
     "false".toXlOper(theGC).fromXlOper!bool(theGC).shouldEqual(false);
+}
+
+T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
+    import std.conv: to;
+    return oper.fromXlOper!string(allocator).to!T;
+}
+
+@system unittest {
+    enum Enum {
+        foo, bar, baz,
+    }
+
+    "bar".toXlOper(theGC).fromXlOper!Enum(theGC).shouldEqual(Enum.bar);
+    "quux".toXlOper(theGC).fromXlOper!Enum(theGC).shouldThrowWithMessage("Enum does not have a member named 'quux'");
 }
 
 /**
