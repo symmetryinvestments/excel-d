@@ -933,6 +933,14 @@ unittest {
     allocator.dispose(backAgain);
 }
 
+@("fromXlOper!double[][] nil")
+@system unittest {
+    XLOPER12 oper;
+    oper.xltype = XlType.xltypeNil;
+    double[][] empty;
+    oper.fromXlOper!(double[][])(theGC).shouldEqual(empty);
+}
+
 ///
 __gshared immutable fromXlOperMultiOperException = new Exception("fromXlOper: oper not of multi type");
 ///
