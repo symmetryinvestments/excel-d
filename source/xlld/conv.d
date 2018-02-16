@@ -230,6 +230,12 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     length.shouldEqual("é"w.length);
 }
 
+@("toXlOper!string failing allocator")
+@safe unittest {
+    auto allocator = FailingAllocator();
+    "foo".toXlOper(theGC).dup(allocator).shouldThrowWithMessage("Can never allocate");
+}
+
 /// the number of bytes required to store `str` as an XLOPER12 string
 package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(Unqual!T == wstring)) {
     // XLOPER12 strings are wide strings where index 0 is the length
