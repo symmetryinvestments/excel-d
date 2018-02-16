@@ -50,9 +50,6 @@ private void fakeAllocate(XLOPER12* oper) @nogc nothrow {
     gAllocated[gNumXlAllocated++] = oper.val.str;
 }
 
-private void fakeFree(XLOPER12 oper) @nogc nothrow {
-    fakeFree(&oper);
-}
 
 private void fakeFree(XLOPER12* oper) @nogc nothrow {
     gFreed[gNumXlFree++] = oper.val.str;
