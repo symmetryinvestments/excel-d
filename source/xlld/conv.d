@@ -243,13 +243,6 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
     return (str.length + 1) * wchar.sizeof;
 }
 
-///
-package size_t numOperStringBytes(ref const(XLOPER12) oper) @trusted @nogc pure nothrow {
-    // XLOPER12 strings are wide strings where index 0 is the length
-    // and [1 .. $] is the actual string
-    if(oper.xltype != XlType.xltypeStr) return 0;
-    return (oper.val.str[0] + 1) * wchar.sizeof;
-}
 
 ///
 __gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
