@@ -50,9 +50,6 @@ private void fakeAllocate(XLOPER12* oper) @nogc nothrow {
     gAllocated[gNumXlAllocated++] = oper.val.str;
 }
 
-private void fakeFree(XLOPER12 oper) @nogc nothrow {
-    fakeFree(&oper);
-}
 
 private void fakeFree(XLOPER12* oper) @nogc nothrow {
     gFreed[gNumXlFree++] = oper.val.str;
@@ -469,5 +466,16 @@ struct MockDateTimes {
         foreach(dateTime; dateTimes)
             mocks ~= MockDateTime(dateTime.year, dateTime.month, dateTime.day,
                                   dateTime.hour, dateTime.minute, dateTime.second);
+    }
+}
+
+
+struct FailingAllocator {
+    void[] allocate(size_t numBytes) @safe @nogc pure nothrow {
+        return null;
+    }
+
+    bool deallocate(void[] bytes) @safe @nogc pure nothrow {
+        assert(false);
     }
 }

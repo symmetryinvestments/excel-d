@@ -14,5 +14,6 @@ int main(string[] args)
         "xlld.test_util",
         "xlld.xlf",
         "xlld.conv",
+        "xlld.any",
     );
 }
