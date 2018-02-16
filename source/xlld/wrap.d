@@ -6,12 +6,8 @@ module xlld.wrap;
 
 import xlld.worksheet;
 import xlld.xlcall: XLOPER12;
-import xlld.traits: isSupportedFunction;
-import xlld.memorymanager: autoFree;
-import xlld.framework: freeXLOper;
 import xlld.any: Any;
 import std.datetime: DateTime;
-import std.experimental.allocator: theAllocator;
 
 version(unittest) {
     import xlld.conv: toXlOper;
@@ -30,17 +26,20 @@ static if(!is(Flaky))
     enum Flaky;
 
 
+private template isWorksheetFunction(alias F) {
+    import xlld.traits: isSupportedFunction;
+    enum isWorksheetFunction =
+        isSupportedFunction!(F,
+                             bool,
+                             int,
+                             double, double[], double[][],
+                             string, string[], string[][],
+                             Any, Any[], Any[][],
+                             DateTime, DateTime[], DateTime[][],
+        );
 
+}
 
-private enum isWorksheetFunction(alias F) =
-    isSupportedFunction!(F,
-                         bool,
-                         int,
-                         double, double[], double[][],
-                         string, string[], string[][],
-                         Any, Any[], Any[][],
-                         DateTime, DateTime[], DateTime[][],
-    );
 
 @("isWorksheetFunction")
 @safe pure unittest {
@@ -318,6 +317,27 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     auto ret = DateTimesToString(&arg);
 
     ret.shouldEqualDlang("31, 30");
+}
+
+
+@("Wrap a function that takes an enum")
+@safe unittest {
+    mixin(wrapTestFuncsString);
+    import xlld.test_d_funcs: MyEnum;
+
+    auto arg = MyEnum.baz.toXlOper(theGC);
+    auto ret = () @trusted { return FuncMyEnum(&arg); }();
+    ret.shouldEqualDlang("prefix_baz");
+}
+
+@("Wrap a function that takes an enum")
+@safe unittest {
+    mixin(wrapTestFuncsString);
+    import xlld.test_d_funcs: MyEnum;
+
+    auto arg = 1.toXlOper(theGC);
+    auto ret = () @trusted { return FuncReturnMyEnum(&arg); }();
+    ret.shouldEqualDlang("bar");
 }
 
 
@@ -787,6 +807,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @system unittest {
     import xlld.test_d_funcs: FuncAddEverything;
     import xlld.xlcall: xlbitDLLFree;
+    import xlld.memorymanager: autoFree;
 
     TestAllocator allocator;
     auto arg = toSRef([1.0, 2.0], theMallocator);
@@ -802,6 +823,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @system unittest {
     import xlld.test_d_funcs: FuncTripleEverything;
     import xlld.xlcall: xlbitDLLFree, XlType;
+    import xlld.memorymanager: autoFree;
 
     TestAllocator allocator;
     auto arg = toSRef([1.0, 2.0, 3.0], theMallocator);
@@ -817,7 +839,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return pool")
 @system unittest {
     import std.typecons: Ternary;
-    import xlld.memorymanager: gTempAllocator;
+    import xlld.memorymanager: gTempAllocator, autoFree;
     import xlld.test_d_funcs: FuncTripleEverything;
 
     auto arg = toSRef([1.0, 2.0, 3.0], gTempAllocator);
@@ -1090,6 +1112,7 @@ unittest {
 @("wrapAll function that returns Any[][]")
 @safe unittest {
     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.memorymanager: autoFree;
 
     mixin(wrapAllTestFuncsString);
 

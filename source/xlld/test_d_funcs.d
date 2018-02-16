@@ -276,3 +276,16 @@ double NaN() {
 int BoolToInt(bool b) {
     return cast(int)b;
 }
+
+enum MyEnum {
+    foo, bar, baz,
+}
+
+string FuncMyEnum(MyEnum val) @safe {
+    import std.conv: text;
+    return "prefix_" ~ val.text;
+}
+
+MyEnum FuncReturnMyEnum(int i) @safe {
+    return cast(MyEnum)i;
+}
