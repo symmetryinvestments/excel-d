@@ -262,7 +262,7 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     const rows = cast(int)values.length;
     const cols = values.length ? cast(int)values[0].length : 0;
     auto ret = multi(rows, cols, allocator);
-    auto opers = ret.val.array.lparray[0 .. rows*cols];
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. rows*cols]; }();
 
     int i;
     foreach(ref row; values) {
@@ -294,7 +294,7 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
 }
 
 ///
-@("toXlOper string[][]")
+@("toXlOper string[][] TestAllocator")
 @system unittest {
     TestAllocator allocator;
     auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper(allocator);
@@ -311,10 +311,16 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     freeXLOper(&oper, allocator);
 }
 
+@("toXlOper!double[][] failing allocation")
+@safe unittest {
+    auto allocator = FailingAllocator();
+    [33.3].toXlOper(allocator).shouldThrowWithMessage("Can never allocate");
+}
+
 ///
 __gshared immutable multiMemoryException = new Exception("Failed to allocate memory for multi oper");
 
-private XLOPER12 multi(A)(int rows, int cols, ref A allocator) {
+private XLOPER12 multi(A)(int rows, int cols, ref A allocator) @trusted {
     auto ret = XLOPER12();
 
     ret.xltype = XlType.xltypeMulti;
