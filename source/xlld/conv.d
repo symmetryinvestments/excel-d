@@ -10,7 +10,7 @@ version(unittest) {
     import xlld.framework: freeXLOper;
     import xlld.memorymanager: autoFree;
     import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef,
-        MockXlFunction, MockDateTime;
+        MockXlFunction, MockDateTime, FailingAllocator;
     import unit_threaded;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     alias theGC = GCAllocator.instance;
@@ -95,6 +95,19 @@ XLOPER12 dup(A)(XLOPER12 oper, ref A allocator) @safe {
             ["quux", "toto", "brzz"],
         ]
     );
+}
+
+@("dup string allocator fails")
+@safe unittest {
+    auto allocator = FailingAllocator();
+    "foo".toXlOper(theGC).dup(allocator).shouldThrowWithMessage("Can never allocate");
+}
+
+@("dup multi allocator fails")
+@safe unittest {
+    auto allocator = FailingAllocator();
+    auto oper = () @trusted { return [33.3].toXlOper(theGC); }();
+    oper.dup(allocator).shouldThrowWithMessage("Can never allocate");
 }
 
 

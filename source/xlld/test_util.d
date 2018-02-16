@@ -471,3 +471,14 @@ struct MockDateTimes {
                                   dateTime.hour, dateTime.minute, dateTime.second);
     }
 }
+
+
+struct FailingAllocator {
+    void[] allocate(size_t numBytes) @safe {
+        throw new Exception("Can never allocate");
+    }
+
+    bool deallocate(void[] bytes) @safe {
+        throw new Exception("Can never deallocate");
+    }
+}
