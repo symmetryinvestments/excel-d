@@ -259,3 +259,15 @@ string FuncCallerAdjacent() @safe {
 double[] Doubles() @safe {
     return [33.3, 123.0];
 }
+
+enum MyEnum { foo, bar, baz }
+
+
+string FuncEnumArg(MyEnum val) @safe {
+    import std.conv: text;
+    return "prefix_" ~ val.text;
+}
+
+MyEnum FuncEnumRet(int i) @safe {
+    return cast(MyEnum)i;
+}
