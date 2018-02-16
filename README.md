@@ -1,5 +1,8 @@
 # excel-d
 
+[![Build Status](https://travis-ci.org/kaleidicassociates/excel-d.png?branch=master)](https://travis-ci.org/kaleidicassociates/excel-d)
+[![Coverage](https://codecov.io/gh/kaleidicassociates/excel-d/branch/master/graph/badge.svg)](https://codecov.io/gh/kaleidicassociates/excel-d)
+
 Excel API bindings and wrapper API for D
 
 This dub package contains D declarations for the [Excel SDK](https://msdn.microsoft.com/en-us/library/office/bb687883.aspx)
