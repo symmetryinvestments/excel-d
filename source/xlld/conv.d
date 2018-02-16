@@ -340,6 +340,12 @@ private XLOPER12 multi(A)(int rows, int cols, ref A allocator) @trusted {
 }
 
 
+@("multi")
+@safe unittest {
+    auto allocator = FailingAllocator();
+    multi(2, 3, allocator).shouldThrowWithMessage("Can never allocate");
+}
+
 ///
 XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(Unqual!T == string[]) || is(Unqual!T == double[]) ||
                                                       is(Unqual!T == int[]) || is(Unqual!T == DateTime[])) {
