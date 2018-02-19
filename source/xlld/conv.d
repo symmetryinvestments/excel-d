@@ -1261,11 +1261,16 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
 {
     import xlld.xlcall: XlType;
+    import std.conv: text;
 
     assert(oper.xltype.stripMemoryBitmask == XlType.xltypeMulti,
            "Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
 
     const length =  oper.val.array.rows * oper.val.array.columns;
+
+    assert(length == T.tupleof.length,
+           text("1D array length must match number of members in ", T.stringof,
+                ". Expected ", T.tupleof.length, ", got ", length));
 
     T ret;
 
@@ -1292,6 +1297,20 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     2.toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage!AssertError(
         "Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
 }
+
+@("1D array to struct with wrong length")
+@system unittest {
+    import core.exception: AssertError;
+
+    static struct Foo { int x, y; }
+
+    [2, 3, 4].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage!AssertError(
+        "1D array length must match number of members in Foo. Expected 2, got 3");
+
+    [2].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage!AssertError(
+        "1D array length must match number of members in Foo. Expected 2, got 1");
+}
+
 
 /**
   creates an XLOPER12 that can be returned to Excel which
