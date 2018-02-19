@@ -1276,8 +1276,13 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
 }
 
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
+    import xlld.xlcall: XlType;
     import std.conv: to;
     import std.traits: fullyQualifiedName;
+
+    static immutable typeException = new Exception("Wrong type for fromXlOper!" ~ T.stringof);
+    if(oper.xltype.stripMemoryBitmask != XlType.xltypeStr)
+        throw typeException;
 
     enum name = fullyQualifiedName!T;
     auto str = oper.fromXlOper!string(allocator);
@@ -1295,6 +1300,14 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
 
     "bar".toXlOper(theGC).fromXlOper!Enum(theGC).shouldEqual(Enum.bar);
     "quux".toXlOper(theGC).fromXlOper!Enum(theGC).shouldThrowWithMessage("Enum does not have a member named 'quux'");
+}
+
+@("fromXlOper!enum wrong type")
+@system unittest {
+    enum Enum { foo, bar, baz, }
+
+    42.toXlOper(theGC).fromXlOper!Enum(theGC).shouldThrowWithMessage(
+        "Wrong type for fromXlOper!Enum");
 }
 
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
@@ -1361,9 +1374,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
 
     ["foo", "bar"].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
         "Wrong type converting oper to Foo");
-
 }
-
 
 
 /**
