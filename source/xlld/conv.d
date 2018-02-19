@@ -16,8 +16,10 @@ version(unittest) {
     alias theGC = GCAllocator.instance;
 }
 
-alias EnumConversionFunction = int delegate(string);
-EnumConversionFunction[string] gEnumConversions;
+alias ToEnumConversionFunction = int delegate(string);
+alias FromEnumConversionFunction = string delegate(int) @safe;
+ToEnumConversionFunction[string] gToEnumConversions;
+FromEnumConversionFunction[string] gFromEnumConversions;
 
 
 /**
@@ -560,21 +562,37 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == bool)) {
    be called before converting any enum arguments to be passed to a wrapped
    D function.
  */
-void registerConversion(T)(EnumConversionFunction func) {
+void registerConversionTo(T)(ToEnumConversionFunction func) {
     import std.traits: fullyQualifiedName;
-    gEnumConversions[fullyQualifiedName!T] = func;
+    gToEnumConversions[fullyQualifiedName!T] = func;
+}
+
+/**
+   Register a custom conversion from enum (going through integer) to a string.
+   This function will be called to convert enum return values from wrapped
+   D functions into strings in Excel.
+ */
+void registerConversionFrom(T)(FromEnumConversionFunction func) {
+    import std.traits: fullyQualifiedName;
+    gFromEnumConversions[fullyQualifiedName!T] = func;
 }
 
 
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(T == enum)) {
 
     import std.conv: text;
+    import std.traits: fullyQualifiedName;
     import core.memory: GC;
 
-    auto str = text(value);
-    auto ret = str.toXlOper(allocator);
-    () @trusted { GC.free(cast(void*)str.ptr); }();
-    return ret;
+    enum name = fullyQualifiedName!T;
+
+    if(name in gFromEnumConversions)
+        return gFromEnumConversions[name](value).toXlOper(allocator);
+
+    scope str = text(value);
+    scope(exit) () @trusted { GC.free(cast(void*)str.ptr); }();
+
+    return str.toXlOper(allocator);
 }
 
 @("toXlOper!enum")
@@ -1207,8 +1225,8 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
     enum name = fullyQualifiedName!T;
     auto str = oper.fromXlOper!string(allocator);
 
-    return name in gEnumConversions
-        ? cast(T) gEnumConversions[name](str)
+    return name in gToEnumConversions
+        ? cast(T) gToEnumConversions[name](str)
         : str.to!T;
 }
 
