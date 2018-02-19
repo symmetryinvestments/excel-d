@@ -635,10 +635,17 @@ auto fromXlOper(T, A)(XLOPER12 val, ref A allocator) {
     return fromXlOper!T(val, allocator);
 }
 
+__gshared immutable fromXlOperDoubleWrongTypeException = new Exception("Wrong type for fromXlOper!double");
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == double)) {
-    if(val.xltype == XlType.xltypeMissing)
+    if(val.xltype.stripMemoryBitmask == XlType.xltypeMissing)
         return double.init;
+
+    if(val.xltype.stripMemoryBitmask == XlType.xltypeInt)
+        return cast(T)val.val.w;
+
+    if(val.xltype.stripMemoryBitmask != XlType.xltypeNum)
+        throw fromXlOperDoubleWrongTypeException;
 
     return val.val.num;
 }
@@ -666,6 +673,10 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == double))
     fromXlOper!double(&oper, allocator).isNaN.shouldBeTrue;
 }
 
+@("fromXlOper!double wrong oper type")
+@system unittest {
+    "foo".toXlOper(theGC).fromXlOper!double(theGC).shouldThrowWithMessage("Wrong type for fromXlOper!double");
+}
 
 __gshared immutable fromXlOperIntWrongTypeException = new Exception("Wrong type for fromXlOper!int");
 
@@ -715,6 +726,8 @@ __gshared immutable fromXlOperMemoryException = new Exception("Could not allocat
 ///
 __gshared immutable fromXlOperConvException = new Exception("Could not convert double to string");
 
+__gshared immutable fromXlOperStringTypeException = new Exception("Wrong type for fromXlOper!string");
+
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string)) {
 
@@ -723,8 +736,12 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
     import std.range: walkLength;
 
     const stripType = stripMemoryBitmask(val.xltype);
-    if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
+
+    if(stripType == XlType.xltypeMissing)
         return null;
+
+    if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
+        throw fromXlOperStringTypeException;
 
 
     if(stripType == XlType.xltypeStr) {
@@ -742,6 +759,7 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
 
         return () @trusted {  return cast(string)ret; }();
     } else {
+
         // if a double, try to convert it to a string
         import std.math: isNaN;
         import core.stdc.stdio: snprintf;
@@ -802,10 +820,10 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
     "foo".toXlOper(theGC).fromXlOper!string(allocator).shouldThrowWithMessage("Could not allocate memory for array of char");
 }
 
-@("fromXlOper!string conversion failure")
+
+@("fromXlOper!string wrong oper type")
 @system unittest {
-    auto allocator = FailingAllocator();
-    33.3.toXlOper(theGC).fromXlOper!string(allocator).shouldThrowWithMessage("Could not allocate memory for array of char");
+    42.toXlOper(theGC).fromXlOper!string(theGC).shouldThrowWithMessage("Wrong type for fromXlOper!string");
 }
 
 
