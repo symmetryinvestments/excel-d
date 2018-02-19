@@ -374,7 +374,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     ret.shouldEqualDlang("___bar");
 }
 
-@("Wrap a functino that takes a struct using 1D array")
+@("Wrap a function that takes a struct using 1D array")
 unittest {
     mixin(wrapTestFuncsString);
 

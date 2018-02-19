@@ -666,15 +666,21 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == double))
     fromXlOper!double(&oper, allocator).isNaN.shouldBeTrue;
 }
 
+
+__gshared immutable fromXlOperIntWrongTypeException = new Exception("Wrong type for fromXlOper!int");
+
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == int)) {
     import xlld.xlcall: XlType;
 
-    if(val.xltype == XlType.xltypeMissing)
+    if(val.xltype.stripMemoryBitmask == XlType.xltypeMissing)
         return int.init;
 
-    if(val.xltype == XlType.xltypeNum)
+    if(val.xltype.stripMemoryBitmask == XlType.xltypeNum)
         return cast(typeof(return))val.val.num;
+
+    if(val.xltype.stripMemoryBitmask != XlType.xltypeInt)
+        throw fromXlOperIntWrongTypeException;
 
     return val.val.w;
 }
@@ -699,6 +705,10 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == int)) {
     oper.fromXlOper!int(theGC).shouldEqual(0);
 }
 
+@("fromXlOper!int wrong oper type")
+@system unittest {
+    "foo".toXlOper(theGC).fromXlOper!int(theGC).shouldThrowWithMessage("Wrong type for fromXlOper!int");
+}
 
 ///
 __gshared immutable fromXlOperMemoryException = new Exception("Could not allocate memory for array of char");
@@ -1275,8 +1285,12 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     T ret;
 
     int i;
+    static immutable wrongTypeException = new Exception("Wrong type converting oper to " ~ T.stringof);
     foreach(ref member; ret.tupleof) {
-        member = oper.val.array.lparray[i++].fromXlOper!(typeof(member))(allocator);
+        try
+            member = oper.val.array.lparray[i++].fromXlOper!(typeof(member))(allocator);
+        catch(Exception _)
+            throw wrongTypeException;
     }
 
     return ret;
@@ -1310,6 +1324,16 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     [2].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage!AssertError(
         "1D array length must match number of members in Foo. Expected 2, got 1");
 }
+
+@("1D array to struct with wrong type")
+@system unittest {
+    static struct Foo { int x, y; }
+
+    ["foo", "bar"].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
+        "Wrong type converting oper to Foo");
+
+}
+
 
 
 /**
