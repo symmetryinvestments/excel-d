@@ -326,7 +326,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     import xlld.test_d_funcs: MyEnum;
 
     auto arg = MyEnum.baz.toXlOper(theGC);
-    auto ret = () @trusted { return FuncMyEnum(&arg); }();
+    auto ret = () @trusted { return FuncMyEnumArg(&arg); }();
     ret.shouldEqualDlang("prefix_baz");
 }
 
@@ -336,7 +336,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     import xlld.test_d_funcs: MyEnum;
 
     auto arg = 1.toXlOper(theGC);
-    auto ret = () @trusted { return FuncReturnMyEnum(&arg); }();
+    auto ret = () @trusted { return FuncMyEnumRet(&arg); }();
     ret.shouldEqualDlang("bar");
 }
 
@@ -352,7 +352,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     registerConversionTo!MyEnum((str) => str[3 .. $].to!MyEnum);
 
     auto arg = "___baz".toXlOper(theGC);
-    auto ret = () @trusted { return FuncMyEnum(&arg); }();
+    auto ret = () @trusted { return FuncMyEnumArg(&arg); }();
 
     ret.shouldEqualDlang("prefix_baz");
 }
@@ -369,7 +369,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     registerConversionFrom!MyEnum((val) => "___" ~ text(cast(MyEnum)val));
 
     auto arg = 1.toXlOper(theGC);
-    auto ret = () @trusted { return FuncReturnMyEnum(&arg); }();
+    auto ret = () @trusted { return FuncMyEnumRet(&arg); }();
 
     ret.shouldEqualDlang("___bar");
 }
