@@ -1325,6 +1325,10 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
         assert(length == T.tupleof.length,
                text("1D array length must match number of members in ", T.stringof,
                     ". Expected ", T.tupleof.length, ", got ", length));
+    else
+        assert((oper.val.array.rows == 2 && oper.val.array.columns == T.tupleof.length) ||
+               (oper.val.array.rows == T.tupleof.length && oper.val.array.columns == 2),
+               text("2D array must be 2x", T.tupleof.length, " or ", T.tupleof.length, "x2 for ", T.stringof));
 
     T ret;
 
@@ -1413,6 +1417,19 @@ unittest {
     }
 }
 
+@("2D array wrong size")
+unittest {
+    import xlld.memorymanager: allocatorContext;
+    import core.exception: AssertError;
+
+    static struct Foo { int x, y, z; }
+
+    with(allocatorContext(theGC)) {
+        [[any("x"), any(2)], [any("y"), any(3)], [any("z"), any(4)], [any("w"), any(5)]].toFrom!Foo.
+            shouldThrowWithMessage!AssertError("2D array must be 2x3 or 3x2 for Foo");
+    }
+
+}
 
 private auto toFrom(R, T)(T val) {
     import std.experimental.allocator.gc_allocator: GCAllocator;
