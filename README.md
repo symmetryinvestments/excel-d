@@ -103,6 +103,13 @@ double AsyncFunc(double d) {
 
 Please see [the Microsoft documentation](https://msdn.microsoft.com/en-us/library/office/ff796219(v=office.14).aspx).
 
+Custom enum coversions
+----------------------
+
+If the usual conversions between strings and enums don't work for the user, it is possible to register
+custom coversions by calling the functions `registerConversionTo` and `registerConversionFrom`.
+
+
 Optional custom memory allocation and `@nogc`
 ---------------------------------------------
 
