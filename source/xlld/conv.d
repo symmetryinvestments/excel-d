@@ -607,6 +607,24 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(T == enum)) {
     Enum.bar.toXlOper(theGC).shouldEqualDlang("bar");
 }
 
+XLOPER12 toXlOper(T, A)(T value, ref A allocator)
+    if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
+{
+    import std.conv: text;
+    import core.memory: GC;
+
+    scope str = text(value);
+    scope(exit) () @trusted { GC.free(cast(void*)str.ptr); }();
+
+    return str.toXlOper(allocator);
+}
+
+@("toXlOper!struct")
+@safe unittest {
+    static struct Foo { int x, y; }
+    Foo(2, 3).toXlOper(theGC).shouldEqualDlang("Foo(2, 3)");
+}
+
 ///
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
     return (&val).fromXlOper!T(allocator);
@@ -1237,6 +1255,32 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
 
     "bar".toXlOper(theGC).fromXlOper!Enum(theGC).shouldEqual(Enum.bar);
     "quux".toXlOper(theGC).fromXlOper!Enum(theGC).shouldThrowWithMessage("Enum does not have a member named 'quux'");
+}
+
+T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
+    if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
+{
+    import xlld.xlcall: XlType;
+
+    assert(oper.xltype.stripMemoryBitmask == XlType.xltypeMulti,
+           "Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
+
+    const length =  oper.val.array.rows * oper.val.array.columns;
+
+    T ret;
+
+    int i;
+    foreach(ref member; ret.tupleof) {
+        member = oper.val.array.lparray[i++].fromXlOper!(typeof(member))(allocator);
+    }
+
+    return ret;
+}
+
+@("1D array to struct")
+@system unittest {
+    static struct Foo { int x, y; }
+    [2, 3].toXlOper(theGC).fromXlOper!Foo(theGC).shouldEqual(Foo(2, 3));
 }
 
 /**

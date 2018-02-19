@@ -224,7 +224,7 @@ template isSupportedFunction(alias F, T...) {
     /// trying to get a pointer to something is a good way of making sure we can
     /// attempt to evaluate `isSomeFunction` - it's not always possible
     enum canGetPointerToIt = __traits(compiles, &F);
-    enum isOneOfSupported(U) = isSupportedType!(U, T) || is(U == enum);
+    enum isOneOfSupported(U) = isSupportedType!(U, T) || is(U == enum) || is(U == struct);
 
     static if(canGetPointerToIt) {
         static if(isSomeFunction!F) {

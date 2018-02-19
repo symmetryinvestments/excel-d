@@ -374,6 +374,16 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     ret.shouldEqualDlang("___bar");
 }
 
+@("Wrap a functino that takes a struct using 1D array")
+unittest {
+    mixin(wrapTestFuncsString);
+
+    auto arg = [2, 3].toXlOper(theGC);
+    auto ret = () @trusted { return FuncPointArg(&arg); }();
+
+    ret.shouldEqualDlang(5);
+}
+
 
 /**
  A string to use with `mixin` that wraps a D function

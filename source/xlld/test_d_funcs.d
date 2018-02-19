@@ -294,9 +294,8 @@ struct Point {
     int x, y;
 }
 
-string FuncPointArg(Point f) @safe {
-    import std.conv: text;
-    return f.text;
+int FuncPointArg(Point p) @safe {
+    return p.x + p.y;
 }
 
 Point FuncPointRet(int x, int y) @safe {
