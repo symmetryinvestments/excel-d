@@ -1283,6 +1283,16 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     [2, 3].toXlOper(theGC).fromXlOper!Foo(theGC).shouldEqual(Foo(2, 3));
 }
 
+@("wrong oper type to struct")
+@system unittest {
+    import core.exception: AssertError;
+
+    static struct Foo { int x, y; }
+
+    2.toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage!AssertError(
+        "Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
+}
+
 /**
   creates an XLOPER12 that can be returned to Excel which
   will be freed by Excel itself
