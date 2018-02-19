@@ -1321,17 +1321,32 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
 
     const length =  oper.val.array.rows * oper.val.array.columns;
 
-    assert(length == T.tupleof.length,
-           text("1D array length must match number of members in ", T.stringof,
-                ". Expected ", T.tupleof.length, ", got ", length));
+    if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
+        assert(length == T.tupleof.length,
+               text("1D array length must match number of members in ", T.stringof,
+                    ". Expected ", T.tupleof.length, ", got ", length));
 
     T ret;
 
-    int i;
+    ulong ptrIndex(ulong i) {
+
+        if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
+            return i;
+
+        if(oper.val.array.rows == 2)
+            return i + oper.val.array.columns;
+
+        if(oper.val.array.columns == 2)
+            return i * 2 + 1;
+
+        return i;
+    }
+
     static immutable wrongTypeException = new Exception("Wrong type converting oper to " ~ T.stringof);
-    foreach(ref member; ret.tupleof) {
+
+    foreach(i, ref member; ret.tupleof) {
         try
-            member = oper.val.array.lparray[i++].fromXlOper!(typeof(member))(allocator);
+            member = oper.val.array.lparray[ptrIndex(i)].fromXlOper!(typeof(member))(allocator);
         catch(Exception _)
             throw wrongTypeException;
     }
@@ -1376,6 +1391,33 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
         "Wrong type converting oper to Foo");
 }
 
+@("2D horizontal array to struct")
+unittest {
+    import xlld.memorymanager: allocatorContext;
+
+    static struct Foo { int x, y, z; }
+
+    with(allocatorContext(theGC)) {
+        [[any("x"), any("y"), any("z")], [any(2), any(3), any(4)]].toFrom!Foo.shouldEqual(Foo(2, 3, 4));
+    }
+}
+
+@("2D vertical array to struct")
+unittest {
+    import xlld.memorymanager: allocatorContext;
+
+    static struct Foo { int x, y, z; }
+
+    with(allocatorContext(theGC)) {
+        [[any("x"), any(2)], [any("y"), any(3)], [any("z"), any(4)]].toFrom!Foo.shouldEqual(Foo(2, 3, 4));
+    }
+}
+
+
+private auto toFrom(R, T)(T val) {
+    import std.experimental.allocator.gc_allocator: GCAllocator;
+    return val.toXlOper(GCAllocator.instance).fromXlOper!R(GCAllocator.instance);
+}
 
 /**
   creates an XLOPER12 that can be returned to Excel which
