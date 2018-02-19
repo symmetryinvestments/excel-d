@@ -330,7 +330,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     ret.shouldEqualDlang("prefix_baz");
 }
 
-@("Wrap a function that takes an enum")
+@("Wrap a function that returns an enum")
 @safe unittest {
     mixin(wrapTestFuncsString);
     import xlld.test_d_funcs: MyEnum;
