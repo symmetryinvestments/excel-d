@@ -607,6 +607,24 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(T == enum)) {
     Enum.bar.toXlOper(theGC).shouldEqualDlang("bar");
 }
 
+XLOPER12 toXlOper(T, A)(T value, ref A allocator)
+    if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
+{
+    import std.conv: text;
+    import core.memory: GC;
+
+    scope str = text(value);
+    scope(exit) () @trusted { GC.free(cast(void*)str.ptr); }();
+
+    return str.toXlOper(allocator);
+}
+
+@("toXlOper!struct")
+@safe unittest {
+    static struct Foo { int x, y; }
+    Foo(2, 3).toXlOper(theGC).shouldEqualDlang("Foo(2, 3)");
+}
+
 ///
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
     return (&val).fromXlOper!T(allocator);
@@ -617,10 +635,17 @@ auto fromXlOper(T, A)(XLOPER12 val, ref A allocator) {
     return fromXlOper!T(val, allocator);
 }
 
+__gshared immutable fromXlOperDoubleWrongTypeException = new Exception("Wrong type for fromXlOper!double");
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == double)) {
-    if(val.xltype == XlType.xltypeMissing)
+    if(val.xltype.stripMemoryBitmask == XlType.xltypeMissing)
         return double.init;
+
+    if(val.xltype.stripMemoryBitmask == XlType.xltypeInt)
+        return cast(T)val.val.w;
+
+    if(val.xltype.stripMemoryBitmask != XlType.xltypeNum)
+        throw fromXlOperDoubleWrongTypeException;
 
     return val.val.num;
 }
@@ -648,15 +673,25 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == double))
     fromXlOper!double(&oper, allocator).isNaN.shouldBeTrue;
 }
 
+@("fromXlOper!double wrong oper type")
+@system unittest {
+    "foo".toXlOper(theGC).fromXlOper!double(theGC).shouldThrowWithMessage("Wrong type for fromXlOper!double");
+}
+
+__gshared immutable fromXlOperIntWrongTypeException = new Exception("Wrong type for fromXlOper!int");
+
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == int)) {
     import xlld.xlcall: XlType;
 
-    if(val.xltype == XlType.xltypeMissing)
+    if(val.xltype.stripMemoryBitmask == XlType.xltypeMissing)
         return int.init;
 
-    if(val.xltype == XlType.xltypeNum)
+    if(val.xltype.stripMemoryBitmask == XlType.xltypeNum)
         return cast(typeof(return))val.val.num;
+
+    if(val.xltype.stripMemoryBitmask != XlType.xltypeInt)
+        throw fromXlOperIntWrongTypeException;
 
     return val.val.w;
 }
@@ -681,11 +716,17 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == int)) {
     oper.fromXlOper!int(theGC).shouldEqual(0);
 }
 
+@("fromXlOper!int wrong oper type")
+@system unittest {
+    "foo".toXlOper(theGC).fromXlOper!int(theGC).shouldThrowWithMessage("Wrong type for fromXlOper!int");
+}
 
 ///
 __gshared immutable fromXlOperMemoryException = new Exception("Could not allocate memory for array of char");
 ///
 __gshared immutable fromXlOperConvException = new Exception("Could not convert double to string");
+
+__gshared immutable fromXlOperStringTypeException = new Exception("Wrong type for fromXlOper!string");
 
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string)) {
@@ -695,8 +736,12 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
     import std.range: walkLength;
 
     const stripType = stripMemoryBitmask(val.xltype);
-    if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
+
+    if(stripType == XlType.xltypeMissing)
         return null;
+
+    if(stripType != XlType.xltypeStr && stripType != XlType.xltypeNum)
+        throw fromXlOperStringTypeException;
 
 
     if(stripType == XlType.xltypeStr) {
@@ -714,6 +759,7 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
 
         return () @trusted {  return cast(string)ret; }();
     } else {
+
         // if a double, try to convert it to a string
         import std.math: isNaN;
         import core.stdc.stdio: snprintf;
@@ -774,10 +820,10 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
     "foo".toXlOper(theGC).fromXlOper!string(allocator).shouldThrowWithMessage("Could not allocate memory for array of char");
 }
 
-@("fromXlOper!string conversion failure")
+
+@("fromXlOper!string wrong oper type")
 @system unittest {
-    auto allocator = FailingAllocator();
-    33.3.toXlOper(theGC).fromXlOper!string(allocator).shouldThrowWithMessage("Could not allocate memory for array of char");
+    42.toXlOper(theGC).fromXlOper!string(theGC).shouldThrowWithMessage("Wrong type for fromXlOper!string");
 }
 
 
@@ -1135,10 +1181,15 @@ package bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
     }
 }
 
+__gshared immutable fromXlOperDateTimeTypeException = new Exception("Wrong type for fromXlOper!DateTime");
+
 ///
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime)) {
     import xlld.framework: Excel12f;
     import xlld.xlcall: XlType, xlretSuccess, xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
+
+    if(oper.xltype.stripMemoryBitmask != XlType.xltypeNum)
+        throw fromXlOperDateTimeTypeException;
 
     XLOPER12 ret;
 
@@ -1168,6 +1219,12 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime))
     dateTime.hour.shouldEqual(1);
     dateTime.minute.shouldEqual(2);
     dateTime.second.shouldEqual(3);
+}
+
+@("fromXlOper!DateTime wrong oper type")
+@system unittest {
+    42.toXlOper(theGC).fromXlOper!DateTime(theGC).shouldThrowWithMessage(
+        "Wrong type for fromXlOper!DateTime");
 }
 
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
@@ -1219,8 +1276,13 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
 }
 
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
+    import xlld.xlcall: XlType;
     import std.conv: to;
     import std.traits: fullyQualifiedName;
+
+    static immutable typeException = new Exception("Wrong type for fromXlOper!" ~ T.stringof);
+    if(oper.xltype.stripMemoryBitmask != XlType.xltypeStr)
+        throw typeException;
 
     enum name = fullyQualifiedName!T;
     auto str = oper.fromXlOper!string(allocator);
@@ -1230,6 +1292,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
         : str.to!T;
 }
 
+@("fromXlOper!enum")
 @system unittest {
     enum Enum {
         foo, bar, baz,
@@ -1237,6 +1300,138 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
 
     "bar".toXlOper(theGC).fromXlOper!Enum(theGC).shouldEqual(Enum.bar);
     "quux".toXlOper(theGC).fromXlOper!Enum(theGC).shouldThrowWithMessage("Enum does not have a member named 'quux'");
+}
+
+@("fromXlOper!enum wrong type")
+@system unittest {
+    enum Enum { foo, bar, baz, }
+
+    42.toXlOper(theGC).fromXlOper!Enum(theGC).shouldThrowWithMessage(
+        "Wrong type for fromXlOper!Enum");
+}
+
+T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
+    if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
+{
+    import xlld.xlcall: XlType;
+    import std.conv: text;
+    import std.exception: enforce;
+
+    static immutable multiException = new Exception("Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
+    if(oper.xltype.stripMemoryBitmask != XlType.xltypeMulti)
+        throw multiException;
+
+    const length =  oper.val.array.rows * oper.val.array.columns;
+
+    if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
+        enforce(length == T.tupleof.length,
+               text("1D array length must match number of members in ", T.stringof,
+                    ". Expected ", T.tupleof.length, ", got ", length));
+    else
+        enforce((oper.val.array.rows == 2 && oper.val.array.columns == T.tupleof.length) ||
+               (oper.val.array.rows == T.tupleof.length && oper.val.array.columns == 2),
+               text("2D array must be 2x", T.tupleof.length, " or ", T.tupleof.length, "x2 for ", T.stringof));
+
+    T ret;
+
+    ulong ptrIndex(ulong i) {
+
+        if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
+            return i;
+
+        if(oper.val.array.rows == 2)
+            return i + oper.val.array.columns;
+
+        if(oper.val.array.columns == 2)
+            return i * 2 + 1;
+
+        assert(0);
+    }
+
+    static immutable wrongTypeException = new Exception("Wrong type converting oper to " ~ T.stringof);
+
+    foreach(i, ref member; ret.tupleof) {
+        try
+            member = oper.val.array.lparray[ptrIndex(i)].fromXlOper!(typeof(member))(allocator);
+        catch(Exception _)
+            throw wrongTypeException;
+    }
+
+    return ret;
+}
+
+@("1D array to struct")
+@system unittest {
+    static struct Foo { int x, y; }
+    [2, 3].toXlOper(theGC).fromXlOper!Foo(theGC).shouldEqual(Foo(2, 3));
+}
+
+@("wrong oper type to struct")
+@system unittest {
+    static struct Foo { int x, y; }
+
+    2.toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
+        "Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
+}
+
+@("1D array to struct with wrong length")
+@system unittest {
+
+    static struct Foo { int x, y; }
+
+    [2, 3, 4].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
+        "1D array length must match number of members in Foo. Expected 2, got 3");
+
+    [2].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
+        "1D array length must match number of members in Foo. Expected 2, got 1");
+}
+
+@("1D array to struct with wrong type")
+@system unittest {
+    static struct Foo { int x, y; }
+
+    ["foo", "bar"].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
+        "Wrong type converting oper to Foo");
+}
+
+@("2D horizontal array to struct")
+unittest {
+    import xlld.memorymanager: allocatorContext;
+
+    static struct Foo { int x, y, z; }
+
+    with(allocatorContext(theGC)) {
+        [[any("x"), any("y"), any("z")], [any(2), any(3), any(4)]].toFrom!Foo.shouldEqual(Foo(2, 3, 4));
+    }
+}
+
+@("2D vertical array to struct")
+unittest {
+    import xlld.memorymanager: allocatorContext;
+
+    static struct Foo { int x, y, z; }
+
+    with(allocatorContext(theGC)) {
+        [[any("x"), any(2)], [any("y"), any(3)], [any("z"), any(4)]].toFrom!Foo.shouldEqual(Foo(2, 3, 4));
+    }
+}
+
+@("2D array wrong size")
+unittest {
+    import xlld.memorymanager: allocatorContext;
+
+    static struct Foo { int x, y, z; }
+
+    with(allocatorContext(theGC)) {
+        [[any("x"), any(2)], [any("y"), any(3)], [any("z"), any(4)], [any("w"), any(5)]].toFrom!Foo.
+            shouldThrowWithMessage("2D array must be 2x3 or 3x2 for Foo");
+    }
+
+}
+
+private auto toFrom(R, T)(T val) {
+    import std.experimental.allocator.gc_allocator: GCAllocator;
+    return val.toXlOper(GCAllocator.instance).fromXlOper!R(GCAllocator.instance);
 }
 
 /**

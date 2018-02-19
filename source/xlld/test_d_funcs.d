@@ -281,11 +281,23 @@ enum MyEnum {
     foo, bar, baz,
 }
 
-string FuncMyEnum(MyEnum val) @safe {
+string FuncMyEnumArg(MyEnum val) @safe {
     import std.conv: text;
     return "prefix_" ~ val.text;
 }
 
-MyEnum FuncReturnMyEnum(int i) @safe {
+MyEnum FuncMyEnumRet(int i) @safe {
     return cast(MyEnum)i;
+}
+
+struct Point {
+    int x, y;
+}
+
+int FuncPointArg(Point p) @safe {
+    return p.x + p.y;
+}
+
+Point FuncPointRet(int x, int y) @safe {
+    return Point(x, y);
 }

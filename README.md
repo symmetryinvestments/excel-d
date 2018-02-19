@@ -109,6 +109,14 @@ Custom enum coversions
 If the usual conversions between strings and enums don't work for the user, it is possible to register
 custom coversions by calling the functions `registerConversionTo` and `registerConversionFrom`.
 
+Structs
+--------
+
+D structs can be returned by functions. They are transformed into a string representation.
+
+D structs can also be passed to functions. To do so, pass in a 1D array with the same number
+of elements as the struct in question.
+
 
 Optional custom memory allocation and `@nogc`
 ---------------------------------------------

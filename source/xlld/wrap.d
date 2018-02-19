@@ -326,7 +326,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     import xlld.test_d_funcs: MyEnum;
 
     auto arg = MyEnum.baz.toXlOper(theGC);
-    auto ret = () @trusted { return FuncMyEnum(&arg); }();
+    auto ret = () @trusted { return FuncMyEnumArg(&arg); }();
     ret.shouldEqualDlang("prefix_baz");
 }
 
@@ -336,7 +336,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     import xlld.test_d_funcs: MyEnum;
 
     auto arg = 1.toXlOper(theGC);
-    auto ret = () @trusted { return FuncReturnMyEnum(&arg); }();
+    auto ret = () @trusted { return FuncMyEnumRet(&arg); }();
     ret.shouldEqualDlang("bar");
 }
 
@@ -352,7 +352,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     registerConversionTo!MyEnum((str) => str[3 .. $].to!MyEnum);
 
     auto arg = "___baz".toXlOper(theGC);
-    auto ret = () @trusted { return FuncMyEnum(&arg); }();
+    auto ret = () @trusted { return FuncMyEnumArg(&arg); }();
 
     ret.shouldEqualDlang("prefix_baz");
 }
@@ -369,9 +369,30 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     registerConversionFrom!MyEnum((val) => "___" ~ text(cast(MyEnum)val));
 
     auto arg = 1.toXlOper(theGC);
-    auto ret = () @trusted { return FuncReturnMyEnum(&arg); }();
+    auto ret = () @trusted { return FuncMyEnumRet(&arg); }();
 
     ret.shouldEqualDlang("___bar");
+}
+
+@("Wrap a function that takes a struct using 1D array")
+unittest {
+    mixin(wrapTestFuncsString);
+
+    auto arg = [2, 3].toXlOper(theGC);
+    auto ret = () @trusted { return FuncPointArg(&arg); }();
+
+    ret.shouldEqualDlang(5);
+}
+
+@("Wrap a function that returns a struct")
+unittest {
+    mixin(wrapTestFuncsString);
+
+    auto arg1 = 2.toXlOper(theGC);
+    auto arg2 = 3.toXlOper(theGC);
+    auto ret = () @trusted { return FuncPointRet(&arg1, &arg2); }();
+
+    ret.shouldEqualDlang("Point(2, 3)");
 }
 
 

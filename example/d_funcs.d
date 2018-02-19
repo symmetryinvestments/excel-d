@@ -271,3 +271,13 @@ string FuncEnumArg(MyEnum val) @safe {
 MyEnum FuncEnumRet(int i) @safe {
     return cast(MyEnum)i;
 }
+
+struct Point { int x, y; }
+
+int FuncPointArg(Point point) @safe {
+    return point.x + point.y;
+}
+
+Point FuncPointRet(int x, int y) @safe {
+    return Point(x + 1, y + 2);
+}
