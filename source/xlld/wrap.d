@@ -384,6 +384,17 @@ unittest {
     ret.shouldEqualDlang(5);
 }
 
+@("Wrap a function that returns a struct")
+unittest {
+    mixin(wrapTestFuncsString);
+
+    auto arg1 = 2.toXlOper(theGC);
+    auto arg2 = 3.toXlOper(theGC);
+    auto ret = () @trusted { return FuncPointRet(&arg1, &arg2); }();
+
+    ret.shouldEqualDlang("Point(2, 3)");
+}
+
 
 /**
  A string to use with `mixin` that wraps a D function
