@@ -341,6 +341,40 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 }
 
 
+@("Register a custom to enum conversion")
+@safe unittest {
+    mixin(wrapTestFuncsString);
+
+    import std.conv: to;
+    import xlld.test_d_funcs: MyEnum;
+    import xlld.conv: registerConversionTo;
+
+    registerConversionTo!MyEnum((str) => str[3 .. $].to!MyEnum);
+
+    auto arg = "___baz".toXlOper(theGC);
+    auto ret = () @trusted { return FuncMyEnum(&arg); }();
+
+    ret.shouldEqualDlang("prefix_baz");
+}
+
+@("Register a custom from enum conversion")
+@safe unittest {
+
+    import std.conv: text;
+    import xlld.test_d_funcs: MyEnum;
+    import xlld.conv: registerConversionFrom;
+
+    mixin(wrapTestFuncsString);
+
+    registerConversionFrom!MyEnum((val) => "___" ~ text(cast(MyEnum)val));
+
+    auto arg = 1.toXlOper(theGC);
+    auto ret = () @trusted { return FuncReturnMyEnum(&arg); }();
+
+    ret.shouldEqualDlang("___bar");
+}
+
+
 /**
  A string to use with `mixin` that wraps a D function
  */
