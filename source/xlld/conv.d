@@ -4,6 +4,7 @@ import xlld.xlcall: XLOPER12, XlType;
 import xlld.any: Any;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
+import core.sync.mutex: Mutex;
 
 version(unittest) {
     import xlld.any: any;
@@ -18,8 +19,10 @@ version(unittest) {
 
 alias ToEnumConversionFunction = int delegate(string);
 alias FromEnumConversionFunction = string delegate(int) @safe;
-ToEnumConversionFunction[string] gToEnumConversions;
-FromEnumConversionFunction[string] gFromEnumConversions;
+package __gshared ToEnumConversionFunction[string] gToEnumConversions;
+package __gshared FromEnumConversionFunction[string] gFromEnumConversions;
+package shared Mutex gToEnumMutex;
+package shared Mutex gFromEnumMutex;
 
 
 /**
@@ -562,9 +565,22 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == bool)) {
    be called before converting any enum arguments to be passed to a wrapped
    D function.
  */
-void registerConversionTo(T)(ToEnumConversionFunction func) {
+void registerConversionTo(T)(ToEnumConversionFunction func) @trusted {
     import std.traits: fullyQualifiedName;
+
+    gToEnumMutex.lock_nothrow;
+    scope(exit)gToEnumMutex.unlock_nothrow;
+
     gToEnumConversions[fullyQualifiedName!T] = func;
+}
+
+void unregisterConversionTo(T)() @trusted {
+    import std.traits: fullyQualifiedName;
+
+    gToEnumMutex.lock_nothrow;
+    scope(exit)gToEnumMutex.unlock_nothrow;
+
+    gToEnumConversions.remove(fullyQualifiedName!T);
 }
 
 /**
@@ -572,13 +588,29 @@ void registerConversionTo(T)(ToEnumConversionFunction func) {
    This function will be called to convert enum return values from wrapped
    D functions into strings in Excel.
  */
-void registerConversionFrom(T)(FromEnumConversionFunction func) {
+void registerConversionFrom(T)(FromEnumConversionFunction func) @trusted {
     import std.traits: fullyQualifiedName;
+
+    gFromEnumMutex.lock_nothrow;
+    scope(exit)gFromEnumMutex.unlock_nothrow;
+
     gFromEnumConversions[fullyQualifiedName!T] = func;
 }
 
 
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(T == enum)) {
+void unregisterConversionFrom(T)() @trusted {
+    import std.traits: fullyQualifiedName;
+
+    gFromEnumMutex.lock_nothrow;
+    scope(exit)gFromEnumMutex.unlock_nothrow;
+
+    gFromEnumConversions.remove(fullyQualifiedName!T);
+}
+
+
+
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) @trusted if(is(T == enum)) {
 
     import std.conv: text;
     import std.traits: fullyQualifiedName;
@@ -586,13 +618,19 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(T == enum)) {
 
     enum name = fullyQualifiedName!T;
 
-    if(name in gFromEnumConversions)
-        return gFromEnumConversions[name](value).toXlOper(allocator);
+    {
+        gFromEnumMutex.lock_nothrow;
+        scope(exit) gFromEnumMutex.unlock_nothrow;
+
+        if(name in gFromEnumConversions)
+            return gFromEnumConversions[name](value).toXlOper(allocator);
+    }
 
     scope str = text(value);
-    scope(exit) () @trusted { GC.free(cast(void*)str.ptr); }();
+    auto ret = str.toXlOper(allocator);
+    () @trusted { GC.free(cast(void*)str.ptr); }();
 
-    return str.toXlOper(allocator);
+    return ret;
 }
 
 @("toXlOper!enum")
@@ -614,9 +652,11 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator)
     import core.memory: GC;
 
     scope str = text(value);
-    scope(exit) () @trusted { GC.free(cast(void*)str.ptr); }();
 
-    return str.toXlOper(allocator);
+    auto ret = str.toXlOper(allocator);
+    () @trusted { GC.free(cast(void*)str.ptr); }();
+
+    return ret;
 }
 
 @("toXlOper!struct")
@@ -1287,9 +1327,14 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
     enum name = fullyQualifiedName!T;
     auto str = oper.fromXlOper!string(allocator);
 
-    return name in gToEnumConversions
-        ? cast(T) gToEnumConversions[name](str)
-        : str.to!T;
+    return () @trusted {
+        gToEnumMutex.lock_nothrow;
+        scope(exit) gToEnumMutex.unlock_nothrow;
+
+        return name in gToEnumConversions
+                           ? cast(T) gToEnumConversions[name](str)
+                           : str.to!T;
+    }();
 }
 
 @("fromXlOper!enum")

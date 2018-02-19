@@ -9,7 +9,7 @@ import xlld.xlcall: XLOPER12;
 import xlld.any: Any;
 import std.datetime: DateTime;
 
-version(unittest) {
+version(testingExcelD) {
     import xlld.conv: toXlOper;
     import xlld.any: any;
     import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef,
@@ -20,7 +20,8 @@ version(unittest) {
     import std.experimental.allocator.gc_allocator: GCAllocator;
     alias theMallocator = Mallocator.instance;
     alias theGC = GCAllocator.instance;
-}
+} else
+      enum Serial;
 
 static if(!is(Flaky))
     enum Flaky;
@@ -320,6 +321,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 }
 
 
+@Serial
 @("Wrap a function that takes an enum")
 @safe unittest {
     mixin(wrapTestFuncsString);
@@ -330,6 +332,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     ret.shouldEqualDlang("prefix_baz");
 }
 
+@Serial
 @("Wrap a function that returns an enum")
 @safe unittest {
     mixin(wrapTestFuncsString);
@@ -341,15 +344,17 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 }
 
 
+@Serial
 @("Register a custom to enum conversion")
 @safe unittest {
     mixin(wrapTestFuncsString);
 
     import std.conv: to;
     import xlld.test_d_funcs: MyEnum;
-    import xlld.conv: registerConversionTo;
+    import xlld.conv: registerConversionTo, unregisterConversionTo;
 
     registerConversionTo!MyEnum((str) => str[3 .. $].to!MyEnum);
+    scope(exit) unregisterConversionTo!MyEnum;
 
     auto arg = "___baz".toXlOper(theGC);
     auto ret = () @trusted { return FuncMyEnumArg(&arg); }();
@@ -357,16 +362,18 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     ret.shouldEqualDlang("prefix_baz");
 }
 
+@Serial
 @("Register a custom from enum conversion")
 @safe unittest {
 
     import std.conv: text;
     import xlld.test_d_funcs: MyEnum;
-    import xlld.conv: registerConversionFrom;
+    import xlld.conv: registerConversionFrom, unregisterConversionFrom;
 
     mixin(wrapTestFuncsString);
 
     registerConversionFrom!MyEnum((val) => "___" ~ text(cast(MyEnum)val));
+    scope(exit)unregisterConversionFrom!MyEnum;
 
     auto arg = 1.toXlOper(theGC);
     auto ret = () @trusted { return FuncMyEnumRet(&arg); }();
@@ -1130,6 +1137,7 @@ unittest  {
 }
 
 
+@Flaky
 @("wrapModuleFunctionStr async double -> double")
 unittest {
     import xlld.conv: fromXlOper;

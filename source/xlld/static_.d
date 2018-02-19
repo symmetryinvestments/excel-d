@@ -13,6 +13,13 @@ shared static this() {
     gAsyncReturns = AA!(XLOPER12, XLOPER12).create;
 }
 
+///
+shared static this() {
+    import xlld.conv: gToEnumMutex, gFromEnumMutex;
+    import core.sync.mutex: Mutex;
+    gToEnumMutex = new shared Mutex;
+    gFromEnumMutex = new shared Mutex;
+}
 
 ///
 static this() {
