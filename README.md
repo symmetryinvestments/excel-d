@@ -109,6 +109,17 @@ Custom enum coversions
 If the usual conversions between strings and enums don't work for the user, it is possible to register
 custom coversions by calling the functions `registerConversionTo` and `registerConversionFrom`.
 
+Structs
+--------
+
+D structs can be returned by functions. They are transformed into a string representation.
+
+D structs can also be passed to functions. To do so, pass in Excel either a 1D array with
+the values to be passed to the contructor, or a 2D array that is either 2xN or Nx2 where
+N is the number of elements in the struct. The 2D array should be 2 columns or 2 rows of
+key, value pairs. The key names don't currently have to match the names of struct members
+and the values are assigned by position.
+
 
 Optional custom memory allocation and `@nogc`
 ---------------------------------------------
