@@ -1181,10 +1181,15 @@ package bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
     }
 }
 
+__gshared immutable fromXlOperDateTimeTypeException = new Exception("Wrong type for fromXlOper!DateTime");
+
 ///
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime)) {
     import xlld.framework: Excel12f;
     import xlld.xlcall: XlType, xlretSuccess, xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
+
+    if(oper.xltype.stripMemoryBitmask != XlType.xltypeNum)
+        throw fromXlOperDateTimeTypeException;
 
     XLOPER12 ret;
 
@@ -1214,6 +1219,12 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime))
     dateTime.hour.shouldEqual(1);
     dateTime.minute.shouldEqual(2);
     dateTime.second.shouldEqual(3);
+}
+
+@("fromXlOper!DateTime wrong oper type")
+@system unittest {
+    42.toXlOper(theGC).fromXlOper!DateTime(theGC).shouldThrowWithMessage(
+        "Wrong type for fromXlOper!DateTime");
 }
 
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
@@ -1276,6 +1287,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
         : str.to!T;
 }
 
+@("fromXlOper!enum")
 @system unittest {
     enum Enum {
         foo, bar, baz,
