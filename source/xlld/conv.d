@@ -1315,18 +1315,20 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
 {
     import xlld.xlcall: XlType;
     import std.conv: text;
+    import std.exception: enforce;
 
-    assert(oper.xltype.stripMemoryBitmask == XlType.xltypeMulti,
-           "Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
+    static immutable multiException = new Exception("Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
+    if(oper.xltype.stripMemoryBitmask != XlType.xltypeMulti)
+        throw multiException;
 
     const length =  oper.val.array.rows * oper.val.array.columns;
 
     if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
-        assert(length == T.tupleof.length,
+        enforce(length == T.tupleof.length,
                text("1D array length must match number of members in ", T.stringof,
                     ". Expected ", T.tupleof.length, ", got ", length));
     else
-        assert((oper.val.array.rows == 2 && oper.val.array.columns == T.tupleof.length) ||
+        enforce((oper.val.array.rows == 2 && oper.val.array.columns == T.tupleof.length) ||
                (oper.val.array.rows == T.tupleof.length && oper.val.array.columns == 2),
                text("2D array must be 2x", T.tupleof.length, " or ", T.tupleof.length, "x2 for ", T.stringof));
 
@@ -1343,7 +1345,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
         if(oper.val.array.columns == 2)
             return i * 2 + 1;
 
-        return i;
+        assert(0);
     }
 
     static immutable wrongTypeException = new Exception("Wrong type converting oper to " ~ T.stringof);
@@ -1366,24 +1368,21 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
 
 @("wrong oper type to struct")
 @system unittest {
-    import core.exception: AssertError;
-
     static struct Foo { int x, y; }
 
-    2.toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage!AssertError(
+    2.toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
         "Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
 }
 
 @("1D array to struct with wrong length")
 @system unittest {
-    import core.exception: AssertError;
 
     static struct Foo { int x, y; }
 
-    [2, 3, 4].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage!AssertError(
+    [2, 3, 4].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
         "1D array length must match number of members in Foo. Expected 2, got 3");
 
-    [2].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage!AssertError(
+    [2].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
         "1D array length must match number of members in Foo. Expected 2, got 1");
 }
 
@@ -1420,13 +1419,12 @@ unittest {
 @("2D array wrong size")
 unittest {
     import xlld.memorymanager: allocatorContext;
-    import core.exception: AssertError;
 
     static struct Foo { int x, y, z; }
 
     with(allocatorContext(theGC)) {
         [[any("x"), any(2)], [any("y"), any(3)], [any("z"), any(4)], [any("w"), any(5)]].toFrom!Foo.
-            shouldThrowWithMessage!AssertError("2D array must be 2x3 or 3x2 for Foo");
+            shouldThrowWithMessage("2D array must be 2x3 or 3x2 for Foo");
     }
 
 }
