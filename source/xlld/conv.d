@@ -16,6 +16,9 @@ version(unittest) {
     alias theGC = GCAllocator.instance;
 }
 
+alias EnumConversionFunction = int delegate(string);
+EnumConversionFunction[string] gEnumConversions;
+
 
 /**
    Deep copy of an oper
@@ -551,6 +554,17 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == bool)) {
         oper.val.bool_.shouldEqual(0);
     }
 }
+
+/**
+   Register a custom conversion from string to an enum type. This function will
+   be called before converting any enum arguments to be passed to a wrapped
+   D function.
+ */
+void registerConversion(T)(EnumConversionFunction func) {
+    import std.traits: fullyQualifiedName;
+    gEnumConversions[fullyQualifiedName!T] = func;
+}
+
 
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(T == enum)) {
 
@@ -1188,7 +1202,14 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
 
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
     import std.conv: to;
-    return oper.fromXlOper!string(allocator).to!T;
+    import std.traits: fullyQualifiedName;
+
+    enum name = fullyQualifiedName!T;
+    auto str = oper.fromXlOper!string(allocator);
+
+    return name in gEnumConversions
+        ? cast(T) gEnumConversions[name](str)
+        : str.to!T;
 }
 
 @system unittest {
