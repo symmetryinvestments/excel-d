@@ -194,6 +194,7 @@ a:link:hover {
 	text-decoration: underline !important; /* important so it overrides even id level things on non-hover */
 }
 
+/*
 pre.d_code  { background-color: #fdf6e3; color: #002b36; padding: 0.25em; border: solid 1px #ccc; }
 .d_code .kwrd { color: #b58900; font-weight: bold;  }
 .d_code .com  { color: #666; font-style: italic; }
@@ -204,12 +205,13 @@ pre.d_code  { background-color: #fdf6e3; color: #002b36; padding: 0.25em; border
 .d_code .cons { color: #859900; font-weight: bold;  }
 
 .highlighted .kwrd { color: #b58900; font-weight: bold;  }
-.highlighted .com  { color: #666; font-style: italic; } /* #93a1a1; */
+.highlighted .com  { color: #666; font-style: italic; } /* #93a1a1; * /
 .highlighted .num  { color: #dc322f; font-weight: normal;  }
 .highlighted .str  { color: #2aa198; font-style: italic; }
 .highlighted .op   { color: #586e75; font-weight: bold;  }
 .highlighted .type { color: #268bd2; font-weight: bold;  }
 .highlighted .cons { color: #859900; font-weight: bold;  }
+*/
 
 /* .member-list p, */
 #table-of-contents,
@@ -1010,6 +1012,7 @@ blockquote {
 	color: #333;
 }
 
+pre.d_code,
 .block-code:not([data-language=""]):not([data-language="pre"]) {
 	background-color: #fcfcfc;
 	padding: 0.25em;
@@ -1033,25 +1036,34 @@ blockquote {
 	margin-top: calc(-0.25em - 1px);
 }
 
+.kwrd,
 .highlighted-keyword {
 	color: #859900;
 	font-weight: bold;
 }
+.type,
 .highlighted-type {
 	color: green;
 	font-weight: bold;
 }
+.num,
 .highlighted-number {
 	color: #dc322f;
 }
+.str,
 .highlighted-string {
 	color: red;
 }
+.com,
 .highlighted-comment {
 	color: blue;
 }
+.highlighted-preprocessor-directive {
+	color: #cd00cd;
+}
+.highlighted-identifier,
 .highlighted-tag {
-	color: #00cdcd
+	color: #008888
 }
 .highlighted-tag-name {
 	color: #859900;
@@ -1061,11 +1073,18 @@ blockquote {
 	text-decoration: none;
 	cursor: help;
 }
+.highlighted-named-constant,
 .highlighted-attribute-name {
 	color: green;
 }
 .highlighted-attribute-value {
 	color: red;
+}
+.highlighted-python-indent {
+	background: linear-gradient(to right, #eee, transparent 3px) no-repeat;
+}
+.highlighted-python-indent:hover {
+	background: linear-gradient(to right, #ccc, transparent 3px) no-repeat;
 }
 
 /*
@@ -1099,6 +1118,11 @@ blockquote {
 	font-weight: normal;
 	background-color: transparent;
 	text-align: right;
+	white-space: pre;
+}
+
+.hide-line-numbers .with-line-wrappers .br {
+	display: none;
 }
 .with-line-wrappers .br:target {
 	background: #ffffbb;
@@ -1184,9 +1208,20 @@ blockquote {
 }
 
 #members + h3,
-.member-list + h3 {
+.member-list + h3,
+h3.member-list-header {
 	border-bottom: solid 1px #333;
+	text-transform: capitalize;
 }
+
+#members + h4,
+.member-list + h4,
+h4.member-list-header {
+	font-weight: normal;
+	text-transform: capitalize;
+	text-decoration: underline;
+}
+
 
 tr.leading-row th {
 	border-bottom: solid 2px black;

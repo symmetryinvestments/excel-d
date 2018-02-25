@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <title>wrapModuleWorksheetFunctionsString (xlld.wrap.wrapModuleWorksheetFunctionsString)</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="style.css" />
+        <script src="script.js" type="text/javascript"></script>
+
+	
+	<link rel="prefetch" href="search-results.html" />
+</head>
+<body>
+	<div id="page-header">
+		<div id="logotype">
+		<span>Documentation</span>
+		<nav>
+			<a href="http://excel-d.code.kaleidic.io/">Kaleidic Associates Open Source - Excel-D</a>
+			<a href="https://github.com/kaleidicassociates/excel-d/">Github - excel-d</a>
+		</nav>
+		</div>
+
+		<form id="search" action="search-docs.html">
+			<input placeholder="Find a symbol name..." name="searchTerm" type="search" />
+			<input type="submit" value="Go" />
+		</form>
+	</div>
+	<div id="page-body">
+		<div id="page-content">
+		<h1>wrapModuleWorksheetFunctionsString</h1><div class="breadcrumbs"><a href="xlld.html" class="breadcrumb">xlld</a><a href="xlld.wrap.html" class="breadcrumb">wrap</a></div><div><div class="documentation-comment synopsis"><div><p>A string to mixin that wraps all eligible functions in the
+   given module.</p></div></div></div><div class="annotated-prototype"><div class="function-prototype"><a id="help-link" href="http://dpldocs.info/reading-prototypes">?</a><div class="attributes"></div><div class="return-type"><span class="builtin-type">string</span></div><div class="function-name">wrapModuleWorksheetFunctionsString</div><div class="template-parameters">(<div class="parameters-list toplevel"><div class="template-parameter-item parameter-item">	<span><span class="builtin-type">string</span> <span data-ident="moduleName" class="name">moduleName</span></span></div></div>)</div><div class="runtime-parameters">(<div class="parameters-list toplevel"><div class="runtime-parameter-item parameter-item"><span class="parameter-type-holder"><span class="parameter-type"><span class="builtin-type">string</span></span></span> <span data-ident="callingModule" class="parameter-name name"><a href="#param-callingModule">callingModule</a></span><span class="parameter-default-value">&#160;=&#160;__MODULE__</span></div></div>)</div><div class="function-contracts"></div></div></div><div><h2 id="examples"><a href="#examples" class="header-anchor">Examples</a></h2><div class="documentation-comment"><div></div></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span>
+<span class="br">3 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">4 </span>
+<span class="br">5 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>(<span class="kwrd">cast</span>(<span class="type">double</span>[][])[[<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>], [<span class="num">11</span>, <span class="num">12</span>, <span class="num">13</span>, <span class="num">14</span>]], <span class="hid">allocator</span>);
+<span class="br">6 </span><span class="hid">FuncAddEverything</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="num">60.0</span>);
+<span class="br">7 </span>
+<span class="br">8 </span><span class="hid">arg</span> = <span class="hid">toSRef</span>(<span class="kwrd">cast</span>(<span class="type">double</span>[][])[[<span class="num">0</span>, <span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>], [<span class="num">4</span>, <span class="num">5</span>, <span class="num">6</span>, <span class="num">7</span>]], <span class="hid">allocator</span>);
+<span class="br">9 </span><span class="hid">FuncAddEverything</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="num">28.0</span>);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span>
+<span class="br">3 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">4 </span>
+<span class="br">5 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>(<span class="kwrd">cast</span>(<span class="type">double</span>[][])[[<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>], [<span class="num">11</span>, <span class="num">12</span>, <span class="num">13</span>, <span class="num">14</span>]], <span class="hid">allocator</span>);
+<span class="br">6 </span><span class="hid">FuncTripleEverything</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="kwrd">cast</span>(<span class="type">double</span>[][])[[<span class="num">3</span>, <span class="num">6</span>, <span class="num">9</span>, <span class="num">12</span>], [<span class="num">33</span>, <span class="num">36</span>, <span class="num">39</span>, <span class="num">42</span>]]);
+<span class="br">7 </span>
+<span class="br">8 </span><span class="hid">arg</span> = <span class="hid">toSRef</span>(<span class="kwrd">cast</span>(<span class="type">double</span>[][])[[<span class="num">0</span>, <span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>], [<span class="num">4</span>, <span class="num">5</span>, <span class="num">6</span>, <span class="num">7</span>]], <span class="hid">allocator</span>);
+<span class="br">9 </span><span class="hid">FuncTripleEverything</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="kwrd">cast</span>(<span class="type">double</span>[][])[[<span class="num">0</span>, <span class="num">3</span>, <span class="num">6</span>, <span class="num">9</span>], [<span class="num">12</span>, <span class="num">15</span>, <span class="num">18</span>, <span class="num">21</span>]]);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span>
+<span class="br">3 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">4 </span>
+<span class="br">5 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>([[<span class="str">&quot;foo&quot;</span>, <span class="str">&quot;bar&quot;</span>, <span class="str">&quot;baz&quot;</span>, <span class="str">&quot;quux&quot;</span>], [<span class="str">&quot;toto&quot;</span>, <span class="str">&quot;titi&quot;</span>, <span class="str">&quot;tutu&quot;</span>, <span class="str">&quot;tete&quot;</span>]], <span class="hid">allocator</span>);
+<span class="br">6 </span><span class="hid">FuncAllLengths</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="num">29.0</span>);
+<span class="br">7 </span>
+<span class="br">8 </span><span class="hid">arg</span> = <span class="hid">toSRef</span>([[<span class="str">&quot;&quot;</span>, <span class="str">&quot;&quot;</span>, <span class="str">&quot;&quot;</span>, <span class="str">&quot;&quot;</span>], [<span class="str">&quot;&quot;</span>, <span class="str">&quot;&quot;</span>, <span class="str">&quot;&quot;</span>, <span class="str">&quot;&quot;</span>]], <span class="hid">allocator</span>);
+<span class="br">9 </span><span class="hid">FuncAllLengths</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="num">0.0</span>);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span>
+<span class="br">3 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">4 </span>
+<span class="br">5 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>([[<span class="str">&quot;foo&quot;</span>, <span class="str">&quot;bar&quot;</span>, <span class="str">&quot;baz&quot;</span>, <span class="str">&quot;quux&quot;</span>], [<span class="str">&quot;toto&quot;</span>, <span class="str">&quot;titi&quot;</span>, <span class="str">&quot;tutu&quot;</span>, <span class="str">&quot;tete&quot;</span>]], <span class="hid">allocator</span>);
+<span class="br">6 </span><span class="hid">FuncLengths</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="kwrd">cast</span>(<span class="type">double</span>[][])[[<span class="num">3</span>, <span class="num">3</span>, <span class="num">3</span>, <span class="num">4</span>], [<span class="num">4</span>, <span class="num">4</span>, <span class="num">4</span>, <span class="num">4</span>]]);
+<span class="br">7 </span>
+<span class="br">8 </span><span class="hid">arg</span> = <span class="hid">toSRef</span>([[<span class="str">&quot;&quot;</span>, <span class="str">&quot;&quot;</span>, <span class="str">&quot;&quot;</span>], [<span class="str">&quot;&quot;</span>, <span class="str">&quot;&quot;</span>, <span class="str">&quot;huh&quot;</span>]], <span class="hid">allocator</span>);
+<span class="br">9 </span><span class="hid">FuncLengths</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="kwrd">cast</span>(<span class="type">double</span>[][])[[<span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>], [<span class="num">0</span>, <span class="num">0</span>, <span class="num">3</span>]]);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span>
+<span class="br">3 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">4 </span>
+<span class="br">5 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>([[<span class="str">&quot;foo&quot;</span>, <span class="str">&quot;bar&quot;</span>, <span class="str">&quot;baz&quot;</span>, <span class="str">&quot;quux&quot;</span>], [<span class="str">&quot;toto&quot;</span>, <span class="str">&quot;titi&quot;</span>, <span class="str">&quot;tutu&quot;</span>, <span class="str">&quot;tete&quot;</span>]], <span class="hid">allocator</span>);
+<span class="br">6 </span><span class="hid">FuncBob</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>([[<span class="str">&quot;foobob&quot;</span>, <span class="str">&quot;barbob&quot;</span>, <span class="str">&quot;bazbob&quot;</span>, <span class="str">&quot;quuxbob&quot;</span>],
+<span class="br">7 </span>                                [<span class="str">&quot;totobob&quot;</span>, <span class="str">&quot;titibob&quot;</span>, <span class="str">&quot;tutubob&quot;</span>, <span class="str">&quot;tetebob&quot;</span>]]);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span>
+<span class="br">3 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">4 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>([[<span class="str">&quot;foo&quot;</span>, <span class="str">&quot;bar&quot;</span>], [<span class="str">&quot;baz&quot;</span>, <span class="str">&quot;quux&quot;</span>]], <span class="hid">allocator</span>);
+<span class="br">5 </span><span class="hid">FuncStringSlice</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="num">4.0</span>);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">3 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>([[<span class="num">1.0</span>, <span class="num">2.0</span>, <span class="num">3.0</span>], [<span class="num">4.0</span>, <span class="num">5.0</span>, <span class="num">6.0</span>]], <span class="hid">allocator</span>);
+<span class="br">4 </span><span class="hid">FuncDoubleSlice</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="num">6.0</span>);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">3 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>([[<span class="num">1.0</span>, <span class="num">2.0</span>, <span class="num">3.0</span>], [<span class="num">4.0</span>, <span class="num">5.0</span>, <span class="num">6.0</span>]], <span class="hid">allocator</span>);
+<span class="br">4 </span><span class="hid">FuncSliceTimes3</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>([<span class="num">3.0</span>, <span class="num">6.0</span>, <span class="num">9.0</span>, <span class="num">12.0</span>, <span class="num">15.0</span>, <span class="num">18.0</span>]);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">3 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>([<span class="str">&quot;quux&quot;</span>, <span class="str">&quot;toto&quot;</span>], <span class="hid">allocator</span>);
+<span class="br">4 </span><span class="hid">StringsToStrings</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>([<span class="str">&quot;quuxfoo&quot;</span>, <span class="str">&quot;totofoo&quot;</span>]);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">3 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>([<span class="str">&quot;quux&quot;</span>, <span class="str">&quot;toto&quot;</span>], <span class="hid">allocator</span>);
+<span class="br">4 </span><span class="hid">StringsToString</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="str">&quot;quux, toto&quot;</span>);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">3 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toXlOper</span>(<span class="str">&quot;foo&quot;</span>, <span class="hid">allocator</span>);
+<span class="br">4 </span><span class="hid">StringToString</span>(&amp;<span class="hid">arg</span>).<span class="hid">shouldEqualDlang</span>(<span class="str">&quot;foobar&quot;</span>);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">3 </span><span class="kwrd">auto</span> <span class="hid">arg0</span> = <span class="hid">toXlOper</span>(<span class="str">&quot;foo&quot;</span>, <span class="hid">allocator</span>);
+<span class="br">4 </span><span class="kwrd">auto</span> <span class="hid">arg1</span> = <span class="hid">toXlOper</span>(<span class="str">&quot;bar&quot;</span>, <span class="hid">allocator</span>);
+<span class="br">5 </span><span class="kwrd">auto</span> <span class="hid">arg2</span> = <span class="hid">toXlOper</span>(<span class="str">&quot;baz&quot;</span>, <span class="hid">allocator</span>);
+<span class="br">6 </span><span class="hid">ManyToString</span>(&amp;<span class="hid">arg0</span>, &amp;<span class="hid">arg1</span>, &amp;<span class="hid">arg2</span>).<span class="hid">shouldEqualDlang</span>(<span class="str">&quot;foobarbaz&quot;</span>);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span>: <span class="hid">allocator</span>;
+<span class="br">2 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">3 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toXlOper</span>(<span class="num">2.0</span>, <span class="hid">allocator</span>);
+<span class="br">4 </span><span class="kwrd">static</span> <span class="kwrd">assert</span>(<span class="kwrd">__traits</span>(<span class="hid">compiles</span>, <span class="hid">FuncThrows</span>(&amp;<span class="hid">arg</span>)));</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">std</span>.<span class="hid">experimental</span>.<span class="hid">allocator</span>.<span class="hid">mallocator</span>: <span class="hid">Mallocator</span>;
+<span class="br">2 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">framework</span>: <span class="hid">freeXLOper</span>;
+<span class="br">3 </span>
+<span class="br">4 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">5 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toXlOper</span>(<span class="num">2.0</span>, <span class="hid">Mallocator</span>.<span class="hid">instance</span>);
+<span class="br">6 </span><span class="kwrd">scope</span>(<span class="hid">exit</span>) <span class="hid">freeXLOper</span>(&amp;<span class="hid">arg</span>, <span class="hid">Mallocator</span>.<span class="hid">instance</span>);
+<span class="br">7 </span><span class="hid">FuncAddEverything</span>(&amp;<span class="hid">arg</span>);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">2 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>(<span class="num">33.3</span>, <span class="hid">theGC</span>);
+<span class="br">3 </span><span class="hid">FuncThrows</span>(&amp;<span class="hid">arg</span>); <span class="com">// should not actually throw</span></pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">2 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="hid">toSRef</span>(<span class="num">33.3</span>, <span class="hid">theGC</span>);
+<span class="br">3 </span><span class="hid">FuncAsserts</span>(&amp;<span class="hid">arg</span>); <span class="com">// should not actually throw</span></pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">xlcall</span>: <span class="hid">XlType</span>;
+<span class="br">2 </span><span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">conv</span>: <span class="hid">stripMemoryBitmask</span>;
+<span class="br">3 </span><span class="kwrd">import</span> <span class="hid">std</span>.<span class="hid">conv</span>: <span class="hid">text</span>;
+<span class="br">4 </span>
+<span class="br">5 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">6 </span>
+<span class="br">7 </span><span class="com">// the argument doesn't matter since we mock extracting the year from it</span>
+<span class="br">8 </span><span class="com">// but it does have to be of double type (DateTime for Excel)</span>
+<span class="br">9 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = <span class="num">33.3</span>.<span class="hid">toXlOper</span>(<span class="hid">theGC</span>);
+<span class="br">10 </span>
+<span class="br">11 </span><span class="kwrd">const</span> <span class="hid">year</span> = <span class="num">2017</span>;
+<span class="br">12 </span><span class="kwrd">const</span> <span class="hid">mock</span> = <span class="hid">MockDateTime</span>(<span class="hid">year</span>, <span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>, <span class="num">5</span>);
+<span class="br">13 </span><span class="kwrd">const</span> <span class="hid">ret</span> = <span class="hid">DateTimeToDouble</span>(&amp;<span class="hid">arg</span>);
+<span class="br">14 </span>
+<span class="br">15 </span><span class="kwrd">try</span>
+<span class="br">16 </span>    <span class="hid">ret</span>.<span class="hid">xltype</span>.<span class="hid">stripMemoryBitmask</span>.<span class="hid">shouldEqual</span>(<span class="hid">XlType</span>.<span class="hid">xltypeNum</span>);
+<span class="br">17 </span><span class="kwrd">catch</span>(<span class="hid">Exception</span> <span class="hid">_</span>)
+<span class="br">18 </span>    <span class="kwrd">assert</span>(<span class="kwrd">false</span>, <span class="hid">text</span>(<span class="str">&quot;Expected xltypeNum, got &quot;</span>, *<span class="hid">ret</span>));
+<span class="br">19 </span>
+<span class="br">20 </span><span class="hid">ret</span>.<span class="hid">val</span>.<span class="hid">num</span>.<span class="hid">shouldEqual</span>(<span class="hid">year</span> * <span class="num">2</span>);</pre></div><div class="unittest-example-holder"><div class="documentation-comment"></div><pre class="d_code highlighted with-line-wrappers"><span class="br">1 </span><span class="kwrd">mixin</span>(<span class="hid">wrapTestFuncsString</span>);
+<span class="br">2 </span>
+<span class="br">3 </span><span class="com">//the arguments don't matter since we mock extracting year, etc. from them</span>
+<span class="br">4 </span><span class="com">//they just need to be double (DateTime to Excel)</span>
+<span class="br">5 </span><span class="kwrd">auto</span> <span class="hid">arg</span> = [<span class="num">0.1</span>, <span class="num">0.2</span>].<span class="hid">toXlOper</span>(<span class="hid">theGC</span>);
+<span class="br">6 </span>
+<span class="br">7 </span><span class="kwrd">auto</span> <span class="hid">mockDateTimes</span> = <span class="hid">MockDateTimes</span>(<span class="hid">DateTime</span>(<span class="num">1</span>, <span class="num">1</span>, <span class="num">31</span>),
+<span class="br">8 </span>                                   <span class="hid">DateTime</span>(<span class="num">1</span>, <span class="num">1</span>, <span class="num">30</span>));
+<span class="br">9 </span>
+<span class="br">10 </span><span class="kwrd">auto</span> <span class="hid">ret</span> = <span class="hid">DateTimesToString</span>(&amp;<span class="hid">arg</span>);
+<span class="br">11 </span>
+<span class="br">12 </span><span class="hid">ret</span>.<span class="hid">shouldEqualDlang</span>(<span class="str">&quot;31, 30&quot;</span>);</pre></div><h2 id="meta"><a href="#meta" class="header-anchor">Meta</a></h2><div class="documentation-comment source-section other-section"><h3 id="source"><a href="#source" class="header-anchor">Source</a></h3><div><p><a href="source/xlld.wrap.d.html#L63">See Implementation</a><br /></p></div></div></div></div>
+		<div id="page-nav"><a href="xlld.html" class="parent">xlld</a><a href="xlld.wrap.html" class="parent">wrap</a>
+		<span class="type-separator">functions</span><ul><li><a href="xlld.wrap.wrapAll.html" class="function">wrapAll</a></li><li><a href="xlld.wrap.wrapModuleFunctionImpl.html" class="function">wrapModuleFunctionImpl</a></li><li><a href="xlld.wrap.wrapModuleFunctionStr.html" class="function">wrapModuleFunctionStr</a></li><li><a href="xlld.wrap.wrapModuleWorksheetFunctionsString.html" class="function current">wrapModuleWorksheetFunctionsString</a></li><li><a href="xlld.wrap.wrapWorksheetFunctionsString.html" class="function">wrapWorksheetFunctionsString</a></li></ul></div>
+	</div>
+	<div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+</body>
+</html>
