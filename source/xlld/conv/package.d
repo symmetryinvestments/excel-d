@@ -867,7 +867,7 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
 }
 
 
-package XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
+XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
     import xlld.xlcall: xlbitXLFree, xlbitDLLFree;
     return cast(XlType)(type & ~(xlbitXLFree | xlbitDLLFree));
 }
@@ -1191,7 +1191,7 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
 }
 
 
-package bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
+bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
     const realType = stripMemoryBitmask(oper.xltype);
     return realType == XlType.xltypeMulti;
 }
