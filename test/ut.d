@@ -13,7 +13,7 @@ int main(string[] args)
         "xlld.memorymanager",
         "xlld.test_util",
         "xlld.xlf",
-        "xlld.conv",
+        "xlld.conv.misc",
         "xlld.any",
     );
 }

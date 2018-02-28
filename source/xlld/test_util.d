@@ -61,7 +61,8 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
 {
 
     import xlld.xlcall;
-    import xlld.conv: toXlOper, stripMemoryBitmask;
+    import xlld.conv: toXlOper;
+    import xlld.conv.misc: stripMemoryBitmask;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     import std.experimental.allocator.mallocator: Mallocator;
     import std.array: front, popFront, empty;
@@ -145,7 +146,8 @@ void shouldEqualDlang(U)
     @trusted
 {
     import xlld.memorymanager: allocator;
-    import xlld.conv: fromXlOper, stripMemoryBitmask;
+    import xlld.conv: fromXlOper;
+    import xlld.conv.misc: stripMemoryBitmask;
     import xlld.xlcall: XlType;
     import std.traits: Unqual;
     import std.conv: text;

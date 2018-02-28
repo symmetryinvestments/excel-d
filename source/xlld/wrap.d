@@ -282,7 +282,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap a function that accepts DateTime")
 @system unittest {
     import xlld.xlcall: XlType;
-    import xlld.conv: stripMemoryBitmask;
+    import xlld.conv.misc: stripMemoryBitmask;
     import std.conv: text;
 
     mixin(wrapTestFuncsString);
@@ -729,7 +729,7 @@ private XLOPER12 stringOper(in string msg) @safe @nogc nothrow {
 private XLOPER12 excelRet(T)(T wrappedRet) {
 
     import xlld.conv: toAutoFreeOper;
-    import xlld.conv: stripMemoryBitmask;
+    import xlld.conv.misc: stripMemoryBitmask;
     import xlld.xlcall: XlType;
     import std.traits: isArray;
 
@@ -773,7 +773,7 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 @("excelRet!double[] from row caller")
 unittest {
     import xlld.xlcall: XlType, xlfCaller;
-    import xlld.conv: stripMemoryBitmask;
+    import xlld.conv.misc: stripMemoryBitmask;
     import xlld.memorymanager: autoFree;
 
     XLOPER12 caller;
@@ -798,7 +798,7 @@ unittest {
 @("excelRet!double[] from column caller")
 unittest {
     import xlld.xlcall: XlType, xlfCaller;
-    import xlld.conv: stripMemoryBitmask;
+    import xlld.conv.misc: stripMemoryBitmask;
     import xlld.memorymanager: autoFree;
 
     XLOPER12 caller;
@@ -823,7 +823,7 @@ unittest {
 @("excelRet!double[] from other caller")
 unittest {
     import xlld.xlcall: XlType, xlfCaller;
-    import xlld.conv: stripMemoryBitmask;
+    import xlld.conv.misc: stripMemoryBitmask;
     import xlld.memorymanager: autoFree;
 
     XLOPER12 caller;
