@@ -196,8 +196,6 @@ double FuncTwiceAsync(double d) {
 }
 
 double IntToDouble(int i) {
-    import xlld.xll: log;
-    log("IntToDouble(", i, ")");
     return i * 2;
 }
 
@@ -218,8 +216,8 @@ DateTime[] DateTimes(int year, int month, int day) {
 }
 
 string FuncCaller() @safe {
-    import xlld.xlf: xlfCaller = caller;
-    import xlld.xlcall: XlType;
+    import xlld.func.xlf: xlfCaller = caller;
+    import xlld.sdk.xlcall: XlType;
     import std.conv: text;
 
     auto caller = xlfCaller;
@@ -240,9 +238,9 @@ string FuncCaller() @safe {
 }
 
 string FuncCallerAdjacent() @safe {
-    import xlld.xl: Coerced;
-    import xlld.xlf: caller;
-    import xlld.xlcall: XlType;
+    import xlld.func.xl: Coerced;
+    import xlld.func.xlf: caller;
+    import xlld.sdk.xlcall: XlType;
     import std.exception: enforce;
 
     auto res = caller;

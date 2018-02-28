@@ -886,6 +886,7 @@ private enum invalidXlOperType = 0xdeadbeef;
  whilst Type is the Type that it gets coerced to.
  */
 template dlangToXlOperType(T) {
+    import xlld.sdk.xlcall: XlType;
     static if(is(Unqual!T == string[])   || is(Unqual!T == string[][]) ||
               is(Unqual!T == double[])   || is(Unqual!T == double[][]) ||
               is(Unqual!T == int[])      || is(Unqual!T == int[][]) ||
@@ -913,8 +914,9 @@ template dlangToXlOperType(T) {
  */
 bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
     import xlld.conv.misc: stripMemoryBitmask;
-    const realType = stripMemoryBitmask(oper.xltype);
-    return realType == XlType.xltypeMulti;
+    import xlld.sdk.xlcall: XlType;
+
+    return stripMemoryBitmask(oper.xltype) == XlType.xltypeMulti;
 }
 
 /**

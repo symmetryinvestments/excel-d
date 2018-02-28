@@ -513,7 +513,7 @@ unittest {
 mixin template GenerateDllDef(string module_ = __MODULE__) {
     version(exceldDef) {
         void main(string[] args) nothrow {
-            import xlld.traits: generateDllDef;
+            import xlld.wrap.traits: generateDllDef;
             try {
                 generateDllDef!module_(args);
             } catch(Exception ex) {
