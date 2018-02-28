@@ -1,27 +1,14 @@
 module wrap.module_;
 
-// import xlld.wrap.worksheet;
-// import xlld.sdk.xlcall: XLOPER12;
-// import xlld.any: Any;
-// import std.datetime: DateTime;
-
-// import xlld.conv: toXlOper;
-// import xlld.any: any;
-// import xlld.test.util: TestAllocator, shouldEqualDlang, toSRef,
-//     MockXlFunction, MockDateTime, MockDateTimes;
-
-// import unit_threaded;
-// import std.experimental.allocator.mallocator: Mallocator;
-// import std.experimental.allocator.gc_allocator: GCAllocator;
-// alias theMallocator = Mallocator.instance;
-// alias theGC = GCAllocator.instance;
-
 import xlld.wrap;
 import xlld.test.util;
 import xlld.sdk.xlcall;
 import xlld.conv.to: toXlOper;
 import unit_threaded;
 import std.datetime;
+import std.experimental.allocator.mallocator: Mallocator;
+alias theMallocator = Mallocator.instance;
+
 
 mixin("import xlld.wrap.traits: Async;\n" ~
       wrapModuleWorksheetFunctionsString!"test.d_funcs");

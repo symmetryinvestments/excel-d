@@ -6,23 +6,13 @@ module xlld.wrap.wrap;
 
 import xlld.wrap.worksheet;
 import xlld.sdk.xlcall: XLOPER12;
-import xlld.any: Any;
-import std.datetime: DateTime;
 
 version(testingExcelD) {
     import xlld.conv: toXlOper;
-    import xlld.any: any;
-    import xlld.test.util: TestAllocator, shouldEqualDlang, toSRef,
-        MockXlFunction, MockDateTime, MockDateTimes;
-
+    import xlld.test.util: shouldEqualDlang, toSRef, MockXlFunction;
     import unit_threaded;
-    import std.experimental.allocator.mallocator: Mallocator;
     import std.experimental.allocator.gc_allocator: GCAllocator;
-    alias theMallocator = Mallocator.instance;
     alias theGC = GCAllocator.instance;
-
-    mixin("import xlld.wrap.traits: Async;\n" ~
-            wrapModuleWorksheetFunctionsString!"test.d_funcs");
 
 } else
       enum Serial;
@@ -33,6 +23,10 @@ static if(!is(Flaky))
 
 private template isWorksheetFunction(alias F) {
     import xlld.wrap.traits: isSupportedFunction;
+    import xlld.any: Any;
+    import std.datetime: DateTime;
+
+
     enum isWorksheetFunction =
         isSupportedFunction!(F,
                              bool,
