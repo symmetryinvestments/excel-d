@@ -13,5 +13,6 @@ int main(string[] args)
         "xlld.func.xl",
         "xlld.func.xlf",
         "xlld.conv.misc",
+        "wrap.module_",
     );
 }
