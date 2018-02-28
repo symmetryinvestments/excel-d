@@ -5,7 +5,7 @@
 module xlld.wrap;
 
 import xlld.worksheet;
-import xlld.xlcall: XLOPER12;
+import xlld.sdk.xlcall: XLOPER12;
 import xlld.any: Any;
 import std.datetime: DateTime;
 
@@ -254,7 +254,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("FuncAddEverything wrapper is @nogc")
 @system @nogc unittest {
     import std.experimental.allocator.mallocator: Mallocator;
-    import xlld.framework: freeXLOper;
+    import xlld.sdk.framework: freeXLOper;
 
     mixin(wrapTestFuncsString);
     auto arg = toXlOper(2.0, Mallocator.instance);
@@ -281,7 +281,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 ///
 @("Wrap a function that accepts DateTime")
 @system unittest {
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import xlld.conv.misc: stripMemoryBitmask;
     import std.conv: text;
 
@@ -497,8 +497,8 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
 
 void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle, T args) {
 
-    import xlld.xlcall: XlType, xlAsyncReturn;
-    import xlld.framework: Excel12f;
+    import xlld.sdk.xlcall: XlType, xlAsyncReturn;
+    import xlld.sdk.framework: Excel12f;
     import std.concurrency: spawn;
     import std.format: format;
 
@@ -524,7 +524,7 @@ void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle
         mixin(q{dArgs = %s;}.format(toDArgsStr));
     } catch(Throwable t) {
         static if(isGC!F) {
-            import xlld.xll: log;
+            import xlld.sdk.xll: log;
             log("ERROR: Could not convert to D args for asynchronous function " ~
                 __traits(identifier, F));
         }
@@ -540,8 +540,8 @@ void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle
 }
 
 void wrapAsyncImpl(alias F, A, T)(ref A allocator, XLOPER12 asyncHandle, T dArgs) {
-    import xlld.framework: Excel12f;
-    import xlld.xlcall: xlAsyncReturn;
+    import xlld.sdk.framework: Excel12f;
+    import xlld.sdk.xlcall: xlAsyncReturn;
     import std.traits: Unqual;
 
     // get rid of the temporary memory allocations for the conversions
@@ -619,7 +619,7 @@ private auto toDArgs(alias wrappedFunc, A, T...)
                     (ref A allocator, T args)
 {
     import xlld.xl: coerce, free;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import xlld.conv.from: fromXlOper;
     import std.traits: Parameters, Unqual;
     import std.typecons: Tuple;
@@ -667,7 +667,7 @@ unittest {
 
 @("xltypeNil can convert to array")
 unittest {
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import std.typecons: tuple;
 
     void fun(double[] arg) {}
@@ -712,7 +712,7 @@ private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs) {
 
 private XLOPER12 stringOper(in string msg) @safe @nogc nothrow {
     import xlld.conv: toAutoFreeOper;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
 
     try
         return () @trusted { return msg.toAutoFreeOper; }();
@@ -730,7 +730,7 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 
     import xlld.conv: toAutoFreeOper;
     import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import std.traits: isArray;
 
     static if(isArray!(typeof(wrappedRet))) {
@@ -772,7 +772,7 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
 
 @("excelRet!double[] from row caller")
 unittest {
-    import xlld.xlcall: XlType, xlfCaller;
+    import xlld.sdk.xlcall: XlType, xlfCaller;
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.memorymanager: autoFree;
 
@@ -797,7 +797,7 @@ unittest {
 
 @("excelRet!double[] from column caller")
 unittest {
-    import xlld.xlcall: XlType, xlfCaller;
+    import xlld.sdk.xlcall: XlType, xlfCaller;
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.memorymanager: autoFree;
 
@@ -822,7 +822,7 @@ unittest {
 
 @("excelRet!double[] from other caller")
 unittest {
-    import xlld.xlcall: XlType, xlfCaller;
+    import xlld.sdk.xlcall: XlType, xlfCaller;
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.memorymanager: autoFree;
 
@@ -868,7 +868,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @("No memory allocation bugs in wrapModuleFunctionImpl for double return Mallocator")
 @system unittest {
     import xlld.test_d_funcs: FuncAddEverything;
-    import xlld.xlcall: xlbitDLLFree;
+    import xlld.sdk.xlcall: xlbitDLLFree;
     import xlld.memorymanager: autoFree;
 
     TestAllocator allocator;
@@ -884,7 +884,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return Mallocator")
 @system unittest {
     import xlld.test_d_funcs: FuncTripleEverything;
-    import xlld.xlcall: xlbitDLLFree, XlType;
+    import xlld.sdk.xlcall: xlbitDLLFree, XlType;
     import xlld.memorymanager: autoFree;
 
     TestAllocator allocator;

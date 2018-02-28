@@ -21,9 +21,9 @@ __gshared immutable gDupMemoryException = new Exception("Failed to allocate memo
 /**
    Deep copy of an oper
  */
-from!"xlld.xlcall".XLOPER12 dup(A)(from!"xlld.xlcall".XLOPER12 oper, ref A allocator) @safe {
+from!"xlld.sdk.xlcall".XLOPER12 dup(A)(from!"xlld.sdk.xlcall".XLOPER12 oper, ref A allocator) @safe {
 
-    import xlld.xlcall: XLOPER12, XlType;
+    import xlld.sdk.xlcall: XLOPER12, XlType;
     import std.experimental.allocator: makeArray;
 
     XLOPER12 ret;
@@ -111,14 +111,14 @@ from!"xlld.xlcall".XLOPER12 dup(A)(from!"xlld.xlcall".XLOPER12 oper, ref A alloc
 }
 
 
-from!"xlld.xlcall".XlType stripMemoryBitmask(in from!"xlld.xlcall".XlType type) @safe @nogc pure nothrow {
-    import xlld.xlcall: XlType, xlbitXLFree, xlbitDLLFree;
+from!"xlld.sdk.xlcall".XlType stripMemoryBitmask(in from!"xlld.sdk.xlcall".XlType type) @safe @nogc pure nothrow {
+    import xlld.sdk.xlcall: XlType, xlbitXLFree, xlbitDLLFree;
     return cast(XlType)(type & ~(xlbitXLFree | xlbitDLLFree));
 }
 
 ///
 ushort operStringLength(T)(in T value) {
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import nogc.exception: enforce;
 
     enforce(value.xltype == XlType.xltypeStr,
@@ -137,8 +137,8 @@ unittest {
 }
 
 // can't be pure because to!double isn't pure
-string toString(in from!"xlld.xlcall".XLOPER12 oper) @safe {
-    import xlld.xlcall: XlType;
+string toString(in from!"xlld.sdk.xlcall".XLOPER12 oper) @safe {
+    import xlld.sdk.xlcall: XlType;
     import xlld.conv.misc: stripMemoryBitmask;
     import std.conv: text;
     import std.format: format;
@@ -197,8 +197,8 @@ string toString(in from!"xlld.xlcall".XLOPER12 oper) @safe {
 ///
 __gshared immutable multiMemoryException = new Exception("Failed to allocate memory for multi oper");
 
-package from!"xlld.xlcall".XLOPER12 multi(A)(int rows, int cols, ref A allocator) @trusted {
-    import xlld.xlcall: XLOPER12, XlType;
+package from!"xlld.sdk.xlcall".XLOPER12 multi(A)(int rows, int cols, ref A allocator) @trusted {
+    import xlld.sdk.xlcall: XLOPER12, XlType;
 
     auto ret = XLOPER12();
 

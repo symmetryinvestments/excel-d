@@ -10,9 +10,9 @@
     which are used in the Microsoft Excel C API.
 
 */
-module xlld.xlcallcpp;
+module xlld.sdk.xlcallcpp;
 
-import xlld.xlcall: LPXLOPER12;
+import xlld.sdk.xlcall: LPXLOPER12;
 
 /**
    Excel 12 entry points backwards compatible with Excel 11
@@ -70,7 +70,7 @@ extern(Windows) void SetExcel12EntryPt(EXCEL12PROC gExcel12New)
 int Excel12(int xlfn, LPXLOPER12 operRes, LPXLOPER12[] args ...)
 {
 	import core.vararg: va_list;
-	import xlld.xlcall: xlretFailed, xlretInvCount;
+	import xlld.sdk.xlcall: xlretFailed, xlretInvCount;
 
 	enum cxloper12Max=255;
 	LPXLOPER12[cxloper12Max] rgxloper12;
@@ -101,7 +101,7 @@ int Excel12(int xlfn, LPXLOPER12 operRes, LPXLOPER12[] args ...)
 extern(Windows) int Excel12v(int xlfn, LPXLOPER12 operRes, int count, LPXLOPER12* opers)
     nothrow @nogc
 {
-	import xlld.xlcall: xlretFailed;
+	import xlld.sdk.xlcall: xlretFailed;
 
 	int mdRet;
 	FetchExcel12EntryPt();

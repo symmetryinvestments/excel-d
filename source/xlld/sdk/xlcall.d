@@ -15,7 +15,7 @@
 
   	Ported to the D Programming Language by Laeeth Isharc (2015)
 */
-module xlld.xlcall;
+module xlld.sdk.xlcall;
 
 version(Windows) {
     import core.sys.windows.windows;

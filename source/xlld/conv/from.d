@@ -4,7 +4,7 @@
 module xlld.conv.from;
 
 import xlld.from;
-import xlld.xlcall: XLOPER12;
+import xlld.sdk.xlcall: XLOPER12;
 import xlld.any: Any;
 import std.traits: Unqual;
 import std.datetime: DateTime;
@@ -12,9 +12,9 @@ import core.sync.mutex: Mutex;
 
 version(unittest) {
     import xlld.conv.to: toXlOper;
-    import xlld.framework: freeXLOper;
+    import xlld.sdk.framework: freeXLOper;
     import xlld.test_util: TestAllocator, FailingAllocator, toSRef, MockDateTime, MockXlFunction, shouldEqualDlang;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import xlld.any: any;
     import unit_threaded;
     import std.experimental.allocator.gc_allocator: GCAllocator;
@@ -39,7 +39,7 @@ auto fromXlOper(T, A)(XLOPER12 val, ref A allocator) {
 __gshared immutable fromXlOperDoubleWrongTypeException = new Exception("Wrong type for fromXlOper!double");
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == double)) {
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import xlld.conv.misc: stripMemoryBitmask;
 
     if(val.xltype.stripMemoryBitmask == XlType.xltypeMissing)
@@ -87,7 +87,7 @@ __gshared immutable fromXlOperIntWrongTypeException = new Exception("Wrong type 
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == int)) {
     import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
 
     if(val.xltype.stripMemoryBitmask == XlType.xltypeMissing)
         return int.init;
@@ -137,7 +137,7 @@ __gshared immutable fromXlOperStringTypeException = new Exception("Wrong type fo
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string)) {
 
     import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import std.experimental.allocator: makeArray;
     import std.utf: byChar;
     import std.range: walkLength;
@@ -380,7 +380,7 @@ unittest {
 ///
 @("fromXlOper!double[] from row")
 unittest {
-    import xlld.xlcall: xlfCaller;
+    import xlld.sdk.xlcall: xlfCaller;
 
     XLOPER12 caller;
     caller.xltype = XlType.xltypeSRef;
@@ -453,7 +453,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.xl: coerce, free;
     import xlld.memorymanager: makeArray2D;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import std.experimental.allocator: makeArray;
 
     if(stripMemoryBitmask(val.xltype) == XlType.xltypeNil) {
@@ -517,7 +517,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
 // is to be converted or not, the row index, the column index,
 // and a reference to the cell value itself
 private void apply(T, alias F)(ref XLOPER12 oper) {
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import xlld.xl: coerce, free;
     import xlld.any: Any;
     version(unittest) import xlld.test_util: gNumXlAllocated, gNumXlFree;
@@ -583,8 +583,8 @@ __gshared immutable fromXlOperDateTimeTypeException = new Exception("Wrong type 
 ///
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime)) {
     import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.framework: Excel12f;
-    import xlld.xlcall: XlType, xlretSuccess, xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
+    import xlld.sdk.framework: Excel12f;
+    import xlld.sdk.xlcall: XlType, xlretSuccess, xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
 
     if(oper.xltype.stripMemoryBitmask != XlType.xltypeNum)
         throw fromXlOperDateTimeTypeException;
@@ -627,7 +627,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime))
 
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
 
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import std.uni: toLower;
 
     if(oper.xltype == XlType.xltypeStr) {
@@ -639,7 +639,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
 
 @("fromXlOper!bool when bool")
 @system unittest {
-    import xlld.xlcall: XLOPER12, XlType;
+    import xlld.sdk.xlcall: XLOPER12, XlType;
     XLOPER12 oper;
     oper.xltype = XlType.xltypeBool;
     oper.val.bool_ = 1;
@@ -675,7 +675,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
 
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
     import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import std.conv: to;
     import std.traits: fullyQualifiedName;
 
@@ -718,7 +718,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
 {
     import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import std.conv: text;
     import std.exception: enforce;
 

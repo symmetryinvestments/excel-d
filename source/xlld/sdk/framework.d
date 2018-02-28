@@ -1,10 +1,10 @@
 /**
    Utility functions for writing XLLs
  */
-module xlld.framework;
+module xlld.sdk.framework;
 
 
-import xlld.xlcall;
+import xlld.sdk.xlcall;
 
 
 /**
@@ -105,7 +105,7 @@ unittest {
 
 int Excel12f(int xlfn, LPXLOPER12 pxResult, in LPXLOPER12[] args...) nothrow @nogc
 {
-    import xlld.xlcallcpp: Excel12v;
+    import xlld.sdk.xlcallcpp: Excel12v;
     import std.algorithm: all;
 
     assert(args.all!(a => a !is null));
@@ -144,7 +144,7 @@ T excel12(T, A...)(int xlfn, auto ref A args) @trusted {
     import xlld.memorymanager: gTempAllocator, autoFreeAllocator;
     import xlld.conv.from: fromXlOper;
     import xlld.conv: toXlOper;
-    import xlld.xlcall: xlretSuccess;
+    import xlld.sdk.xlcall: xlretSuccess;
     import std.meta: allSatisfy;
     import std.traits: Unqual;
     import std.experimental.allocator.gc_allocator: GCAllocator;

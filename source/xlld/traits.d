@@ -17,7 +17,7 @@
 module xlld.traits;
 
 import xlld.worksheet;
-import xlld.xlcall;
+import xlld.sdk.xlcall;
 import std.traits: isSomeFunction, allSatisfy, isSomeString;
 
 /// import unit_threaded and introduce helper functions for testing
@@ -361,7 +361,7 @@ WorksheetFunction[] getAllWorksheetFunctions(Modules...)() pure @safe if(allSati
 }
 
 /**
- Implements the getWorksheetFunctions function needed by xlld.xll in
+ Implements the getWorksheetFunctions function needed by xlld.sdk.xll in
  order to register the Excel-callable functions at runtime
  This used to be a template mixin but even using a string mixin inside
  fails to actually make it an extern(C) function.

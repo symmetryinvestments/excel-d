@@ -3,9 +3,7 @@
  */
 module xlld.conv.to;
 
-
-
-import xlld.xlcall: XLOPER12, XlType;
+import xlld.sdk.xlcall: XLOPER12, XlType;
 import xlld.any: Any;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
@@ -13,7 +11,7 @@ import core.sync.mutex: Mutex;
 
 version(unittest) {
     import xlld.any: any;
-    import xlld.framework: freeXLOper;
+    import xlld.sdk.framework: freeXLOper;
     import xlld.test_util: TestAllocator, shouldEqualDlang,
         MockXlFunction, FailingAllocator;
     import unit_threaded;
@@ -44,7 +42,7 @@ unittest {
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == double)) {
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
 
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeNum;
@@ -70,7 +68,7 @@ __gshared immutable toXlOperMemoryException = new Exception("Failed to allocate 
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     if(is(Unqual!T == string) || is(Unqual!T == wstring))
 {
-    import xlld.xlcall: XCHAR;
+    import xlld.sdk.xlcall: XCHAR;
     import std.utf: byWchar;
 
     const numBytes = numOperStringBytes(val);
@@ -366,8 +364,8 @@ unittest {
 
 
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
-    import xlld.framework: Excel12f;
-    import xlld.xlcall: xlfDate, xlfTime, xlretSuccess;
+    import xlld.sdk.framework: Excel12f;
+    import xlld.sdk.xlcall: xlfDate, xlfTime, xlretSuccess;
     import nogc.conv: text;
 
     XLOPER12 ret, date, time;
@@ -396,7 +394,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
 @("toXlOper!DateTime")
 @safe unittest {
 
-    import xlld.xlcall: xlfDate, xlfTime;
+    import xlld.sdk.xlcall: xlfDate, xlfTime;
 
     const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
     {
@@ -422,7 +420,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
 
 
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == bool)) {
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     XLOPER12 ret;
     ret.xltype = XlType.xltypeBool;
     ret.val.bool_ = cast(typeof(ret.val.bool_)) value;
@@ -432,7 +430,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == bool)) {
 ///
 @("toXlOper!bool when bool")
 @system unittest {
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     {
         const oper = true.toXlOper(theGC);
         oper.xltype.shouldEqual(XlType.xltypeBool);
@@ -534,7 +532,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator)
  */
 XLOPER12 toAutoFreeOper(T)(T value) {
     import xlld.memorymanager: autoFreeAllocator;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
 
     auto result = value.toXlOper(autoFreeAllocator);
     result.xltype |= XlType.xlbitDLLFree;

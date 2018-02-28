@@ -7,7 +7,7 @@
 	with Excel.
 */
 
-module xlld.xll;
+module xlld.sdk.xll;
 
 import xlld: WorksheetFunction, LPXLOPER12;
 version(unittest) import unit_threaded;
@@ -110,8 +110,8 @@ extern(Windows) int xlAutoOpen() {
 
 private void registerAllWorkSheetFunctions() {
     import xlld.memorymanager: allocator;
-    import xlld.framework: Excel12f, freeXLOper;
-    import xlld.xlcall: xlGetName, xlfRegister, XLOPER12;
+    import xlld.sdk.framework: Excel12f, freeXLOper;
+    import xlld.sdk.xlcall: xlGetName, xlfRegister, XLOPER12;
     import xlld.conv: toXlOper;
     import std.algorithm: map;
     import std.array: array;
@@ -144,7 +144,7 @@ extern(Windows) int xlAutoClose() {
 
 extern(Windows) int xlAutoFree12(LPXLOPER12 arg) nothrow {
     import xlld.memorymanager: autoFree;
-    import xlld.xlcall: xlbitDLLFree;
+    import xlld.sdk.xlcall: xlbitDLLFree;
 
     if(!(arg.xltype & xlbitDLLFree)) {
         log("[ERROR]: Trying to free XLOPER12 without xlbitDLLFree, ignoring");
@@ -156,9 +156,9 @@ extern(Windows) int xlAutoFree12(LPXLOPER12 arg) nothrow {
 }
 
 extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction) {
-    import xlld.xlcall: XLOPER12, XlType, xltypeInt, xlCoerce, xlerrValue;
+    import xlld.sdk.xlcall: XLOPER12, XlType, xltypeInt, xlCoerce, xlerrValue;
+    import xlld.sdk.framework: Excel12f;
     import xlld.conv: toAutoFreeOper;
-    import xlld.framework: Excel12f;
 
     static XLOPER12 xInfo, xIntAction;
 

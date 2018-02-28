@@ -9,7 +9,7 @@
 */
 module xlld.memorymanager;
 
-import xlld.xlcall: XLOPER12, LPXLOPER12;
+import xlld.sdk.xlcall: XLOPER12, LPXLOPER12;
 import xlld.any: Any;
 import std.experimental.allocator.building_blocks.allocator_list: AllocatorList;
 import std.experimental.allocator.mallocator: Mallocator;
@@ -40,7 +40,7 @@ T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
 
 /// the function called by the Excel callback
 void autoFree(LPXLOPER12 arg) nothrow {
-    import xlld.framework: freeXLOper;
+    import xlld.sdk.framework: freeXLOper;
     freeXLOper(arg, autoFreeAllocator);
 }
 

@@ -5,7 +5,7 @@ module xlld.test_util;
 
 version(unittest):
 
-import xlld.xlcall: LPXLOPER12, XLOPER12, XlType;
+import xlld.sdk.xlcall: LPXLOPER12, XLOPER12, XlType;
 import unit_threaded;
 import std.range: isInputRange;
 import std.experimental.allocator.gc_allocator: GCAllocator;
@@ -60,7 +60,7 @@ extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, L
     nothrow @nogc
 {
 
-    import xlld.xlcall;
+    import xlld.sdk.xlcall;
     import xlld.conv: toXlOper;
     import xlld.conv.misc: stripMemoryBitmask;
     import std.experimental.allocator.gc_allocator: GCAllocator;
@@ -148,7 +148,7 @@ void shouldEqualDlang(U)
     import xlld.memorymanager: allocator;
     import xlld.conv.from: fromXlOper;
     import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import std.traits: Unqual;
     import std.conv: text;
     import std.experimental.allocator.gc_allocator: GCAllocator;
@@ -407,7 +407,7 @@ struct AA(K, V, int N = 100) {
 
 
 XLOPER12 newAsyncHandle() @safe nothrow {
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import core.atomic: atomicOp;
 
     static shared typeof(XLOPER12.val.w) index = 1;
@@ -442,7 +442,7 @@ struct MockXlFunction {
 
 struct MockDateTime {
 
-    import xlld.xlcall: xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
+    import xlld.sdk.xlcall: xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
 
     MockXlFunction year, month, day, hour, minute, second;
 

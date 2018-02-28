@@ -7,7 +7,7 @@ version(unittest):
 
 ///
 shared static this() {
-    import xlld.xlcall: XLOPER12;
+    import xlld.sdk.xlcall: XLOPER12;
     import xlld.test_util: gAsyncReturns, AA;
     gAsyncReturns = AA!(XLOPER12, XLOPER12).create;
 }
@@ -24,7 +24,7 @@ shared static this() {
 ///
 static this() {
     import xlld.test_util: excel12UnitTest;
-    import xlld.xlcallcpp: SetExcel12EntryPt;
+    import xlld.sdk.xlcallcpp: SetExcel12EntryPt;
     // this effectively "implements" the Excel12v function
     // so that the code can be unit tested without needing to link
     // with the Excel SDK

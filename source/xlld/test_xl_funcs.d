@@ -8,7 +8,9 @@ module xlld.test_xl_funcs;
 
 version(unittest):
 
-import xlld.xlcall;
+import xlld.from;
+
+import xlld.sdk.xlcall;
 import xlld.worksheet;
 import xlld.traits: Async;
 
@@ -21,11 +23,14 @@ extern(Windows) double FuncFP12(FP12* cells) nothrow {
 }
 
 
-extern(Windows) LPXLOPER12 FuncFib (LPXLOPER12 n) nothrow {
-    return LPXLOPER12.init;
+extern(Windows) from!"xlld.sdk.xlcall".LPXLOPER12 FuncFib (from!"xlld.sdk.xlcall".LPXLOPER12 n) nothrow {
+    return null;
 }
 
 @Async
-extern(Windows) void FuncAsync(LPXLOPER12 n, LPXLOPER12 asyncHandle) nothrow {
+extern(Windows) void FuncAsync(from!"xlld.sdk.xlcall".LPXLOPER12 n,
+                               from!"xlld.sdk.xlcall".LPXLOPER12 asyncHandle)
+    nothrow
+{
 
 }
