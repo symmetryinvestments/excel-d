@@ -15,7 +15,8 @@ shared static this() {
 
 ///
 shared static this() {
-    import xlld.conv: gToEnumMutex, gFromEnumMutex;
+    import xlld.conv.from: gToEnumMutex;
+    import xlld.conv: gFromEnumMutex;
     import core.sync.mutex: Mutex;
     gToEnumMutex = new shared Mutex;
     gFromEnumMutex = new shared Mutex;

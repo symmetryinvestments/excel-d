@@ -6,13 +6,9 @@ module xlld.conv.misc;
 import xlld.from;
 
 version(unittest) {
-    // import xlld.any: any;
-    // import xlld.framework: freeXLOper;
-    // import xlld.memorymanager: autoFree;
-    // import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef,
-    //     MockXlFunction, MockDateTime, FailingAllocator;
     import xlld.test_util: shouldEqualDlang, FailingAllocator;
-    import xlld.conv: fromXlOper, toXlOper;
+    import xlld.conv: toXlOper;
+    import xlld.conv.from: fromXlOper;
     import unit_threaded.should;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     alias theGC = GCAllocator.instance;
@@ -196,4 +192,31 @@ string toString(in from!"xlld.xlcall".XLOPER12 oper) @safe {
     }
     ret ~= ")";
     return ret;
+}
+
+///
+__gshared immutable multiMemoryException = new Exception("Failed to allocate memory for multi oper");
+
+package from!"xlld.xlcall".XLOPER12 multi(A)(int rows, int cols, ref A allocator) @trusted {
+    import xlld.xlcall: XLOPER12, XlType;
+
+    auto ret = XLOPER12();
+
+    ret.xltype = XlType.xltypeMulti;
+    ret.val.array.rows = rows;
+    ret.val.array.columns = cols;
+
+    ret.val.array.lparray = cast(XLOPER12*)allocator.allocate(rows * cols * ret.sizeof).ptr;
+    if(ret.val.array.lparray is null)
+        throw multiMemoryException;
+
+    return ret;
+}
+
+
+///
+@("multi")
+@safe unittest {
+    auto allocator = FailingAllocator();
+    multi(2, 3, allocator).shouldThrowWithMessage("Failed to allocate memory for multi oper");
 }

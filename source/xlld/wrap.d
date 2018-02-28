@@ -351,7 +351,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 
     import std.conv: to;
     import xlld.test_d_funcs: MyEnum;
-    import xlld.conv: registerConversionTo, unregisterConversionTo;
+    import xlld.conv.from: registerConversionTo, unregisterConversionTo;
 
     registerConversionTo!MyEnum((str) => str[3 .. $].to!MyEnum);
     scope(exit) unregisterConversionTo!MyEnum;
@@ -568,7 +568,7 @@ version(unittest) private double twice(double d) { return d * 2; }
 @("wrapAsync")
 @system unittest {
     import xlld.test_util: asyncReturn, newAsyncHandle;
-    import xlld.conv: fromXlOper;
+    import xlld.conv.from: fromXlOper;
     import core.time: MonoTime;
     import core.thread;
 
@@ -620,7 +620,7 @@ private auto toDArgs(alias wrappedFunc, A, T...)
 {
     import xlld.xl: coerce, free;
     import xlld.xlcall: XlType;
-    import xlld.conv: fromXlOper;
+    import xlld.conv.from: fromXlOper;
     import std.traits: Parameters, Unqual;
     import std.typecons: Tuple;
     import std.meta: staticMap;
@@ -1140,7 +1140,7 @@ unittest  {
 @Flaky
 @("wrapModuleFunctionStr async double -> double")
 unittest {
-    import xlld.conv: fromXlOper;
+    import xlld.conv.from: fromXlOper;
     import xlld.traits: Async;
     import xlld.test_util: asyncReturn, newAsyncHandle;
     import core.time: MonoTime;

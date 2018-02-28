@@ -146,7 +146,7 @@ void shouldEqualDlang(U)
     @trusted
 {
     import xlld.memorymanager: allocator;
-    import xlld.conv: fromXlOper;
+    import xlld.conv.from: fromXlOper;
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.xlcall: XlType;
     import std.traits: Unqual;

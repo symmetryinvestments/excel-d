@@ -22,7 +22,7 @@ struct Any {
     ///
     bool opEquals(Any other) @trusted const {
         import xlld.xlcall: XlType;
-        import xlld.conv: fromXlOper;
+        import xlld.conv.from: fromXlOper;
 
         switch(_impl.xltype) {
 
@@ -73,7 +73,7 @@ struct Any {
     string toString() @safe const {
         import std.conv: text;
         import xlld.xlcall: XlType;
-        import xlld.conv: fromXlOper;
+        import xlld.conv.from: fromXlOper;
         import xlld.xlcall: xlbitXLFree, xlbitDLLFree;
         import std.experimental.allocator.gc_allocator: GCAllocator;
 

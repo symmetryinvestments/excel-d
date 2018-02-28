@@ -30,7 +30,7 @@ package MemoryPool gTempAllocator;
 
 ///
 T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
-    import xlld.conv: isMulti;
+    import xlld.conv.from: isMulti;
     import std.experimental.allocator: makeMultidimensionalArray;
     with(oper.val.array) return
         isMulti(oper) ?
@@ -62,7 +62,7 @@ struct AllocatorContext(A) {
 
     ///
     auto fromXlOper(T, U)(U oper) {
-        import xlld.conv: convFromXlOper = fromXlOper;
+        import xlld.conv.from: convFromXlOper = fromXlOper;
         return convFromXlOper!T(oper, _allocator_);
     }
 
