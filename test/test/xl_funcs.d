@@ -11,8 +11,8 @@ version(unittest):
 import xlld.from;
 
 import xlld.sdk.xlcall;
-import xlld.worksheet;
-import xlld.traits: Async;
+import xlld.wrap.worksheet;
+import xlld.wrap.traits: Async;
 
 extern(Windows) double FuncMulByTwo(double n) nothrow {
     return n * 2;

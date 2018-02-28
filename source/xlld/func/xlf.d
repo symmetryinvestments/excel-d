@@ -128,7 +128,7 @@ private auto callerCell() @safe {
 @("callerCell throws if caller is string")
 unittest {
     import xlld.sdk.xlcall: xlfCaller;
-    import xlld.wrap: toXlOper;
+    import xlld.conv.to: toXlOper;
 
     with(MockXlFunction(xlfCaller, "foobar".toXlOper(theGC))) {
         callerCell.shouldThrowWithMessage("Caller not a cell");

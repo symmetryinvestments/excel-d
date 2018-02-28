@@ -2,9 +2,9 @@
     Wrapper module for Excel. This module contains the functionality that autowraps
     D code for use within Excel.
 */
-module xlld.wrap;
+module xlld.wrap.wrap;
 
-import xlld.worksheet;
+import xlld.wrap.worksheet;
 import xlld.sdk.xlcall: XLOPER12;
 import xlld.any: Any;
 import std.datetime: DateTime;
@@ -28,7 +28,7 @@ static if(!is(Flaky))
 
 
 private template isWorksheetFunction(alias F) {
-    import xlld.traits: isSupportedFunction;
+    import xlld.wrap.traits: isSupportedFunction;
     enum isWorksheetFunction =
         isSupportedFunction!(F,
                              bool,
@@ -65,7 +65,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
         return "";
     }
 
-    import xlld.traits: Identity;
+    import xlld.wrap.traits: Identity;
     import std.array: join;
     import std.traits: ReturnType, Parameters;
 
@@ -90,7 +90,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
             /// attempt to evaluate `isSomeFunction` - it's not always possible
             enum canGetPointerToIt = __traits(compiles, &moduleMember);
             static if(canGetPointerToIt) {
-                import xlld.worksheet: Register;
+                import xlld.wrap.worksheet: Register;
                 import std.traits: getUDAs;
                 alias registerAttrs = getUDAs!(moduleMember, Register);
                 static assert(registerAttrs.length == 0,
@@ -415,8 +415,8 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     assert(callingModule != moduleName,
            "Cannot use `wrapAll` with __MODULE__");
 
-    import xlld.traits: Async, Identity;
-    import xlld.worksheet: Register;
+    import xlld.wrap.traits: Async, Identity;
+    import xlld.wrap.worksheet: Register;
     import std.array: join;
     import std.traits: Parameters, functionAttributes, FunctionAttribute, getUDAs, hasUDA;
     import std.conv: to;
@@ -487,7 +487,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
 ///
 @("wrapModuleFunctionStr")
 @system unittest {
-    import xlld.worksheet;
+    import xlld.wrap.worksheet;
     import std.traits: getUDAs;
 
     mixin(wrapModuleFunctionStr!("test.d_funcs", "FuncAddEverything"));
@@ -681,7 +681,7 @@ unittest {
 // the XLOPER12 result
 private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs) {
 
-    import xlld.worksheet: Dispose;
+    import xlld.wrap.worksheet: Dispose;
     import std.traits: hasUDA, getUDAs;
 
     static XLOPER12 ret;
@@ -1058,7 +1058,7 @@ string wrapAll(Modules...)(in string mainModule = __MODULE__) {
         return "";
     }
 
-    import xlld.traits: implGetWorksheetFunctionsString;
+    import xlld.wrap.traits: implGetWorksheetFunctionsString;
     return
         wrapWorksheetFunctionsString!Modules(mainModule) ~
         "\n" ~
@@ -1072,7 +1072,7 @@ string wrapAll(Modules...)(in string mainModule = __MODULE__) {
 @("wrapAll FuncAddEverything")
 unittest  {
     import xlld.memorymanager: allocator;
-    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
     mixin(wrapAllTestFuncsString);
     auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
@@ -1086,7 +1086,7 @@ unittest  {
 @safe unittest {
     import xlld.test.util: gTestAllocator;
     import xlld.memorymanager: gTempAllocator;
-    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
     // this is needed since gTestAllocator is global, so we can't rely
     // on its destructor
@@ -1141,7 +1141,7 @@ unittest  {
 @("wrapModuleFunctionStr async double -> double")
 unittest {
     import xlld.conv.from: fromXlOper;
-    import xlld.traits: Async;
+    import xlld.wrap.traits: Async;
     import xlld.test.util: asyncReturn, newAsyncHandle;
     import core.time: MonoTime;
     import core.thread;
@@ -1174,7 +1174,7 @@ unittest {
 ///
 @("wrapAll function that returns Any[][]")
 @safe unittest {
-    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
     import xlld.memorymanager: autoFree;
 
     mixin(wrapAllTestFuncsString);
@@ -1194,7 +1194,7 @@ unittest {
 ///
 @("wrapAll function that takes Any[][]")
 unittest {
-    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
     import xlld.memorymanager: allocatorContext;
 
     mixin(wrapAllTestFuncsString);
@@ -1215,7 +1215,7 @@ unittest {
 ///
 @("wrapAll Any[][] -> Any[][]")
 unittest {
-    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
     import xlld.memorymanager: allocatorContext;
     import xlld.any: Any;
 
@@ -1242,7 +1242,7 @@ unittest {
 ///
 @("wrapAll Any[][] -> Any[][] -> Any[][]")
 unittest {
-    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
     import xlld.memorymanager: allocatorContext;
     import xlld.any: Any;
 
@@ -1269,7 +1269,7 @@ unittest {
 ///
 @("wrapAll overloaded functions are not wrapped")
 unittest {
-    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
     mixin(wrapAllTestFuncsString);
 
@@ -1282,7 +1282,7 @@ unittest {
 ///
 @("wrapAll bool -> int")
 @safe unittest {
-    import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
+    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
     mixin(wrapAllTestFuncsString);
     auto string_ = "true".toXlOper(theGC);
@@ -1293,10 +1293,10 @@ unittest {
 version(testingExcelD):
 
 string wrapTestFuncsString() {
-    return "import xlld.traits: Async;\n" ~
+    return "import xlld.wrap.traits: Async;\n" ~
         wrapModuleWorksheetFunctionsString!"test.d_funcs";
 }
 
 string wrapAllTestFuncsString() {
-    return "import xlld.traits: Async;\n" ~ wrapAll!"test.d_funcs";
+    return "import xlld.wrap.traits: Async;\n" ~ wrapAll!"test.d_funcs";
 }

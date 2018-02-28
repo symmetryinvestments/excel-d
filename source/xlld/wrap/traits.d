@@ -14,9 +14,9 @@
  All eligible functions in the 3 example modules above will automagically
  be accessible from Excel (assuming the built XLL is loaded as an add-in).
  */
-module xlld.traits;
+module xlld.wrap.traits;
 
-import xlld.worksheet;
+import xlld.wrap.worksheet;
 import xlld.sdk.xlcall;
 import std.traits: isSomeFunction, allSatisfy, isSomeString;
 
@@ -372,8 +372,7 @@ string implGetWorksheetFunctionsString(Modules...)() if(allSatisfy!(isSomeString
 
 @("template mixin for getWorkSheetFunctions for test_xl_funcs")
 unittest {
-    import xlld.traits;
-    import xlld.worksheet;
+    import xlld.wrap.worksheet;
 
     // mixin the function here then call it to see if it does what it's supposed to
     mixin(implGetWorksheetFunctionsString!"test.xl_funcs");
@@ -413,8 +412,7 @@ string implGetWorksheetFunctionsString(string[] modules...) {
 
 @("implGetWorksheetFunctionsString runtime")
 unittest {
-    import xlld.traits;
-    import xlld.worksheet;
+    import xlld.wrap.worksheet;
 
     // mixin the function here then call it to see if it does what it's supposed to
     mixin(implGetWorksheetFunctionsString("test.xl_funcs"));

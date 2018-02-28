@@ -2,8 +2,6 @@ module xlld;
 
 public import xlld.sdk.xlcall;
 public import xlld.sdk.framework;
-public import xlld.worksheet;
-public import xlld.traits;
 public import xlld.wrap;
 public import xlld.conv;
 public import xlld.func.xlf;

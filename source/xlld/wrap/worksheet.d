@@ -1,7 +1,7 @@
 /**
    Interface for registering worksheet functions with Excel
  */
-module xlld.worksheet;
+module xlld.wrap.worksheet;
 
 /**
  Simple wrapper struct for a value. Provides a type-safe way
