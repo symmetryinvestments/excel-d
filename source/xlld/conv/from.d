@@ -11,11 +11,10 @@ import std.datetime: DateTime;
 import core.sync.mutex: Mutex;
 
 version(unittest) {
-    import xlld.conv: toXlOper;
+    import xlld.conv.to: toXlOper;
     import xlld.framework: freeXLOper;
     import xlld.test_util: TestAllocator, FailingAllocator, toSRef, MockDateTime, MockXlFunction, shouldEqualDlang;
     import xlld.xlcall: XlType;
-    import xlld.conv: toXlOper;
     import xlld.any: any;
     import unit_threaded;
     import std.experimental.allocator.gc_allocator: GCAllocator;

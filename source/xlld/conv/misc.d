@@ -7,7 +7,7 @@ import xlld.from;
 
 version(unittest) {
     import xlld.test_util: shouldEqualDlang, FailingAllocator;
-    import xlld.conv: toXlOper;
+    import xlld.conv.to: toXlOper;
     import xlld.conv.from: fromXlOper;
     import unit_threaded.should;
     import std.experimental.allocator.gc_allocator: GCAllocator;
