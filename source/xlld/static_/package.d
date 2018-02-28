@@ -1,7 +1,6 @@
 /**
    To avoid cyclic dependencies with module constructors
  */
-
 module xlld.static_;
 
 version(unittest):
@@ -16,7 +15,7 @@ shared static this() {
 ///
 shared static this() {
     import xlld.conv.from: gToEnumMutex;
-    import xlld.conv: gFromEnumMutex;
+    import xlld.conv.to: gFromEnumMutex;
     import core.sync.mutex: Mutex;
     gToEnumMutex = new shared Mutex;
     gFromEnumMutex = new shared Mutex;
