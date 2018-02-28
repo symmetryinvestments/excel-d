@@ -3,7 +3,7 @@
  */
 module xlld.func.xlf;
 
-import xlld.sdk.framework: excel12;
+import xlld.func.framework: excel12;
 import xlld.sdk.xlcall: XLOPER12;
 
 version(testingExcelD) {
