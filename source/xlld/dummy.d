@@ -4,7 +4,7 @@
  */
 module xlld.dummy;
 
-version(unittest)
+version(testingExcelD)
     enum useDummy = true;
 else version(exceldDef)
     enum useDummy = true;

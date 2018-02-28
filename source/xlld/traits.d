@@ -21,7 +21,7 @@ import xlld.sdk.xlcall;
 import std.traits: isSomeFunction, allSatisfy, isSomeString;
 
 /// import unit_threaded and introduce helper functions for testing
-version(unittest) {
+version(testingExcelD) {
     import unit_threaded;
 
     /// return a WorksheetFunction for a double function(double) with no
@@ -337,7 +337,7 @@ WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)() {
 
 @("getWorksheetFunctions on test_xl_funcs")
 @safe pure unittest {
-    getModuleWorksheetFunctions!"xlld.test_xl_funcs".shouldEqual(
+    getModuleWorksheetFunctions!"test.xl_funcs".shouldEqual(
         [
             doubleToDoubleFunction("FuncMulByTwo"),
             FP12ToDoubleFunction("FuncFP12"),
@@ -376,7 +376,7 @@ unittest {
     import xlld.worksheet;
 
     // mixin the function here then call it to see if it does what it's supposed to
-    mixin(implGetWorksheetFunctionsString!"xlld.test_xl_funcs");
+    mixin(implGetWorksheetFunctionsString!"test.xl_funcs");
     getWorksheetFunctions.shouldEqual(
         [
             doubleToDoubleFunction("FuncMulByTwo"),
@@ -417,7 +417,7 @@ unittest {
     import xlld.worksheet;
 
     // mixin the function here then call it to see if it does what it's supposed to
-    mixin(implGetWorksheetFunctionsString("xlld.test_xl_funcs"));
+    mixin(implGetWorksheetFunctionsString("test.xl_funcs"));
     getWorksheetFunctions.shouldEqual(
         [
             doubleToDoubleFunction("FuncMulByTwo"),
@@ -491,7 +491,7 @@ if(allSatisfy!(isSomeString, typeof(Modules)))
 
 @("worksheet functions to .def file")
 unittest {
-    dllDefFile!"xlld.test_xl_funcs"("myxll32.dll", "Simple D add-in").shouldEqual(
+    dllDefFile!"test.xl_funcs"("myxll32.dll", "Simple D add-in").shouldEqual(
         DllDefFile(
             [
                 Statement("LIBRARY", "myxll32.dll"),

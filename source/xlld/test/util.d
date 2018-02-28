@@ -1,7 +1,7 @@
 /**
     Utility test functions
 */
-module xlld.test_util;
+module xlld.test.util;
 
 version(unittest):
 

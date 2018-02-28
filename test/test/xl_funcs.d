@@ -4,7 +4,7 @@
  Contains functions with types that the spreadsheet knows about
  */
 
-module xlld.test_xl_funcs;
+module xlld.test.xl_funcs;
 
 version(unittest):
 

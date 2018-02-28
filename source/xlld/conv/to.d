@@ -9,10 +9,10 @@ import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
 import core.sync.mutex: Mutex;
 
-version(unittest) {
+version(testingExcelD) {
     import xlld.any: any;
     import xlld.sdk.framework: freeXLOper;
-    import xlld.test_util: TestAllocator, shouldEqualDlang,
+    import xlld.test.util: TestAllocator, shouldEqualDlang,
         MockXlFunction, FailingAllocator;
     import unit_threaded;
     import std.experimental.allocator.gc_allocator: GCAllocator;

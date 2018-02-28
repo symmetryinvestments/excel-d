@@ -10,7 +10,7 @@
 module xlld.sdk.xll;
 
 import xlld: WorksheetFunction, LPXLOPER12;
-version(unittest) import unit_threaded;
+version(testingExcelD) import unit_threaded;
 
 
 alias AutoCloseFunc = void delegate() nothrow;
@@ -219,6 +219,11 @@ version(unittest) {
     }
 
     int gAutoCloseCounter;
+
+    version(testingExcelD)
+        import unit_threaded: DontTest;
+    else
+        enum DontTest;
 
     @DontTest
         void testAutoCloseFunc() nothrow {

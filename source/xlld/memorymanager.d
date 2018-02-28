@@ -75,7 +75,7 @@ struct AllocatorContext(A) {
     version(unittest) {
         ///
         auto toSRef(T)(T val) {
-            import xlld.test_util: toSRef_ = toSRef;
+            import xlld.test.util: toSRef_ = toSRef;
             return toSRef_(val, _allocator_);
         }
     }

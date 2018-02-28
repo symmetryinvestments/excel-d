@@ -10,4 +10,4 @@ public import xlld.conv.misc;
 public import xlld.xlf;
 public import xlld.any;
 public import xlld.memorymanager: allocatorContext;
-version(unittest) public import xlld.test_util;
+version(unittest) public import xlld.test.util;

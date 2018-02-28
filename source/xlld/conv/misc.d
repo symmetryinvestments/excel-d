@@ -5,10 +5,10 @@ module xlld.conv.misc;
 
 import xlld.from;
 
-version(unittest) {
-    import xlld.test_util: shouldEqualDlang, FailingAllocator;
+version(testingExcelD) {
     import xlld.conv.to: toXlOper;
     import xlld.conv.from: fromXlOper;
+    import xlld.test.util: shouldEqualDlang, FailingAllocator;
     import unit_threaded.should;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     alias theGC = GCAllocator.instance;

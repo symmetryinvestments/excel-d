@@ -9,7 +9,7 @@ int main(string[] args)
         "xlld.xl",
         "xlld.sdk.xll",
         "xlld.memorymanager",
-        "xlld.test_util",
+        "xlld.test.util",
         "xlld.xlf",
         "xlld.conv.misc",
         "xlld.any",

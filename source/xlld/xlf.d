@@ -7,8 +7,8 @@ import xlld.sdk.framework: excel12;
 import xlld.sdk.xlcall: XLOPER12;
 
 version(testingExcelD) {
+    import xlld.test.util;
     import unit_threaded;
-    import xlld.test_util;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     alias theGC = GCAllocator.instance;
 }

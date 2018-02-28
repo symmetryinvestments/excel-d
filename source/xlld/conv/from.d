@@ -10,10 +10,10 @@ import std.traits: Unqual;
 import std.datetime: DateTime;
 import core.sync.mutex: Mutex;
 
-version(unittest) {
+version(testingExcelD) {
     import xlld.conv.to: toXlOper;
     import xlld.sdk.framework: freeXLOper;
-    import xlld.test_util: TestAllocator, FailingAllocator, toSRef, MockDateTime, MockXlFunction, shouldEqualDlang;
+    import xlld.test.util: TestAllocator, FailingAllocator, toSRef, MockDateTime, MockXlFunction, shouldEqualDlang;
     import xlld.sdk.xlcall: XlType;
     import xlld.any: any;
     import unit_threaded;
@@ -520,7 +520,7 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
     import xlld.sdk.xlcall: XlType;
     import xlld.xl: coerce, free;
     import xlld.any: Any;
-    version(unittest) import xlld.test_util: gNumXlAllocated, gNumXlFree;
+    version(unittest) import xlld.test.util: gNumXlAllocated, gNumXlFree;
 
     const rows = oper.val.array.rows;
     const cols = oper.val.array.columns;
@@ -531,7 +531,7 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
 
             auto cellVal = coerce(&values[row * cols + col]);
 
-            // Issue 22's unittest ends up coercing more than test_util can handle
+            // Issue 22's unittest ends up coercing more than xlld.test.util can handle
             // so we undo the side-effect here
             version(unittest) --gNumXlAllocated; // ignore this for testing
 

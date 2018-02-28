@@ -12,7 +12,7 @@ import std.datetime: DateTime;
 version(testingExcelD) {
     import xlld.conv: toXlOper;
     import xlld.any: any;
-    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef,
+    import xlld.test.util: TestAllocator, shouldEqualDlang, toSRef,
         MockXlFunction, MockDateTime, MockDateTimes;
 
     import unit_threaded;
@@ -44,7 +44,7 @@ private template isWorksheetFunction(alias F) {
 
 @("isWorksheetFunction")
 @safe pure unittest {
-    import xlld.test_d_funcs;
+    import test.d_funcs;
     // the line below checks that the code still compiles even with a private function
     // it might stop compiling in a future version when the deprecation rules for
     // visibility kick in
@@ -325,7 +325,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap a function that takes an enum")
 @safe unittest {
     mixin(wrapTestFuncsString);
-    import xlld.test_d_funcs: MyEnum;
+    import test.d_funcs: MyEnum;
 
     auto arg = MyEnum.baz.toXlOper(theGC);
     auto ret = () @trusted { return FuncMyEnumArg(&arg); }();
@@ -336,7 +336,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap a function that returns an enum")
 @safe unittest {
     mixin(wrapTestFuncsString);
-    import xlld.test_d_funcs: MyEnum;
+    import test.d_funcs: MyEnum;
 
     auto arg = 1.toXlOper(theGC);
     auto ret = () @trusted { return FuncMyEnumRet(&arg); }();
@@ -350,7 +350,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     mixin(wrapTestFuncsString);
 
     import std.conv: to;
-    import xlld.test_d_funcs: MyEnum;
+    import test.d_funcs: MyEnum;
     import xlld.conv.from: registerConversionTo, unregisterConversionTo;
 
     registerConversionTo!MyEnum((str) => str[3 .. $].to!MyEnum);
@@ -367,7 +367,7 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @safe unittest {
 
     import std.conv: text;
-    import xlld.test_d_funcs: MyEnum;
+    import test.d_funcs: MyEnum;
     import xlld.conv: registerConversionFrom, unregisterConversionFrom;
 
     mixin(wrapTestFuncsString);
@@ -490,7 +490,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
     import xlld.worksheet;
     import std.traits: getUDAs;
 
-    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "FuncAddEverything"));
+    mixin(wrapModuleFunctionStr!("test.d_funcs", "FuncAddEverything"));
     alias registerAttrs = getUDAs!(FuncAddEverything, Register);
     static assert(registerAttrs[0].argumentText.value == "Array to add");
 }
@@ -562,12 +562,12 @@ private bool isGC(alias F)() {
 }
 
 // this has to be a top-level function and can't be declared in the unittest
-version(unittest) private double twice(double d) { return d * 2; }
+version(testingExcelD) private double twice(double d) { return d * 2; }
 
 @Flaky
 @("wrapAsync")
 @system unittest {
-    import xlld.test_util: asyncReturn, newAsyncHandle;
+    import xlld.test.util: asyncReturn, newAsyncHandle;
     import xlld.conv.from: fromXlOper;
     import core.time: MonoTime;
     import core.thread;
@@ -867,7 +867,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 ///
 @("No memory allocation bugs in wrapModuleFunctionImpl for double return Mallocator")
 @system unittest {
-    import xlld.test_d_funcs: FuncAddEverything;
+    import test.d_funcs: FuncAddEverything;
     import xlld.sdk.xlcall: xlbitDLLFree;
     import xlld.memorymanager: autoFree;
 
@@ -883,7 +883,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 ///
 @("No memory allocation bugs in wrapModuleFunctionImpl for double[][] return Mallocator")
 @system unittest {
-    import xlld.test_d_funcs: FuncTripleEverything;
+    import test.d_funcs: FuncTripleEverything;
     import xlld.sdk.xlcall: xlbitDLLFree, XlType;
     import xlld.memorymanager: autoFree;
 
@@ -902,7 +902,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @system unittest {
     import std.typecons: Ternary;
     import xlld.memorymanager: gTempAllocator, autoFree;
-    import xlld.test_d_funcs: FuncTripleEverything;
+    import test.d_funcs: FuncTripleEverything;
 
     auto arg = toSRef([1.0, 2.0, 3.0], gTempAllocator);
     auto oper = wrapModuleFunctionImpl!FuncTripleEverything(gTempAllocator, &arg);
@@ -916,7 +916,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @system unittest {
     import std.typecons: Ternary;
     import xlld.memorymanager: gTempAllocator;
-    import xlld.test_d_funcs: StringToString;
+    import test.d_funcs: StringToString;
 
     auto arg = "foo".toSRef(gTempAllocator);
     auto oper = wrapModuleFunctionImpl!StringToString(gTempAllocator, &arg);
@@ -928,7 +928,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @("No memory allocation bugs in wrapModuleFunctionImpl for Any[][] -> Any[][] -> Any[][] mallocator")
 @system unittest {
     import xlld.memorymanager: allocatorContext;
-    import xlld.test_d_funcs: FirstOfTwoAnyArrays;
+    import test.d_funcs: FirstOfTwoAnyArrays;
 
     with(allocatorContext(theGC)) {
         auto dArg = [[any(1.0), any("foo"), any(3.0)], [any(4.0), any(5.0), any(6.0)]];
@@ -942,7 +942,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @("No memory allocation bugs in wrapModuleFunctionImpl for Any[][] -> Any[][] -> Any[][] TestAllocator")
 @system unittest {
     import xlld.memorymanager: allocatorContext;
-    import xlld.test_d_funcs: FirstOfTwoAnyArrays;
+    import test.d_funcs: FirstOfTwoAnyArrays;
 
     auto testAllocator = TestAllocator();
 
@@ -960,8 +960,8 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 ///
 @("Correct number of coercions and frees in wrapModuleFunctionImpl")
 @system unittest {
-    import xlld.test_d_funcs: FuncAddEverything;
-    import xlld.test_util: gNumXlAllocated, gNumXlFree;
+    import test.d_funcs: FuncAddEverything;
+    import xlld.test.util: gNumXlAllocated, gNumXlFree;
 
     const oldNumAllocated = gNumXlAllocated;
     const oldNumFree = gNumXlFree;
@@ -978,7 +978,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @("Can't return empty 1D array to Excel")
 @system unittest {
     import xlld.memorymanager: allocatorContext;
-    import xlld.test_d_funcs: EmptyStrings1D;
+    import test.d_funcs: EmptyStrings1D;
 
     with(allocatorContext(theGC)) {
         auto dArg = any(1.0);
@@ -993,7 +993,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @("Can't return empty 2D array to Excel")
 @system unittest {
     import xlld.memorymanager: allocatorContext;
-    import xlld.test_d_funcs: EmptyStrings2D;
+    import test.d_funcs: EmptyStrings2D;
 
     with(allocatorContext(theGC)) {
         auto dArg = any(1.0);
@@ -1007,7 +1007,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @("Can't return half empty 2D array to Excel")
 @system unittest {
     import xlld.memorymanager: allocatorContext;
-    import xlld.test_d_funcs: EmptyStringsHalfEmpty2D;
+    import test.d_funcs: EmptyStringsHalfEmpty2D;
 
     with(allocatorContext(theGC)) {
         auto dArg = any(1.0);
@@ -1022,7 +1022,7 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 @system unittest {
     import std.typecons: Ternary;
     import xlld.memorymanager: allocatorContext, MemoryPool;
-    import xlld.test_d_funcs: FirstOfTwoAnyArrays;
+    import test.d_funcs: FirstOfTwoAnyArrays;
 
     auto pool = MemoryPool();
 
@@ -1084,7 +1084,7 @@ unittest  {
 ///
 @("wrapAll FuncReturnArrayNoGC")
 @safe unittest {
-    import xlld.test_util: gTestAllocator;
+    import xlld.test.util: gTestAllocator;
     import xlld.memorymanager: gTempAllocator;
     import xlld.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
@@ -1103,7 +1103,7 @@ unittest  {
 ///
 @("wrapModuleFunctionStr function that returns Any[][]")
 @safe unittest {
-    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "DoubleArrayToAnyArray"));
+    mixin(wrapModuleFunctionStr!("test.d_funcs", "DoubleArrayToAnyArray"));
 
     auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theGC);
     auto arg = () @trusted { return &oper; }();
@@ -1119,7 +1119,7 @@ unittest  {
 ///
 @("wrapModuleFunctionStr int -> int")
 @safe unittest {
-    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "Twice"));
+    mixin(wrapModuleFunctionStr!("test.d_funcs", "Twice"));
 
     auto oper = 3.toSRef(theGC);
     auto arg = () @trusted { return &oper; }();
@@ -1129,7 +1129,7 @@ unittest  {
 ///
 @("issue 31 - D functions can have const arguments")
 @safe unittest {
-    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "FuncConstDouble"));
+    mixin(wrapModuleFunctionStr!("test.d_funcs", "FuncConstDouble"));
 
     auto oper = (3.0).toSRef(theGC);
     auto arg = () @trusted { return &oper; }();
@@ -1142,11 +1142,11 @@ unittest  {
 unittest {
     import xlld.conv.from: fromXlOper;
     import xlld.traits: Async;
-    import xlld.test_util: asyncReturn, newAsyncHandle;
+    import xlld.test.util: asyncReturn, newAsyncHandle;
     import core.time: MonoTime;
     import core.thread;
 
-    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "AsyncDoubleToDouble"));
+    mixin(wrapModuleFunctionStr!("test.d_funcs", "AsyncDoubleToDouble"));
 
     auto oper = (3.0).toXlOper(theGC);
     auto arg = () @trusted { return &oper; }();
@@ -1165,7 +1165,7 @@ unittest {
 
 @("wrapModuleFunctionStr () -> NaN")
 unittest {
-    mixin(wrapModuleFunctionStr!("xlld.test_d_funcs", "NaN"));
+    mixin(wrapModuleFunctionStr!("test.d_funcs", "NaN"));
     NaN().shouldEqualDlang("#NaN");
 }
 
@@ -1290,13 +1290,13 @@ unittest {
 }
 
 
-version(unittest):
+version(testingExcelD):
 
 string wrapTestFuncsString() {
     return "import xlld.traits: Async;\n" ~
-        wrapModuleWorksheetFunctionsString!"xlld.test_d_funcs";
+        wrapModuleWorksheetFunctionsString!"test.d_funcs";
 }
 
 string wrapAllTestFuncsString() {
-    return "import xlld.traits: Async;\n" ~ wrapAll!"xlld.test_d_funcs";
+    return "import xlld.traits: Async;\n" ~ wrapAll!"test.d_funcs";
 }

@@ -4,7 +4,7 @@
  the spreadsheet.
  */
 
-module xlld.test_d_funcs;
+module xlld.test.d_funcs;
 
 version(unittest):
 
@@ -143,14 +143,14 @@ double FuncAsserts(double) {
     memory leaks.
 */
 @Dispose!((ret) {
-    import xlld.test_util: gTestAllocator;
+    import xlld.test.util: gTestAllocator;
     import std.experimental.allocator: dispose;
     gTestAllocator.dispose(ret);
 })
 
 ///
 double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
-    import xlld.test_util: gTestAllocator;
+    import xlld.test.util: gTestAllocator;
     import std.experimental.allocator: makeArray;
     import std.algorithm: map;
 
