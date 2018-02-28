@@ -9,7 +9,7 @@
 */
 module xlld.memorymanager;
 
-import xlld.xlcall: XLOPER12, LPXLOPER12;
+import xlld.sdk.xlcall: XLOPER12, LPXLOPER12;
 import xlld.any: Any;
 import std.experimental.allocator.building_blocks.allocator_list: AllocatorList;
 import std.experimental.allocator.mallocator: Mallocator;
@@ -30,7 +30,7 @@ package MemoryPool gTempAllocator;
 
 ///
 T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
-    import xlld.conv: isMulti;
+    import xlld.conv.from: isMulti;
     import std.experimental.allocator: makeMultidimensionalArray;
     with(oper.val.array) return
         isMulti(oper) ?
@@ -40,7 +40,7 @@ T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {
 
 /// the function called by the Excel callback
 void autoFree(LPXLOPER12 arg) nothrow {
-    import xlld.framework: freeXLOper;
+    import xlld.sdk.framework: freeXLOper;
     freeXLOper(arg, autoFreeAllocator);
 }
 
@@ -62,7 +62,7 @@ struct AllocatorContext(A) {
 
     ///
     auto fromXlOper(T, U)(U oper) {
-        import xlld.conv: convFromXlOper = fromXlOper;
+        import xlld.conv.from: convFromXlOper = fromXlOper;
         return convFromXlOper!T(oper, _allocator_);
     }
 
@@ -75,7 +75,7 @@ struct AllocatorContext(A) {
     version(unittest) {
         ///
         auto toSRef(T)(T val) {
-            import xlld.test_util: toSRef_ = toSRef;
+            import xlld.test.util: toSRef_ = toSRef;
             return toSRef_(val, _allocator_);
         }
     }

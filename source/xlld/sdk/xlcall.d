@@ -15,7 +15,7 @@
 
   	Ported to the D Programming Language by Laeeth Isharc (2015)
 */
-module xlld.xlcall;
+module xlld.sdk.xlcall;
 
 version(Windows) {
     import core.sys.windows.windows;
@@ -269,63 +269,6 @@ extern(C)int Excel4(int xlfn, LPXLOPER operRes, int count,... );  //_cdecl
 		}
 		VAL val;
 		XlType xltype;
-
-		// can't be pure because to!double isn't pure
-		string toString() @safe const {
-			import xlld.conv: stripMemoryBitmask;
-			import std.conv: text;
-            import std.format: format;
-
-			string ret;
-
-			ret ~= "XLOPER12(";
-			switch(stripMemoryBitmask(xltype)) {
-			default:
-				ret ~= xltype.stripMemoryBitmask.text;
-				break;
-
-			case XlType.xltypeSRef:
-				import xlld.xl: Coerced;
-				auto oper = Coerced(&this);
-				return "SRef[ " ~ oper.toString ~ " ]";
-
-			case XlType.xltypeNum:
-				ret ~= format!"%.6f"(val.num);
-				break;
-
-			case XlType.xltypeStr:
-				ret ~= `"`;
-				() @trusted {
-					const ulong length = val.str[0];
-					ret ~= text(val.str[1 .. 1 + length]);
-				}();
-				ret ~= `"`;
-				break;
-
-			case XlType.xltypeInt:
-				ret ~= text(val.w);
-				break;
-
-			case XlType.xltypeBool:
-				ret ~= text(val.bool_);
-				break;
-
-			case XlType.xltypeErr:
-				ret ~= "ERROR";
-				break;
-
-			case XlType.xltypeBigData:
-				() @trusted {
-					ret ~= "BIG(";
-					ret ~= text(val.bigdata.h.hdata);
-					ret ~= ", ";
-					ret ~= text(val.bigdata.cbData);
-					ret ~= ")";
-				}();
-			}
-			ret ~= ")";
-			return ret;
-		}
 	}
 	alias LPXLOPER12=XLOPER12*;
 

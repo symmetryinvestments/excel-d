@@ -1,15 +1,15 @@
 /**
  Wraps calls to xlXXX "functions" via the Excel4/Excel12 functions
  */
-module xlld.xl;
+module xlld.func.xl;
 
-import xlld.xlcall: XLOPER12, LPXLOPER12;
+import xlld.sdk.xlcall: XLOPER12, LPXLOPER12;
 
 
 ///
 XLOPER12 coerce(in LPXLOPER12 oper) nothrow @nogc @trusted {
-    import xlld.framework: Excel12f;
-    import xlld.xlcall: xlCoerce;
+    import xlld.sdk.framework: Excel12f;
+    import xlld.sdk.xlcall: xlCoerce;
 
     XLOPER12 coerced;
     Excel12f(xlCoerce, &coerced, oper);
@@ -23,8 +23,8 @@ void free(ref const(XLOPER12) oper) nothrow @nogc @trusted {
 
 ///
 void free(in LPXLOPER12 oper) nothrow @nogc @trusted {
-    import xlld.framework: Excel12f;
-    import xlld.xlcall: xlFree;
+    import xlld.sdk.framework: Excel12f;
+    import xlld.sdk.xlcall: xlFree;
 
     const(XLOPER12)*[1] arg = [oper];
     Excel12f(xlFree, null, arg);

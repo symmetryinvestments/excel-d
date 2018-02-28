@@ -1,669 +1,30 @@
-module xlld.conv;
+/**
+   Conversions from XLOPER12 to D types
+ */
+module xlld.conv.from;
 
-import xlld.xlcall: XLOPER12, XlType;
+import xlld.from;
+import xlld.sdk.xlcall: XLOPER12;
 import xlld.any: Any;
-import std.traits: isIntegral, Unqual;
+import std.traits: Unqual;
 import std.datetime: DateTime;
 import core.sync.mutex: Mutex;
 
-version(unittest) {
+version(testingExcelD) {
+    import xlld.conv.to: toXlOper;
+    import xlld.sdk.framework: freeXLOper;
+    import xlld.test.util: TestAllocator, FailingAllocator, toSRef, MockDateTime, MockXlFunction, shouldEqualDlang;
+    import xlld.sdk.xlcall: XlType;
     import xlld.any: any;
-    import xlld.framework: freeXLOper;
-    import xlld.memorymanager: autoFree;
-    import xlld.test_util: TestAllocator, shouldEqualDlang, toSRef,
-        MockXlFunction, MockDateTime, FailingAllocator;
     import unit_threaded;
     import std.experimental.allocator.gc_allocator: GCAllocator;
     alias theGC = GCAllocator.instance;
 }
 
 alias ToEnumConversionFunction = int delegate(string);
-alias FromEnumConversionFunction = string delegate(int) @safe;
 package __gshared ToEnumConversionFunction[string] gToEnumConversions;
-package __gshared FromEnumConversionFunction[string] gFromEnumConversions;
 package shared Mutex gToEnumMutex;
-package shared Mutex gFromEnumMutex;
 
-
-/**
-   Deep copy of an oper
- */
-XLOPER12 dup(A)(XLOPER12 oper, ref A allocator) @safe {
-
-    import xlld.xlcall: XlType;
-    import std.experimental.allocator: makeArray;
-
-    XLOPER12 ret;
-
-    ret.xltype = oper.xltype;
-
-    switch(stripMemoryBitmask(oper.xltype)) with(XlType) {
-
-        default:
-            ret = oper;
-            return ret;
-
-        case xltypeStr:
-            const length = operStringLength(oper) + 1;
-
-            () @trusted {
-                ret.val.str = allocator.makeArray!wchar(length).ptr;
-                if(ret.val.str is null)
-                    throw toXlOperMemoryException;
-            }();
-
-            () @trusted { ret.val.str[0 .. length] = oper.val.str[0 .. length]; }();
-            return ret;
-
-        case xltypeMulti:
-            () @trusted {
-                ret.val.array.rows = oper.val.array.rows;
-                ret.val.array.columns = oper.val.array.columns;
-                const length = oper.val.array.rows * oper.val.array.columns;
-                ret.val.array.lparray = allocator.makeArray!XLOPER12(length).ptr;
-
-                if(ret.val.array.lparray is null)
-                    throw toXlOperMemoryException;
-
-                foreach(i; 0 .. length) {
-                    ret.val.array.lparray[i] = oper.val.array.lparray[i].dup(allocator);
-                }
-            }();
-
-            return ret;
-    }
-
-    assert(0);
-}
-
-
-///
-@("dup")
-@safe unittest {
-    auto int_ = 42.toXlOper(theGC);
-    int_.dup(theGC).shouldEqualDlang(42);
-
-    auto double_ = (33.3).toXlOper(theGC);
-    double_.dup(theGC).shouldEqualDlang(33.3);
-
-    auto string_ = "foobar".toXlOper(theGC);
-    string_.dup(theGC).shouldEqualDlang("foobar");
-
-    auto array = () @trusted {
-        return [
-            ["foo", "bar", "baz"],
-            ["quux", "toto", "brzz"]
-        ]
-        .toXlOper(theGC);
-    }();
-
-    array.dup(theGC).shouldEqualDlang(
-        [
-            ["foo", "bar", "baz"],
-            ["quux", "toto", "brzz"],
-        ]
-    );
-}
-
-@("dup string allocator fails")
-@safe unittest {
-    auto allocator = FailingAllocator();
-    "foo".toXlOper(theGC).dup(allocator).shouldThrowWithMessage("Failed to allocate memory for string oper");
-}
-
-@("dup multi allocator fails")
-@safe unittest {
-    auto allocator = FailingAllocator();
-    auto oper = () @trusted { return [33.3].toXlOper(theGC); }();
-    oper.dup(allocator).shouldThrowWithMessage("Failed to allocate memory for string oper");
-}
-
-
-///
-XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(isIntegral!T) {
-    auto ret = XLOPER12();
-    ret.xltype = XlType.xltypeInt;
-    ret.val.w = val;
-    return ret;
-}
-
-///
-@("toExcelOper!int")
-unittest {
-    auto oper = 42.toXlOper(theGC);
-    oper.xltype.shouldEqual(XlType.xltypeInt);
-    oper.val.w.shouldEqual(42);
-}
-
-
-///
-XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(is(Unqual!T == double)) {
-    import xlld.xlcall: XlType;
-
-    auto ret = XLOPER12();
-    ret.xltype = XlType.xltypeNum;
-    ret.val.num = val;
-
-    return ret;
-}
-
-///
-@("toExcelOper!double")
-unittest {
-    auto oper = (42.0).toXlOper(theGC);
-    oper.xltype.shouldEqual(XlType.xltypeNum);
-    oper.val.num.shouldEqual(42.0);
-}
-
-
-///
-__gshared immutable toXlOperMemoryException = new Exception("Failed to allocate memory for string oper");
-
-
-///
-XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
-    if(is(Unqual!T == string) || is(Unqual!T == wstring))
-{
-    import xlld.xlcall: XCHAR;
-    import std.utf: byWchar;
-
-    const numBytes = numOperStringBytes(val);
-    auto wval = () @trusted { return cast(wchar[])allocator.allocate(numBytes); }();
-    if(wval is null)
-        throw toXlOperMemoryException;
-
-    int i = 1;
-    foreach(ch; val.byWchar) {
-        wval[i++] = ch;
-    }
-
-    wval[0] = cast(ushort)(i - 1);
-
-    auto ret = XLOPER12();
-    ret.xltype = XlType.xltypeStr;
-    () @trusted { ret.val.str = cast(XCHAR*)&wval[0]; }();
-
-    return ret;
-}
-
-///
-@("toXlOper!string utf8")
-@system unittest {
-    import std.conv: to;
-    import xlld.memorymanager: allocator;
-
-    const str = "foo";
-    auto oper = str.toXlOper(allocator);
-    scope(exit) freeXLOper(&oper, allocator);
-
-    oper.xltype.shouldEqual(XlType.xltypeStr);
-    (cast(int)oper.val.str[0]).shouldEqual(str.length);
-    (cast(wchar*)oper.val.str)[1 .. str.length + 1].to!string.shouldEqual(str);
-}
-
-///
-@("toXlOper!string utf16")
-@system unittest {
-    import xlld.memorymanager: allocator;
-
-    const str = "foo"w;
-    auto oper = str.toXlOper(allocator);
-    scope(exit) freeXLOper(&oper, allocator);
-
-    oper.xltype.shouldEqual(XlType.xltypeStr);
-    (cast(int)oper.val.str[0]).shouldEqual(str.length);
-    (cast(wchar*)oper.val.str)[1 .. str.length + 1].shouldEqual(str);
-}
-
-///
-@("toXlOper!string TestAllocator")
-@system unittest {
-    auto allocator = TestAllocator();
-    auto oper = "foo".toXlOper(allocator);
-    allocator.numAllocations.shouldEqual(1);
-    freeXLOper(&oper, allocator);
-}
-
-///
-@("toXlOper!string unicode")
-@system unittest {
-    import std.utf: byWchar;
-    import std.array: array;
-
-    "é".byWchar.array.length.shouldEqual(1);
-    "é"w.byWchar.array.length.shouldEqual(1);
-
-    auto oper = "é".toXlOper(theGC);
-    const ushort length = oper.val.str[0];
-    length.shouldEqual("é"w.length);
-}
-
-@("toXlOper!string failing allocator")
-@safe unittest {
-    auto allocator = FailingAllocator();
-    "foo".toXlOper(theGC).dup(allocator).shouldThrowWithMessage("Failed to allocate memory for string oper");
-}
-
-/// the number of bytes required to store `str` as an XLOPER12 string
-package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(Unqual!T == wstring)) {
-    // XLOPER12 strings are wide strings where index 0 is the length
-    // and [1 .. $] is the actual string
-    return (str.length + 1) * wchar.sizeof;
-}
-
-
-///
-__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
-
-
-///
-XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
-    if(is(Unqual!T == double) || is(Unqual!T == string) || is(Unqual!T == Any)
-       || is(Unqual!T == int) || is(Unqual!T == DateTime))
-{
-    import std.algorithm: map, all;
-    import std.array: array;
-
-    if(!values.all!(a => a.length == values[0].length))
-       throw toXlOperShapeException;
-
-    const rows = cast(int)values.length;
-    const cols = values.length ? cast(int)values[0].length : 0;
-    auto ret = multi(rows, cols, allocator);
-    auto opers = () @trusted { return ret.val.array.lparray[0 .. rows*cols]; }();
-
-    int i;
-    foreach(ref row; values) {
-        foreach(ref val; row) {
-            opers[i++] = val.toXlOper(allocator);
-        }
-    }
-
-    return ret;
-}
-
-
-///
-@("toXlOper string[][]")
-@system unittest {
-    import xlld.memorymanager: allocator;
-
-    auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper(allocator);
-    scope(exit) freeXLOper(&oper, allocator);
-
-    oper.xltype.shouldEqual(XlType.xltypeMulti);
-    oper.val.array.rows.shouldEqual(2);
-    oper.val.array.columns.shouldEqual(3);
-    auto opers = oper.val.array.lparray[0 .. oper.val.array.rows * oper.val.array.columns];
-
-    opers[0].shouldEqualDlang("foo");
-    opers[3].shouldEqualDlang("toto");
-    opers[5].shouldEqualDlang("quux");
-}
-
-///
-@("toXlOper string[][] TestAllocator")
-@system unittest {
-    TestAllocator allocator;
-    auto oper = [["foo", "bar", "baz"], ["toto", "titi", "quux"]].toXlOper(allocator);
-    allocator.numAllocations.shouldEqual(7);
-    freeXLOper(&oper, allocator);
-}
-
-///
-@("toXlOper double[][]")
-@system unittest {
-    TestAllocator allocator;
-    auto oper = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]].toXlOper(allocator);
-    allocator.numAllocations.shouldEqual(1);
-    freeXLOper(&oper, allocator);
-}
-
-@("toXlOper!double[][] failing allocation")
-@safe unittest {
-    auto allocator = FailingAllocator();
-    [33.3].toXlOper(allocator).shouldThrowWithMessage("Failed to allocate memory for multi oper");
-}
-
-@("toXlOper!double[][] wrong shape")
-@safe unittest {
-    [[33.3], [1.0, 2.0]].toXlOper(theGC).shouldThrowWithMessage("# of columns must all be the same and aren't");
-}
-
-///
-__gshared immutable multiMemoryException = new Exception("Failed to allocate memory for multi oper");
-
-private XLOPER12 multi(A)(int rows, int cols, ref A allocator) @trusted {
-    auto ret = XLOPER12();
-
-    ret.xltype = XlType.xltypeMulti;
-    ret.val.array.rows = rows;
-    ret.val.array.columns = cols;
-
-    ret.val.array.lparray = cast(XLOPER12*)allocator.allocate(rows * cols * ret.sizeof).ptr;
-    if(ret.val.array.lparray is null)
-        throw multiMemoryException;
-
-    return ret;
-}
-
-
-@("multi")
-@safe unittest {
-    auto allocator = FailingAllocator();
-    multi(2, 3, allocator).shouldThrowWithMessage("Failed to allocate memory for multi oper");
-}
-
-///
-XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(Unqual!T == string[]) || is(Unqual!T == double[]) ||
-                                                      is(Unqual!T == int[]) || is(Unqual!T == DateTime[])) {
-    T[1] realValues = [values];
-    return realValues[].toXlOper(allocator);
-}
-
-
-///
-@("toXlOper string[]")
-@system unittest {
-    TestAllocator allocator;
-    auto oper = ["foo", "bar", "baz", "toto", "titi", "quux"].toXlOper(allocator);
-    allocator.numAllocations.shouldEqual(7);
-    freeXLOper(&oper, allocator);
-}
-
-///
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any)) {
-    return value.dup(allocator);
-}
-
-///
-@("toXlOper any double")
-unittest {
-    any(5.0, theGC).toXlOper(theGC).shouldEqualDlang(5.0);
-}
-
-///
-@("toXlOper any string")
-unittest {
-    any("foo", theGC).toXlOper(theGC).shouldEqualDlang("foo");
-}
-
-///
-@("toXlOper any double[][]")
-unittest {
-    any([[1.0, 2.0], [3.0, 4.0]], theGC)
-        .toXlOper(theGC).shouldEqualDlang([[1.0, 2.0], [3.0, 4.0]]);
-}
-
-///
-@("toXlOper any string[][]")
-unittest {
-    any([["foo", "bar"], ["quux", "toto"]], theGC)
-        .toXlOper(theGC).shouldEqualDlang([["foo", "bar"], ["quux", "toto"]]);
-}
-
-
-///
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any[])) {
-    return [value].toXlOper(allocator);
-}
-
-///
-@("toXlOper any[]")
-unittest {
-    import xlld.memorymanager: allocatorContext;
-
-    with(allocatorContext(theGC)) {
-        auto oper = toXlOper([any(42.0), any("foo")]);
-        oper.xltype.shouldEqual(XlType.xltypeMulti);
-        oper.val.array.lparray[0].shouldEqualDlang(42.0);
-        oper.val.array.lparray[1].shouldEqualDlang("foo");
-    }
-}
-
-
-///
-@("toXlOper mixed 1D array of any")
-unittest {
-    const a = any([any(1.0, theGC), any("foo", theGC)],
-                  theGC);
-    auto oper = a.toXlOper(theGC);
-    oper.xltype.shouldEqual(XlType.xltypeMulti);
-
-    const rows = oper.val.array.rows;
-    const cols = oper.val.array.columns;
-    auto opers = oper.val.array.lparray[0 .. rows * cols];
-    opers[0].shouldEqualDlang(1.0);
-    opers[1].shouldEqualDlang("foo");
-}
-
-///
-@("toXlOper any[][]")
-unittest {
-    import xlld.memorymanager: allocatorContext;
-
-    with(allocatorContext(theGC)) {
-        auto oper = toXlOper([[any(42.0), any("foo"), any("quux")], [any("bar"), any(7.0), any("toto")]]);
-        oper.xltype.shouldEqual(XlType.xltypeMulti);
-        oper.val.array.rows.shouldEqual(2);
-        oper.val.array.columns.shouldEqual(3);
-        oper.val.array.lparray[0].shouldEqualDlang(42.0);
-        oper.val.array.lparray[1].shouldEqualDlang("foo");
-        oper.val.array.lparray[2].shouldEqualDlang("quux");
-        oper.val.array.lparray[3].shouldEqualDlang("bar");
-        oper.val.array.lparray[4].shouldEqualDlang(7.0);
-        oper.val.array.lparray[5].shouldEqualDlang("toto");
-    }
-}
-
-
-///
-@("toXlOper mixed 2D array of any")
-unittest {
-    const a = any([
-                     [any(1.0, theGC), any(2.0, theGC)],
-                     [any("foo", theGC), any("bar", theGC)]
-                 ],
-                 theGC);
-    auto oper = a.toXlOper(theGC);
-    oper.xltype.shouldEqual(XlType.xltypeMulti);
-
-    const rows = oper.val.array.rows;
-    const cols = oper.val.array.columns;
-    auto opers = oper.val.array.lparray[0 .. rows * cols];
-    opers[0].shouldEqualDlang(1.0);
-    opers[1].shouldEqualDlang(2.0);
-    opers[2].shouldEqualDlang("foo");
-    opers[3].shouldEqualDlang("bar");
-}
-
-
-
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
-    import xlld.framework: Excel12f;
-    import xlld.xlcall: xlfDate, xlfTime, xlretSuccess;
-    import nogc.conv: text;
-
-    XLOPER12 ret, date, time;
-
-    auto year = value.year.toXlOper(allocator);
-    auto month = value.month.toXlOper(allocator);
-    auto day = value.day.toXlOper(allocator);
-
-    const dateCode = () @trusted { return Excel12f(xlfDate, &date, &year, &month, &day); }();
-    assert(dateCode == xlretSuccess, "Error calling xlfDate");
-    () @trusted { assert(date.xltype == XlType.xltypeNum, text("date is not xltypeNum but ", date.xltype)); }();
-
-    auto hour = value.hour.toXlOper(allocator);
-    auto minute = value.minute.toXlOper(allocator);
-    auto second = value.second.toXlOper(allocator);
-
-    const timeCode = () @trusted { return Excel12f(xlfTime, &time, &hour, &minute, &second); }();
-    assert(timeCode == xlretSuccess, "Error calling xlfTime");
-    () @trusted { assert(time.xltype == XlType.xltypeNum, text("time is not xltypeNum but ", time.xltype)); }();
-
-    ret.xltype = XlType.xltypeNum;
-    ret.val.num = date.val.num + time.val.num;
-    return ret;
-}
-
-@("toXlOper!DateTime")
-@safe unittest {
-
-    import xlld.xlcall: xlfDate, xlfTime;
-
-    const dateTime = DateTime(2017, 12, 31, 1, 2, 3);
-    {
-        auto mockDate = MockXlFunction(xlfDate, 0.1.toXlOper(theGC));
-        auto mockTime = MockXlFunction(xlfTime, 0.2.toXlOper(theGC));
-
-        auto oper = dateTime.toXlOper(theGC);
-
-        oper.xltype.shouldEqual(XlType.xltypeNum);
-        oper.val.num.shouldApproxEqual(0.3);
-    }
-
-    {
-        auto mockDate = MockXlFunction(xlfDate, 1.1.toXlOper(theGC));
-        auto mockTime = MockXlFunction(xlfTime, 1.2.toXlOper(theGC));
-
-        auto oper = dateTime.toXlOper(theGC);
-
-        oper.xltype.shouldEqual(XlType.xltypeNum);
-        oper.val.num.shouldApproxEqual(2.3);
-    }
-}
-
-
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == bool)) {
-    import xlld.xlcall: XlType;
-    XLOPER12 ret;
-    ret.xltype = XlType.xltypeBool;
-    ret.val.bool_ = cast(typeof(ret.val.bool_)) value;
-    return ret;
-}
-
-///
-@("toXlOper!bool when bool")
-@system unittest {
-    import xlld.xlcall: XlType;
-    {
-        const oper = true.toXlOper(theGC);
-        oper.xltype.shouldEqual(XlType.xltypeBool);
-        oper.val.bool_.shouldEqual(1);
-    }
-
-    {
-        const oper = false.toXlOper(theGC);
-        oper.xltype.shouldEqual(XlType.xltypeBool);
-        oper.val.bool_.shouldEqual(0);
-    }
-}
-
-/**
-   Register a custom conversion from string to an enum type. This function will
-   be called before converting any enum arguments to be passed to a wrapped
-   D function.
- */
-void registerConversionTo(T)(ToEnumConversionFunction func) @trusted {
-    import std.traits: fullyQualifiedName;
-
-    gToEnumMutex.lock_nothrow;
-    scope(exit)gToEnumMutex.unlock_nothrow;
-
-    gToEnumConversions[fullyQualifiedName!T] = func;
-}
-
-void unregisterConversionTo(T)() @trusted {
-    import std.traits: fullyQualifiedName;
-
-    gToEnumMutex.lock_nothrow;
-    scope(exit)gToEnumMutex.unlock_nothrow;
-
-    gToEnumConversions.remove(fullyQualifiedName!T);
-}
-
-/**
-   Register a custom conversion from enum (going through integer) to a string.
-   This function will be called to convert enum return values from wrapped
-   D functions into strings in Excel.
- */
-void registerConversionFrom(T)(FromEnumConversionFunction func) @trusted {
-    import std.traits: fullyQualifiedName;
-
-    gFromEnumMutex.lock_nothrow;
-    scope(exit)gFromEnumMutex.unlock_nothrow;
-
-    gFromEnumConversions[fullyQualifiedName!T] = func;
-}
-
-
-void unregisterConversionFrom(T)() @trusted {
-    import std.traits: fullyQualifiedName;
-
-    gFromEnumMutex.lock_nothrow;
-    scope(exit)gFromEnumMutex.unlock_nothrow;
-
-    gFromEnumConversions.remove(fullyQualifiedName!T);
-}
-
-
-
-
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) @trusted if(is(T == enum)) {
-
-    import std.conv: text;
-    import std.traits: fullyQualifiedName;
-    import core.memory: GC;
-
-    enum name = fullyQualifiedName!T;
-
-    {
-        gFromEnumMutex.lock_nothrow;
-        scope(exit) gFromEnumMutex.unlock_nothrow;
-
-        if(name in gFromEnumConversions)
-            return gFromEnumConversions[name](value).toXlOper(allocator);
-    }
-
-    scope str = text(value);
-    auto ret = str.toXlOper(allocator);
-    () @trusted { GC.free(cast(void*)str.ptr); }();
-
-    return ret;
-}
-
-@("toXlOper!enum")
-@safe unittest {
-
-    enum Enum {
-        foo,
-        bar,
-        baz,
-    }
-
-    Enum.bar.toXlOper(theGC).shouldEqualDlang("bar");
-}
-
-XLOPER12 toXlOper(T, A)(T value, ref A allocator)
-    if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
-{
-    import std.conv: text;
-    import core.memory: GC;
-
-    scope str = text(value);
-
-    auto ret = str.toXlOper(allocator);
-    () @trusted { GC.free(cast(void*)str.ptr); }();
-
-    return ret;
-}
-
-@("toXlOper!struct")
-@safe unittest {
-    static struct Foo { int x, y; }
-    Foo(2, 3).toXlOper(theGC).shouldEqualDlang("Foo(2, 3)");
-}
 
 ///
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
@@ -678,6 +39,9 @@ auto fromXlOper(T, A)(XLOPER12 val, ref A allocator) {
 __gshared immutable fromXlOperDoubleWrongTypeException = new Exception("Wrong type for fromXlOper!double");
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == double)) {
+    import xlld.sdk.xlcall: XlType;
+    import xlld.conv.misc: stripMemoryBitmask;
+
     if(val.xltype.stripMemoryBitmask == XlType.xltypeMissing)
         return double.init;
 
@@ -722,7 +86,8 @@ __gshared immutable fromXlOperIntWrongTypeException = new Exception("Wrong type 
 
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == int)) {
-    import xlld.xlcall: XlType;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.sdk.xlcall: XlType;
 
     if(val.xltype.stripMemoryBitmask == XlType.xltypeMissing)
         return int.init;
@@ -771,6 +136,8 @@ __gshared immutable fromXlOperStringTypeException = new Exception("Wrong type fo
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string)) {
 
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.sdk.xlcall: XlType;
     import std.experimental.allocator: makeArray;
     import std.utf: byChar;
     import std.range: walkLength;
@@ -866,14 +233,9 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator) if(is(Unqual!T == string))
     42.toXlOper(theGC).fromXlOper!string(theGC).shouldThrowWithMessage("Wrong type for fromXlOper!string");
 }
 
-
-package XlType stripMemoryBitmask(in XlType type) @safe @nogc pure nothrow {
-    import xlld.xlcall: xlbitXLFree, xlbitDLLFree;
-    return cast(XlType)(type & ~(xlbitXLFree | xlbitDLLFree));
-}
-
 ///
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == Any)) {
+    import xlld.conv.misc: dup;
     return Any((*oper).dup(allocator));
 }
 
@@ -940,6 +302,7 @@ unittest {
 ///
 @("fromXlOper!string[][] when not all opers are strings")
 unittest {
+    import xlld.conv.misc: multi;
     import std.experimental.allocator.mallocator: Mallocator;
     alias allocator = theGC;
 
@@ -1017,7 +380,7 @@ unittest {
 ///
 @("fromXlOper!double[] from row")
 unittest {
-    import xlld.xlcall: xlfCaller;
+    import xlld.sdk.xlcall: xlfCaller;
 
     XLOPER12 caller;
     caller.xltype = XlType.xltypeSRef;
@@ -1087,9 +450,10 @@ __gshared immutable fromXlOperMultiOperException = new Exception("fromXlOper: op
 __gshared immutable fromXlOperMultiMemoryException = new Exception("fromXlOper: Could not allocate memory in fromXlOperMulti");
 
 private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
-    import xlld.xl: coerce, free;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.func.xl: coerce, free;
     import xlld.memorymanager: makeArray2D;
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import std.experimental.allocator: makeArray;
 
     if(stripMemoryBitmask(val.xltype) == XlType.xltypeNil) {
@@ -1153,10 +517,10 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
 // is to be converted or not, the row index, the column index,
 // and a reference to the cell value itself
 private void apply(T, alias F)(ref XLOPER12 oper) {
-    import xlld.xlcall: XlType;
-    import xlld.xl: coerce, free;
+    import xlld.sdk.xlcall: XlType;
+    import xlld.func.xl: coerce, free;
     import xlld.any: Any;
-    version(unittest) import xlld.test_util: gNumXlAllocated, gNumXlFree;
+    version(unittest) import xlld.test.util: gNumXlAllocated, gNumXlFree;
 
     const rows = oper.val.array.rows;
     const cols = oper.val.array.columns;
@@ -1167,7 +531,7 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
 
             auto cellVal = coerce(&values[row * cols + col]);
 
-            // Issue 22's unittest ends up coercing more than test_util can handle
+            // Issue 22's unittest ends up coercing more than xlld.test.util can handle
             // so we undo the side-effect here
             version(unittest) --gNumXlAllocated; // ignore this for testing
 
@@ -1189,13 +553,6 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
         }
     }
 }
-
-
-package bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
-    const realType = stripMemoryBitmask(oper.xltype);
-    return realType == XlType.xltypeMulti;
-}
-
 
 @("fromXlOper any 1D array")
 @system unittest {
@@ -1225,8 +582,9 @@ __gshared immutable fromXlOperDateTimeTypeException = new Exception("Wrong type 
 
 ///
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime)) {
-    import xlld.framework: Excel12f;
-    import xlld.xlcall: XlType, xlretSuccess, xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.sdk.framework: Excel12f;
+    import xlld.sdk.xlcall: XlType, xlretSuccess, xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
 
     if(oper.xltype.stripMemoryBitmask != XlType.xltypeNum)
         throw fromXlOperDateTimeTypeException;
@@ -1269,7 +627,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime))
 
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
 
-    import xlld.xlcall: XlType;
+    import xlld.sdk.xlcall: XlType;
     import std.uni: toLower;
 
     if(oper.xltype == XlType.xltypeStr) {
@@ -1281,7 +639,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
 
 @("fromXlOper!bool when bool")
 @system unittest {
-    import xlld.xlcall: XLOPER12, XlType;
+    import xlld.sdk.xlcall: XLOPER12, XlType;
     XLOPER12 oper;
     oper.xltype = XlType.xltypeBool;
     oper.val.bool_ = 1;
@@ -1316,7 +674,8 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == bool)) {
 }
 
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
-    import xlld.xlcall: XlType;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.sdk.xlcall: XlType;
     import std.conv: to;
     import std.traits: fullyQualifiedName;
 
@@ -1358,7 +717,8 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
 {
-    import xlld.xlcall: XlType;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.sdk.xlcall: XlType;
     import std.conv: text;
     import std.exception: enforce;
 
@@ -1479,38 +839,6 @@ private auto toFrom(R, T)(T val) {
     return val.toXlOper(GCAllocator.instance).fromXlOper!R(GCAllocator.instance);
 }
 
-/**
-  creates an XLOPER12 that can be returned to Excel which
-  will be freed by Excel itself
- */
-XLOPER12 toAutoFreeOper(T)(T value) {
-    import xlld.memorymanager: autoFreeAllocator;
-    import xlld.xlcall: XlType;
-
-    auto result = value.toXlOper(autoFreeAllocator);
-    result.xltype |= XlType.xlbitDLLFree;
-    return result;
-}
-
-///
-ushort operStringLength(T)(in T value) {
-    import nogc.exception: enforce;
-
-    enforce(value.xltype == XlType.xltypeStr,
-            "Cannot calculate string length for oper of type ", value.xltype);
-
-    return cast(ushort)value.val.str[0];
-}
-
-///
-@("operStringLength")
-unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
-    auto oper = "foobar".toXlOper(theGC);
-    const length = () @nogc { return operStringLength(oper); }();
-    length.shouldEqual(6);
-}
-
 ///
 auto fromXlOperCoerce(T)(XLOPER12* val) {
     return fromXlOperCoerce(*val);
@@ -1531,7 +859,7 @@ auto fromXlOperCoerce(T)(ref XLOPER12 val) {
 
 ///
 auto fromXlOperCoerce(T, A)(ref XLOPER12 val, auto ref A allocator) {
-    import xlld.xl: coerce, free;
+    import xlld.func.xl: coerce, free;
 
     auto coerced = coerce(&val);
     scope(exit) free(&coerced);
@@ -1558,6 +886,7 @@ private enum invalidXlOperType = 0xdeadbeef;
  whilst Type is the Type that it gets coerced to.
  */
 template dlangToXlOperType(T) {
+    import xlld.sdk.xlcall: XlType;
     static if(is(Unqual!T == string[])   || is(Unqual!T == string[][]) ||
               is(Unqual!T == double[])   || is(Unqual!T == double[][]) ||
               is(Unqual!T == int[])      || is(Unqual!T == int[][]) ||
@@ -1578,4 +907,37 @@ template dlangToXlOperType(T) {
         enum InputType = invalidXlOperType;
         enum Type = invalidXlOperType;
     }
+}
+
+/**
+   If an oper is of multi type
+ */
+bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.sdk.xlcall: XlType;
+
+    return stripMemoryBitmask(oper.xltype) == XlType.xltypeMulti;
+}
+
+/**
+   Register a custom conversion from string to an enum type. This function will
+   be called before converting any enum arguments to be passed to a wrapped
+   D function.
+ */
+void registerConversionTo(T)(ToEnumConversionFunction func) @trusted {
+    import std.traits: fullyQualifiedName;
+
+    gToEnumMutex.lock_nothrow;
+    scope(exit)gToEnumMutex.unlock_nothrow;
+
+    gToEnumConversions[fullyQualifiedName!T] = func;
+}
+
+void unregisterConversionTo(T)() @trusted {
+    import std.traits: fullyQualifiedName;
+
+    gToEnumMutex.lock_nothrow;
+    scope(exit)gToEnumMutex.unlock_nothrow;
+
+    gToEnumConversions.remove(fullyQualifiedName!T);
 }

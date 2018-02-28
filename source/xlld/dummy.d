@@ -4,7 +4,7 @@
  */
 module xlld.dummy;
 
-version(unittest)
+version(testingExcelD)
     enum useDummy = true;
 else version(exceldDef)
     enum useDummy = true;
@@ -14,7 +14,7 @@ else
 version(Windows):
 static if(useDummy) {
 
-    import xlld.xlcall;
+    import xlld.sdk.xlcall;
 
     extern(System) int Excel4v(int xlfn, LPXLOPER operRes, int count, LPXLOPER* opers) {
         return 0;

@@ -13,7 +13,7 @@ version(testingExcelD) {
 
 ///
 struct Any {
-    import xlld.xlcall: XLOPER12;
+    import xlld.sdk.xlcall: XLOPER12;
 
     ///
     XLOPER12 _impl;
@@ -21,8 +21,8 @@ struct Any {
 
     ///
     bool opEquals(Any other) @trusted const {
-        import xlld.xlcall: XlType;
-        import xlld.conv: fromXlOper;
+        import xlld.sdk.xlcall: XlType;
+        import xlld.conv.from: fromXlOper;
 
         switch(_impl.xltype) {
 
@@ -72,9 +72,9 @@ struct Any {
     ///
     string toString() @safe const {
         import std.conv: text;
-        import xlld.xlcall: XlType;
-        import xlld.conv: fromXlOper;
-        import xlld.xlcall: xlbitXLFree, xlbitDLLFree;
+        import xlld.sdk.xlcall: XlType;
+        import xlld.conv.from: fromXlOper;
+        import xlld.sdk.xlcall: xlbitXLFree, xlbitDLLFree;
         import std.experimental.allocator.gc_allocator: GCAllocator;
 
         alias allocator = GCAllocator.instance;

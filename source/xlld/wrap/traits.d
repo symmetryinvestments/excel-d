@@ -14,14 +14,14 @@
  All eligible functions in the 3 example modules above will automagically
  be accessible from Excel (assuming the built XLL is loaded as an add-in).
  */
-module xlld.traits;
+module xlld.wrap.traits;
 
-import xlld.worksheet;
-import xlld.xlcall;
+import xlld.wrap.worksheet;
+import xlld.sdk.xlcall;
 import std.traits: isSomeFunction, allSatisfy, isSomeString;
 
 /// import unit_threaded and introduce helper functions for testing
-version(unittest) {
+version(testingExcelD) {
     import unit_threaded;
 
     /// return a WorksheetFunction for a double function(double) with no
@@ -335,9 +335,9 @@ WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)() {
     return ret;
 }
 
-@("getWorksheetFunctions on test_xl_funcs")
+@("getWorksheetFunctions on test.xl_funcs")
 @safe pure unittest {
-    getModuleWorksheetFunctions!"xlld.test_xl_funcs".shouldEqual(
+    getModuleWorksheetFunctions!"test.xl_funcs".shouldEqual(
         [
             doubleToDoubleFunction("FuncMulByTwo"),
             FP12ToDoubleFunction("FuncFP12"),
@@ -361,7 +361,7 @@ WorksheetFunction[] getAllWorksheetFunctions(Modules...)() pure @safe if(allSati
 }
 
 /**
- Implements the getWorksheetFunctions function needed by xlld.xll in
+ Implements the getWorksheetFunctions function needed by xlld.sdk.xll in
  order to register the Excel-callable functions at runtime
  This used to be a template mixin but even using a string mixin inside
  fails to actually make it an extern(C) function.
@@ -370,13 +370,12 @@ string implGetWorksheetFunctionsString(Modules...)() if(allSatisfy!(isSomeString
     return implGetWorksheetFunctionsString(Modules);
 }
 
-@("template mixin for getWorkSheetFunctions for test_xl_funcs")
+@("template mixin for getWorkSheetFunctions for test.xl_funcs")
 unittest {
-    import xlld.traits;
-    import xlld.worksheet;
+    import xlld.wrap.worksheet;
 
     // mixin the function here then call it to see if it does what it's supposed to
-    mixin(implGetWorksheetFunctionsString!"xlld.test_xl_funcs");
+    mixin(implGetWorksheetFunctionsString!"test.xl_funcs");
     getWorksheetFunctions.shouldEqual(
         [
             doubleToDoubleFunction("FuncMulByTwo"),
@@ -413,11 +412,10 @@ string implGetWorksheetFunctionsString(string[] modules...) {
 
 @("implGetWorksheetFunctionsString runtime")
 unittest {
-    import xlld.traits;
-    import xlld.worksheet;
+    import xlld.wrap.worksheet;
 
     // mixin the function here then call it to see if it does what it's supposed to
-    mixin(implGetWorksheetFunctionsString("xlld.test_xl_funcs"));
+    mixin(implGetWorksheetFunctionsString("test.xl_funcs"));
     getWorksheetFunctions.shouldEqual(
         [
             doubleToDoubleFunction("FuncMulByTwo"),
@@ -491,7 +489,7 @@ if(allSatisfy!(isSomeString, typeof(Modules)))
 
 @("worksheet functions to .def file")
 unittest {
-    dllDefFile!"xlld.test_xl_funcs"("myxll32.dll", "Simple D add-in").shouldEqual(
+    dllDefFile!"test.xl_funcs"("myxll32.dll", "Simple D add-in").shouldEqual(
         DllDefFile(
             [
                 Statement("LIBRARY", "myxll32.dll"),
@@ -515,7 +513,7 @@ unittest {
 mixin template GenerateDllDef(string module_ = __MODULE__) {
     version(exceldDef) {
         void main(string[] args) nothrow {
-            import xlld.traits: generateDllDef;
+            import xlld.wrap.traits: generateDllDef;
             try {
                 generateDllDef!module_(args);
             } catch(Exception ex) {
