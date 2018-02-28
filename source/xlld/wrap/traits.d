@@ -335,7 +335,7 @@ WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)() {
     return ret;
 }
 
-@("getWorksheetFunctions on test_xl_funcs")
+@("getWorksheetFunctions on test.xl_funcs")
 @safe pure unittest {
     getModuleWorksheetFunctions!"test.xl_funcs".shouldEqual(
         [
@@ -370,7 +370,7 @@ string implGetWorksheetFunctionsString(Modules...)() if(allSatisfy!(isSomeString
     return implGetWorksheetFunctionsString(Modules);
 }
 
-@("template mixin for getWorkSheetFunctions for test_xl_funcs")
+@("template mixin for getWorkSheetFunctions for test.xl_funcs")
 unittest {
     import xlld.wrap.worksheet;
 
