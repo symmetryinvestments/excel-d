@@ -4,7 +4,7 @@
  the spreadsheet.
  */
 
-module xlld.test.d_funcs;
+module test.d_funcs;
 
 version(unittest):
 

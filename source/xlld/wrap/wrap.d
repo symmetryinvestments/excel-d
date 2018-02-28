@@ -20,6 +20,10 @@ version(testingExcelD) {
     import std.experimental.allocator.gc_allocator: GCAllocator;
     alias theMallocator = Mallocator.instance;
     alias theGC = GCAllocator.instance;
+
+    mixin("import xlld.wrap.traits: Async;\n" ~
+            wrapModuleWorksheetFunctionsString!"test.d_funcs");
+
 } else
       enum Serial;
 
@@ -44,16 +48,16 @@ private template isWorksheetFunction(alias F) {
 
 @("isWorksheetFunction")
 @safe pure unittest {
-    import test.d_funcs;
+    static import test.d_funcs;
     // the line below checks that the code still compiles even with a private function
     // it might stop compiling in a future version when the deprecation rules for
     // visibility kick in
-    static assert(!isWorksheetFunction!shouldNotBeAProblem);
-    static assert(isWorksheetFunction!FuncThrows);
-    static assert(isWorksheetFunction!DoubleArrayToAnyArray);
-    static assert(isWorksheetFunction!Twice);
-    static assert(isWorksheetFunction!DateTimeToDouble);
-    static assert(isWorksheetFunction!BoolToInt);
+    static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
+    static assert(isWorksheetFunction!(test.d_funcs.FuncThrows));
+    static assert(isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
+    static assert(isWorksheetFunction!(test.d_funcs.Twice));
+    static assert(isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
+    static assert(isWorksheetFunction!(test.d_funcs.BoolToInt));
 }
 
 /**
@@ -108,8 +112,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @system unittest {
     import xlld.memorymanager: allocator;
 
-    mixin(wrapTestFuncsString);
-
     auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncAddEverything(&arg).shouldEqualDlang(60.0);
 
@@ -121,8 +123,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap double[][] -> double[][]")
 @system unittest {
     import xlld.memorymanager: allocator;
-
-    mixin(wrapTestFuncsString);
 
     auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncTripleEverything(&arg).shouldEqualDlang(cast(double[][])[[3, 6, 9, 12], [33, 36, 39, 42]]);
@@ -138,8 +138,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 
     import xlld.memorymanager: allocator;
 
-    mixin(wrapTestFuncsString);
-
     auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncAllLengths(&arg).shouldEqualDlang(29.0);
 
@@ -152,8 +150,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @system unittest {
 
     import xlld.memorymanager: allocator;
-
-    mixin(wrapTestFuncsString);
 
     auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncLengths(&arg).shouldEqualDlang(cast(double[][])[[3, 3, 3, 4], [4, 4, 4, 4]]);
@@ -168,8 +164,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 
     import xlld.memorymanager: allocator;
 
-    mixin(wrapTestFuncsString);
-
     auto arg = toSRef([["foo", "bar", "baz", "quux"], ["toto", "titi", "tutu", "tete"]], allocator);
     FuncBob(&arg).shouldEqualDlang([["foobob", "barbob", "bazbob", "quuxbob"],
                                     ["totobob", "titibob", "tutubob", "tetebob"]]);
@@ -180,7 +174,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @system unittest {
     import xlld.memorymanager: allocator;
 
-    mixin(wrapTestFuncsString);
     auto arg = toSRef([["foo", "bar"], ["baz", "quux"]], allocator);
     FuncStringSlice(&arg).shouldEqualDlang(4.0);
 }
@@ -189,7 +182,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap double[] -> double")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapTestFuncsString);
     auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], allocator);
     FuncDoubleSlice(&arg).shouldEqualDlang(6.0);
 }
@@ -198,7 +190,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap double[] -> double[]")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapTestFuncsString);
     auto arg = toSRef([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], allocator);
     FuncSliceTimes3(&arg).shouldEqualDlang([3.0, 6.0, 9.0, 12.0, 15.0, 18.0]);
 }
@@ -207,7 +198,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap string[] -> string[]")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapTestFuncsString);
     auto arg = toSRef(["quux", "toto"], allocator);
     StringsToStrings(&arg).shouldEqualDlang(["quuxfoo", "totofoo"]);
 }
@@ -216,7 +206,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap string[] -> string")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapTestFuncsString);
     auto arg = toSRef(["quux", "toto"], allocator);
     StringsToString(&arg).shouldEqualDlang("quux, toto");
 }
@@ -225,7 +214,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap string -> string")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapTestFuncsString);
     auto arg = toXlOper("foo", allocator);
     StringToString(&arg).shouldEqualDlang("foobar");
 }
@@ -234,7 +222,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("Wrap string, string, string -> string")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapTestFuncsString);
     auto arg0 = toXlOper("foo", allocator);
     auto arg1 = toXlOper("bar", allocator);
     auto arg2 = toXlOper("baz", allocator);
@@ -245,7 +232,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @("nothrow functions")
 @system unittest {
     import xlld.memorymanager: allocator;
-    mixin(wrapTestFuncsString);
     auto arg = toXlOper(2.0, allocator);
     static assert(__traits(compiles, FuncThrows(&arg)));
 }
@@ -256,7 +242,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     import std.experimental.allocator.mallocator: Mallocator;
     import xlld.sdk.framework: freeXLOper;
 
-    mixin(wrapTestFuncsString);
     auto arg = toXlOper(2.0, Mallocator.instance);
     scope(exit) freeXLOper(&arg, Mallocator.instance);
     FuncAddEverything(&arg);
@@ -265,7 +250,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 ///
 @("Wrap a function that throws")
 @system unittest {
-    mixin(wrapTestFuncsString);
     auto arg = toSRef(33.3, theGC);
     FuncThrows(&arg); // should not actually throw
 }
@@ -273,7 +257,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 ///
 @("Wrap a function that asserts")
 @system unittest {
-    mixin(wrapTestFuncsString);
     auto arg = toSRef(33.3, theGC);
     FuncAsserts(&arg); // should not actually throw
 }
@@ -284,8 +267,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     import xlld.sdk.xlcall: XlType;
     import xlld.conv.misc: stripMemoryBitmask;
     import std.conv: text;
-
-    mixin(wrapTestFuncsString);
 
     // the argument doesn't matter since we mock extracting the year from it
     // but it does have to be of double type (DateTime for Excel)
@@ -306,8 +287,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 ///
 @("Wrap a function that accepts DateTime[]")
 @system unittest {
-    mixin(wrapTestFuncsString);
-
     //the arguments don't matter since we mock extracting year, etc. from them
     //they just need to be double (DateTime to Excel)
     auto arg = [0.1, 0.2].toXlOper(theGC);
@@ -324,7 +303,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @Serial
 @("Wrap a function that takes an enum")
 @safe unittest {
-    mixin(wrapTestFuncsString);
     import test.d_funcs: MyEnum;
 
     auto arg = MyEnum.baz.toXlOper(theGC);
@@ -335,7 +313,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @Serial
 @("Wrap a function that returns an enum")
 @safe unittest {
-    mixin(wrapTestFuncsString);
     import test.d_funcs: MyEnum;
 
     auto arg = 1.toXlOper(theGC);
@@ -347,8 +324,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 @Serial
 @("Register a custom to enum conversion")
 @safe unittest {
-    mixin(wrapTestFuncsString);
-
     import std.conv: to;
     import test.d_funcs: MyEnum;
     import xlld.conv.from: registerConversionTo, unregisterConversionTo;
@@ -370,8 +345,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     import test.d_funcs: MyEnum;
     import xlld.conv: registerConversionFrom, unregisterConversionFrom;
 
-    mixin(wrapTestFuncsString);
-
     registerConversionFrom!MyEnum((val) => "___" ~ text(cast(MyEnum)val));
     scope(exit)unregisterConversionFrom!MyEnum;
 
@@ -383,8 +356,6 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 
 @("Wrap a function that takes a struct using 1D array")
 unittest {
-    mixin(wrapTestFuncsString);
-
     auto arg = [2, 3].toXlOper(theGC);
     auto ret = () @trusted { return FuncPointArg(&arg); }();
 
@@ -393,8 +364,6 @@ unittest {
 
 @("Wrap a function that returns a struct")
 unittest {
-    mixin(wrapTestFuncsString);
-
     auto arg1 = 2.toXlOper(theGC);
     auto arg2 = 3.toXlOper(theGC);
     auto ret = () @trusted { return FuncPointRet(&arg1, &arg2); }();
@@ -1291,11 +1260,6 @@ unittest {
 
 
 version(testingExcelD):
-
-string wrapTestFuncsString() {
-    return "import xlld.wrap.traits: Async;\n" ~
-        wrapModuleWorksheetFunctionsString!"test.d_funcs";
-}
 
 string wrapAllTestFuncsString() {
     return "import xlld.wrap.traits: Async;\n" ~ wrapAll!"test.d_funcs";
