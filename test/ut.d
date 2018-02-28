@@ -6,12 +6,12 @@ int main(string[] args)
         "xlld.worksheet",
         "xlld.traits",
         "xlld.wrap",
-        "xlld.xl",
+        "xlld.any",
         "xlld.sdk.xll",
         "xlld.memorymanager",
         "xlld.test.util",
-        "xlld.xlf",
+        "xlld.func.xl",
+        "xlld.func.xlf",
         "xlld.conv.misc",
-        "xlld.any",
     );
 }

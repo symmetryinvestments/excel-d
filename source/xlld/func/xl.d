@@ -1,7 +1,7 @@
 /**
  Wraps calls to xlXXX "functions" via the Excel4/Excel12 functions
  */
-module xlld.xl;
+module xlld.func.xl;
 
 import xlld.sdk.xlcall: XLOPER12, LPXLOPER12;
 

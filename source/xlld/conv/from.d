@@ -451,7 +451,7 @@ __gshared immutable fromXlOperMultiMemoryException = new Exception("fromXlOper: 
 
 private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
     import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.xl: coerce, free;
+    import xlld.func.xl: coerce, free;
     import xlld.memorymanager: makeArray2D;
     import xlld.sdk.xlcall: XlType;
     import std.experimental.allocator: makeArray;
@@ -518,7 +518,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
 // and a reference to the cell value itself
 private void apply(T, alias F)(ref XLOPER12 oper) {
     import xlld.sdk.xlcall: XlType;
-    import xlld.xl: coerce, free;
+    import xlld.func.xl: coerce, free;
     import xlld.any: Any;
     version(unittest) import xlld.test.util: gNumXlAllocated, gNumXlFree;
 
@@ -859,7 +859,7 @@ auto fromXlOperCoerce(T)(ref XLOPER12 val) {
 
 ///
 auto fromXlOperCoerce(T, A)(ref XLOPER12 val, auto ref A allocator) {
-    import xlld.xl: coerce, free;
+    import xlld.func.xl: coerce, free;
 
     auto coerced = coerce(&val);
     scope(exit) free(&coerced);

@@ -152,7 +152,7 @@ string toString(in from!"xlld.sdk.xlcall".XLOPER12 oper) @safe {
         break;
 
     case XlType.xltypeSRef:
-        import xlld.xl: Coerced;
+        import xlld.func.xl: Coerced;
         auto coerced = () @trusted { return Coerced(&oper); }();
         return "SRef[ " ~ coerced.toString ~ " ]";
 

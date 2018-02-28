@@ -618,7 +618,7 @@ XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 private auto toDArgs(alias wrappedFunc, A, T...)
                     (ref A allocator, T args)
 {
-    import xlld.xl: coerce, free;
+    import xlld.func.xl: coerce, free;
     import xlld.sdk.xlcall: XlType;
     import xlld.conv.from: fromXlOper;
     import std.traits: Parameters, Unqual;
@@ -754,7 +754,7 @@ private XLOPER12 excelRet(T)(T wrappedRet) {
     // convert 1D arrays called from a column into a column instead of the default row
     static if(isArray!(typeof(wrappedRet))) {
         static if(!isArray!(typeof(wrappedRet[0]))) { // 1D array
-            import xlld.xlf: xlfCaller = caller;
+            import xlld.func.xlf: xlfCaller = caller;
             import std.algorithm: swap;
 
             try {

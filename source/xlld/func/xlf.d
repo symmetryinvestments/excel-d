@@ -1,7 +1,7 @@
 /**
    This module provides D versions of xlf Excel functions
  */
-module xlld.xlf;
+module xlld.func.xlf;
 
 import xlld.sdk.framework: excel12;
 import xlld.sdk.xlcall: XLOPER12;
@@ -101,7 +101,7 @@ __gshared immutable callerException = new Exception("Error calling xlfCaller");
 auto caller() @safe {
     import xlld.sdk.xlcall: xlfCaller, xlretSuccess;
     import xlld.sdk.framework: Excel12f;
-    import xlld.xl: ScopedOper;
+    import xlld.func.xl: ScopedOper;
 
     XLOPER12 result;
     () @trusted {
@@ -115,7 +115,7 @@ auto caller() @safe {
 
 private auto callerCell() @safe {
     import xlld.sdk.xlcall: XlType;
-    import xlld.xl: coerce, free, Coerced;
+    import xlld.func.xl: coerce, free, Coerced;
 
     auto oper = caller();
 
