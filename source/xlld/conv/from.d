@@ -687,6 +687,8 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
     auto str = oper.fromXlOper!string(allocator);
 
     return () @trusted {
+        assert(gToEnumMutex !is null, "gToEnumMutex is null");
+
         gToEnumMutex.lock_nothrow;
         scope(exit) gToEnumMutex.unlock_nothrow;
 
@@ -927,6 +929,8 @@ bool isMulti(ref const(XLOPER12) oper) @safe @nogc pure nothrow {
 void registerConversionTo(T)(ToEnumConversionFunction func) @trusted {
     import std.traits: fullyQualifiedName;
 
+    assert(gToEnumMutex !is null, "gToEnumMutex is null");
+
     gToEnumMutex.lock_nothrow;
     scope(exit)gToEnumMutex.unlock_nothrow;
 
@@ -935,6 +939,8 @@ void registerConversionTo(T)(ToEnumConversionFunction func) @trusted {
 
 void unregisterConversionTo(T)() @trusted {
     import std.traits: fullyQualifiedName;
+
+    assert(gToEnumMutex !is null, "gToEnumMutex is null");
 
     gToEnumMutex.lock_nothrow;
     scope(exit)gToEnumMutex.unlock_nothrow;

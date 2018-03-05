@@ -373,6 +373,7 @@ unittest {
 private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs) {
 
     import xlld.wrap.worksheet: Dispose;
+    import nogc.conv: text;
     import std.traits: hasUDA, getUDAs;
 
     static XLOPER12 ret;
@@ -392,10 +393,10 @@ private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs) {
         return &ret;
 
     } catch(Exception ex) {
-         ret = stringOper("#ERROR calling " ~ __traits(identifier, wrappedFunc));
+         ret = stringOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", ex.msg));
          return &ret;
     } catch(Throwable t) {
-         ret = stringOper("#FATAL ERROR calling " ~ __traits(identifier, wrappedFunc));
+         ret = stringOper(text("#FATAL ERROR calling ", __traits(identifier, wrappedFunc), ": ", t.msg));
          return &ret;
     }
 }

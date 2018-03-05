@@ -371,8 +371,12 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
     XLOPER12 ret, date, time;
 
     auto year = value.year.toXlOper(allocator);
-    auto month = value.month.toXlOper(allocator);
+    auto month = toXlOper(cast(int)value.month, allocator);
     auto day = value.day.toXlOper(allocator);
+
+    assert(year.xltype == XlType.xltypeInt, text("year is not int but ", year.xltype));
+    assert(month.xltype == XlType.xltypeInt, text("month is not int but ", month.xltype));
+    assert(day.xltype == XlType.xltypeInt, text("day is not int but ", day.xltype));
 
     const dateCode = () @trusted { return Excel12f(xlfDate, &date, &year, &month, &day); }();
     assert(dateCode == xlretSuccess, "Error calling xlfDate");
@@ -452,6 +456,8 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == bool)) {
 void registerConversionFrom(T)(FromEnumConversionFunction func) @trusted {
     import std.traits: fullyQualifiedName;
 
+    assert(gFromEnumMutex !is null, "gFromEnumMutex is null");
+
     gFromEnumMutex.lock_nothrow;
     scope(exit)gFromEnumMutex.unlock_nothrow;
 
@@ -461,6 +467,8 @@ void registerConversionFrom(T)(FromEnumConversionFunction func) @trusted {
 
 void unregisterConversionFrom(T)() @trusted {
     import std.traits: fullyQualifiedName;
+
+    assert(gFromEnumMutex !is null, "gFromEnumMutex is null");
 
     gFromEnumMutex.lock_nothrow;
     scope(exit)gFromEnumMutex.unlock_nothrow;
@@ -480,6 +488,8 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) @trusted if(is(T == enum)) {
     enum name = fullyQualifiedName!T;
 
     {
+        assert(gFromEnumMutex !is null, "gFromEnumMutex is null");
+
         gFromEnumMutex.lock_nothrow;
         scope(exit) gFromEnumMutex.unlock_nothrow;
 
