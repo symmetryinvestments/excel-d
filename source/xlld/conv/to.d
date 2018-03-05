@@ -363,7 +363,7 @@ unittest {
 
 
 
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) @safe if(is(Unqual!T == DateTime)) {
     import xlld.sdk.framework: Excel12f;
     import xlld.sdk.xlcall: xlfDate, xlfTime, xlretSuccess;
     import nogc.conv: text;
@@ -371,12 +371,14 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == DateTime)) {
     XLOPER12 ret, date, time;
 
     auto year = value.year.toXlOper(allocator);
-    auto month = toXlOper(cast(int)value.month, allocator);
+    auto month = () @trusted { return toXlOper(cast(int)value.month, allocator); }();
     auto day = value.day.toXlOper(allocator);
 
-    assert(year.xltype == XlType.xltypeInt, text("year is not int but ", year.xltype));
-    assert(month.xltype == XlType.xltypeInt, text("month is not int but ", month.xltype));
-    assert(day.xltype == XlType.xltypeInt, text("day is not int but ", day.xltype));
+    () @trusted {
+        assert(year.xltype == XlType.xltypeInt, text("year is not int but ", year.xltype));
+        assert(month.xltype == XlType.xltypeInt, text("month is not int but ", month.xltype));
+        assert(day.xltype == XlType.xltypeInt, text("day is not int but ", day.xltype));
+    }();
 
     const dateCode = () @trusted { return Excel12f(xlfDate, &date, &year, &month, &day); }();
     assert(dateCode == xlretSuccess, "Error calling xlfDate");

@@ -348,7 +348,7 @@ struct TestAllocator {
    @nogc associative array
  */
 struct AA(K, V, int N = 100) {
-    import core.thread: Mutex;
+    import core.sync.mutex: Mutex;
 
     Entry[N] entries;
     size_t index;
