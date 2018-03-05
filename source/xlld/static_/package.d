@@ -3,15 +3,6 @@
  */
 module xlld.static_;
 
-version(unittest):
-
-///
-shared static this() {
-    import xlld.sdk.xlcall: XLOPER12;
-    import xlld.test.util: gAsyncReturns, AA;
-    gAsyncReturns = AA!(XLOPER12, XLOPER12).create;
-}
-
 ///
 shared static this() {
     import xlld.conv.from: gToEnumMutex;
@@ -19,6 +10,16 @@ shared static this() {
     import core.sync.mutex: Mutex;
     gToEnumMutex = new shared Mutex;
     gFromEnumMutex = new shared Mutex;
+}
+
+
+version(unittest):
+
+///
+shared static this() {
+    import xlld.sdk.xlcall: XLOPER12;
+    import xlld.test.util: gAsyncReturns, AA;
+    gAsyncReturns = AA!(XLOPER12, XLOPER12).create;
 }
 
 ///
