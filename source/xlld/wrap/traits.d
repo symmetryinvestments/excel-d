@@ -335,7 +335,7 @@ WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)() {
     return ret;
 }
 
-@("getWorksheetFunctions on test.xl_funcs")
+@("getModuleWorksheetFunctions on test.xl_funcs")
 @safe pure unittest {
     getModuleWorksheetFunctions!"test.xl_funcs".shouldEqual(
         [

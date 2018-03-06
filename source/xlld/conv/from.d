@@ -741,7 +741,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
 
     T ret;
 
-    ulong ptrIndex(ulong i) {
+    size_t ptrIndex(size_t i) {
 
         if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
             return i;
