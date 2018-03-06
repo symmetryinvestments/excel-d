@@ -3,14 +3,8 @@
 */
 module xlld.test.util;
 
-version(unittest):
-
-import xlld.sdk.xlcall: LPXLOPER12, XLOPER12, XlType;
-import unit_threaded;
-import std.range: isInputRange;
-import std.experimental.allocator.gc_allocator: GCAllocator;
-alias theGC = GCAllocator.instance;
-
+import xlld.sdk.xlcall: XLOPER12, XlType;
+version(testingExcelD) import unit_threaded;
 
 ///
 TestAllocator gTestAllocator;
@@ -35,7 +29,7 @@ alias XlFunction = int;
  */
 XLOPER12[][XlFunction] gXlFuncResults;
 
-private shared AA!(XLOPER12, XLOPER12) gAsyncReturns = void;
+shared AA!(XLOPER12, XLOPER12) gAsyncReturns = void;
 
 
 XLOPER12 asyncReturn(XLOPER12 asyncHandle) @safe {
@@ -56,7 +50,7 @@ private void fakeFree(XLOPER12* oper) @nogc nothrow {
 }
 
 ///
-extern(Windows) int excel12UnitTest(int xlfn, int numOpers, LPXLOPER12 *opers, LPXLOPER12 result)
+extern(Windows) int excel12UnitTest(int xlfn, int numOpers, XLOPER12** opers, XLOPER12* result)
     nothrow @nogc
 {
 
@@ -435,6 +429,12 @@ struct MockXlFunction {
         gXlFuncResults[xlFunction] ~= results;
     }
 
+    this(int xlFunction, double value) @safe {
+        import xlld.conv.to: toXlOper;
+        import std.experimental.allocator.gc_allocator: GCAllocator;
+        this(xlFunction, value.toXlOper(GCAllocator.instance));
+    }
+
     ~this() @safe {
         gXlFuncResults = oldResults;
     }
@@ -448,6 +448,8 @@ struct MockDateTime {
 
     this(int year, int month, int day, int hour, int minute, int second) @safe {
         import xlld.conv: toXlOper;
+        import std.experimental.allocator.gc_allocator: GCAllocator;
+        alias theGC = GCAllocator.instance;
 
         this.year   = MockXlFunction(xlfYear,   double(year).toXlOper(theGC));
         this.month  = MockXlFunction(xlfMonth,  double(month).toXlOper(theGC));
@@ -461,13 +463,47 @@ struct MockDateTime {
 struct MockDateTimes {
 
     import std.datetime: DateTime;
+    import std.range: isInputRange, ElementType;
+    import std.traits: Unqual;
 
     MockDateTime[] mocks;
 
     this(DateTime[] dateTimes...) @safe {
+        fromRange(dateTimes);
+    }
+
+    this(R)(R dateTimes) @safe if(isInputRange!R && is(Unqual!(ElementType!R) == DateTime)) {
+        fromRange(dateTimes);
+    }
+
+    private void fromRange(R)(R dateTimes) @trusted if(isInputRange!R && is(Unqual!(ElementType!R) == DateTime)) {
         foreach(dateTime; dateTimes)
             mocks ~= MockDateTime(dateTime.year, dateTime.month, dateTime.day,
                                   dateTime.hour, dateTime.minute, dateTime.second);
+    }
+}
+
+struct MockDates {
+    import std.range: isInputRange, ElementType;
+
+    MockXlFunction[] mocks;
+
+    this(R)(R dates) if(isInputRange!R) {
+        import xlld.sdk.xlcall: xlfDate;
+        foreach(date; dates)
+            mocks ~= MockXlFunction(xlfDate, double(date));
+    }
+}
+
+struct MockTimes {
+    import std.range: isInputRange, ElementType;
+
+    MockXlFunction[] mocks;
+
+    this(R)(R dates) if(isInputRange!R) {
+        import xlld.sdk.xlcall: xlfTime;
+        foreach(date; dates)
+            mocks ~= MockXlFunction(xlfTime, double(date));
     }
 }
 

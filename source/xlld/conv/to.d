@@ -20,7 +20,7 @@ version(testingExcelD) {
 }
 alias FromEnumConversionFunction = string delegate(int) @safe;
 package __gshared FromEnumConversionFunction[string] gFromEnumConversions;
-package shared Mutex gFromEnumMutex;
+shared Mutex gFromEnumMutex;
 
 
 ///
@@ -363,7 +363,9 @@ unittest {
 
 
 
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) @safe if(is(Unqual!T == DateTime)) {
+XLOPER12 toXlOper(T, A)(T value, ref A allocator, in string file = __FILE__, in size_t line = __LINE__)
+    @safe if(is(Unqual!T == DateTime))
+{
     import xlld.sdk.framework: Excel12f;
     import xlld.sdk.xlcall: xlfDate, xlfTime, xlretSuccess;
     import nogc.conv: text;
@@ -381,7 +383,8 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) @safe if(is(Unqual!T == DateTi
     }();
 
     const dateCode = () @trusted { return Excel12f(xlfDate, &date, &year, &month, &day); }();
-    assert(dateCode == xlretSuccess, "Error calling xlfDate");
+    if(dateCode != xlretSuccess)
+        throw new Exception("Error calling xlfDate", file, line);
     () @trusted { assert(date.xltype == XlType.xltypeNum, text("date is not xltypeNum but ", date.xltype)); }();
 
     auto hour = value.hour.toXlOper(allocator);
@@ -389,7 +392,9 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) @safe if(is(Unqual!T == DateTi
     auto second = value.second.toXlOper(allocator);
 
     const timeCode = () @trusted { return Excel12f(xlfTime, &time, &hour, &minute, &second); }();
-    assert(timeCode == xlretSuccess, "Error calling xlfTime");
+    if(timeCode != xlretSuccess)
+        throw new Exception("Error calling xlfTime", file, line);
+
     () @trusted { assert(time.xltype == XlType.xltypeNum, text("time is not xltypeNum but ", time.xltype)); }();
 
     ret.xltype = XlType.xltypeNum;

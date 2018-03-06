@@ -13,7 +13,7 @@ shared static this() {
 }
 
 
-version(unittest):
+version(testLibraryExcelD):
 
 ///
 shared static this() {

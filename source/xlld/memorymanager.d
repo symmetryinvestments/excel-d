@@ -55,9 +55,9 @@ struct AllocatorContext(A) {
     }
 
     ///
-    auto any(T)(auto ref T value) {
+    auto any(T)(auto ref T value, in string file = __FILE__, in size_t line = __LINE__) {
         import xlld.any: _any = any;
-        return _any(value, *_allocator_);
+        return _any(value, *_allocator_, file, line);
     }
 
     ///
