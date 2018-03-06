@@ -23,7 +23,7 @@ version(testingExcelD) {
 
 alias ToEnumConversionFunction = int delegate(string);
 package __gshared ToEnumConversionFunction[string] gToEnumConversions;
-package shared Mutex gToEnumMutex;
+shared Mutex gToEnumMutex;
 
 
 ///
@@ -581,7 +581,9 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
 __gshared immutable fromXlOperDateTimeTypeException = new Exception("Wrong type for fromXlOper!DateTime");
 
 ///
-T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime)) {
+T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
+    if(is(Unqual!T == DateTime))
+{
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.sdk.framework: Excel12f;
     import xlld.sdk.xlcall: XlType, xlretSuccess, xlfYear, xlfMonth, xlfDay, xlfHour, xlfMinute, xlfSecond;
@@ -593,7 +595,9 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == DateTime))
 
     auto get(int fn) @trusted {
         const code = Excel12f(fn, &ret, oper);
-        assert(code == xlretSuccess, "Error calling xlf datetime part function");
+        if(code != xlretSuccess)
+            throw new Exception("Error calling xlf datetime part function");
+
         // for some reason the Excel API returns doubles
         assert(ret.xltype == XlType.xltypeNum, "xlf datetime part return not xltypeNum");
         return cast(int)ret.val.num;

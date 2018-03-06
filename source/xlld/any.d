@@ -10,7 +10,6 @@ version(testingExcelD) {
     alias theGC = GCAllocator.instance;
 }
 
-
 ///
 struct Any {
     import xlld.sdk.xlcall: XLOPER12;
@@ -117,7 +116,10 @@ struct Any {
 
 
 ///
-auto any(T, A)(auto ref T value, auto ref A allocator) @trusted {
+auto any(T, A)(auto ref T value, auto ref A allocator, in string file = __FILE__, in size_t line = __LINE__) @trusted {
     import xlld.conv: toXlOper;
-    return Any(value.toXlOper(allocator));
+    static if(__traits(compiles, Any(value.toXlOper(allocator, file, line))))
+        return Any(value.toXlOper(allocator, file, line));
+    else
+        return Any(value.toXlOper(allocator));
 }

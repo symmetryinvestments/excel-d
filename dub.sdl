@@ -1,12 +1,17 @@
 name "excel-d"
 description "Excel bindings for D"
 authors "Laeeth Isharc" "Stefan Koch" "Atila Neves"
-copyright "Copyright © 2016, 2017 Kaleidic Associates Advisory Limited"
-license "proprietary"
-targetType "sourceLibrary"
+copyright "Copyright © 2016-2018 Kaleidic Associates Advisory Limited"
+license "BSD"
 dependency "nogc" version="~>0.0.1"
 
-configuration "sourceLibrary" {
+configuration "default" {
+    targetType "sourceLibrary"
+}
+
+configuration "testLibrary" {
+    targetType "library"
+    versions "testLibraryExcelD"
 }
 
 configuration "unittest" {
@@ -17,7 +22,7 @@ configuration "unittest" {
     sourcePaths "source" "test"
     mainSourceFile "test/ut.d"
     dependency "unit-threaded" version="~>0.7.0"
-    versions "testingExcelD"
+    versions "testingExcelD" "testLibraryExcelD"
 }
 
 configuration "ut" {
@@ -28,5 +33,5 @@ configuration "ut" {
     sourcePaths "source" "test"
     mainSourceFile "test/ut.d"
     dependency "unit-threaded" version="~>0.7.0"
-    versions "unitThreadedLight" "testingExcelD"
+    versions "unitThreadedLight" "testingExcelD" "testLibraryExcelD"
 }
