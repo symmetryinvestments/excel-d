@@ -18,7 +18,8 @@ module xlld.wrap.traits;
 
 import xlld.wrap.worksheet;
 import xlld.sdk.xlcall;
-import std.traits: isSomeFunction, allSatisfy, isSomeString;
+import std.traits: isSomeFunction, isSomeString;
+import std.meta: allSatisfy;
 
 /// import unit_threaded and introduce helper functions for testing
 version(testingExcelD) {
