@@ -12,10 +12,10 @@ int main(string[] args)
         "xlld.test.util",
         "xlld.func.xl",
         "xlld.func.xlf",
-        "xlld.conv.misc",
         "ut.wrap.module_",
         "ut.wrap.all",
         "ut.conv.from",
         "ut.conv.to",
+        "ut.conv.misc",
     );
 }

@@ -5,15 +5,6 @@ module xlld.conv.misc;
 
 import xlld.from;
 
-version(testingExcelD) {
-    import xlld.conv.to: toXlOper;
-    import xlld.conv.from: fromXlOper;
-    import xlld.test.util: shouldEqualDlang, FailingAllocator;
-    import unit_threaded.should;
-    import std.experimental.allocator.gc_allocator: GCAllocator;
-    alias theGC = GCAllocator.instance;
-}
-
 ///
 __gshared immutable gDupMemoryException = new Exception("Failed to allocate memory in dup");
 
@@ -69,46 +60,6 @@ from!"xlld.sdk.xlcall".XLOPER12 dup(A)(from!"xlld.sdk.xlcall".XLOPER12 oper, ref
     assert(0);
 }
 
-///
-@("dup")
-@safe unittest {
-    auto int_ = 42.toXlOper(theGC);
-    int_.dup(theGC).shouldEqualDlang(42);
-
-    auto double_ = (33.3).toXlOper(theGC);
-    double_.dup(theGC).shouldEqualDlang(33.3);
-
-    auto string_ = "foobar".toXlOper(theGC);
-    string_.dup(theGC).shouldEqualDlang("foobar");
-
-    auto array = () @trusted {
-        return [
-            ["foo", "bar", "baz"],
-            ["quux", "toto", "brzz"]
-        ]
-        .toXlOper(theGC);
-    }();
-
-    array.dup(theGC).shouldEqualDlang(
-        [
-            ["foo", "bar", "baz"],
-            ["quux", "toto", "brzz"],
-        ]
-    );
-}
-
-@("dup string allocator fails")
-@safe unittest {
-    auto allocator = FailingAllocator();
-    "foo".toXlOper(theGC).dup(allocator).shouldThrowWithMessage("Failed to allocate memory in dup");
-}
-
-@("dup multi allocator fails")
-@safe unittest {
-    auto allocator = FailingAllocator();
-    auto oper = () @trusted { return [33.3].toXlOper(theGC); }();
-    oper.dup(allocator).shouldThrowWithMessage("Failed to allocate memory in dup");
-}
 
 
 from!"xlld.sdk.xlcall".XlType stripMemoryBitmask(in from!"xlld.sdk.xlcall".XlType type) @safe @nogc pure nothrow {
@@ -127,14 +78,6 @@ ushort operStringLength(T)(in T value) {
     return cast(ushort)value.val.str[0];
 }
 
-///
-@("operStringLength")
-unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
-    auto oper = "foobar".toXlOper(theGC);
-    const length = () @nogc { return operStringLength(oper); }();
-    length.shouldEqual(6);
-}
 
 // can't be pure because to!double isn't pure
 string toString(in from!"xlld.sdk.xlcall".XLOPER12 oper) @safe {
@@ -211,12 +154,4 @@ from!"xlld.sdk.xlcall".XLOPER12 multi(A)(int rows, int cols, ref A allocator) @t
         throw multiMemoryException;
 
     return ret;
-}
-
-
-///
-@("multi")
-@safe unittest {
-    auto allocator = FailingAllocator();
-    multi(2, 3, allocator).shouldThrowWithMessage("Failed to allocate memory for multi oper");
 }
