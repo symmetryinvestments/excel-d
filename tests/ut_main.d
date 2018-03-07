@@ -16,5 +16,6 @@ int main(string[] args)
         "ut.conv.to",
         "ut.conv.misc",
         "ut.func.xlf",
+        "ut.wrap.wrap",
     );
 }
