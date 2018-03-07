@@ -20,7 +20,7 @@ configuration "unittest" {
     targetPath "bin"
     importPaths "source" "tests"
     sourcePaths "source" "tests"
-    mainSourceFile "tests/ut.d"
+    mainSourceFile "tests/ut_main.d"
     dependency "unit-threaded" version="~>0.7.0"
     versions "testingExcelD" "testLibraryExcelD"
 }
@@ -31,7 +31,7 @@ configuration "ut" {
     targetPath "bin"
     importPaths "source" "tests"
     sourcePaths "source" "tests"
-    mainSourceFile "tests/ut.d"
+    mainSourceFile "tests/ut_main.d"
     dependency "unit-threaded" version="~>0.7.0"
     versions "unitThreadedLight" "testingExcelD" "testLibraryExcelD"
 }

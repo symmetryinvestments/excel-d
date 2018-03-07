@@ -13,7 +13,7 @@ int main(string[] args)
         "xlld.func.xl",
         "xlld.func.xlf",
         "xlld.conv.misc",
-        "wrap.module_",
-        "wrap.all",
+        "ut.wrap.module_",
+        "ut.wrap.all",
     );
 }
