@@ -6,13 +6,6 @@ module xlld.func.xlf;
 import xlld.func.framework: excel12;
 import xlld.sdk.xlcall: XLOPER12;
 
-version(testingExcelD) {
-    import xlld.test.util;
-    import unit_threaded;
-    import std.experimental.allocator.gc_allocator: GCAllocator;
-    alias theGC = GCAllocator.instance;
-}
-
 
 // should be pure but can't due to calling Excel12
 int year(double date) @safe @nogc nothrow {
@@ -113,7 +106,7 @@ auto caller() @safe {
     return ScopedOper(result);
 }
 
-private auto callerCell() @safe {
+auto callerCell() @safe {
     import xlld.sdk.xlcall: XlType;
     import xlld.func.xl: coerce, free, Coerced;
 
@@ -123,25 +116,4 @@ private auto callerCell() @safe {
         throw new Exception("Caller not a cell");
 
     return Coerced(oper);
-}
-
-@("callerCell throws if caller is string")
-unittest {
-    import xlld.sdk.xlcall: xlfCaller;
-    import xlld.conv.to: toXlOper;
-
-    with(MockXlFunction(xlfCaller, "foobar".toXlOper(theGC))) {
-        callerCell.shouldThrowWithMessage("Caller not a cell");
-    }
-}
-
-
-@("callerCell with SRef")
-unittest {
-    import xlld.sdk.xlcall: xlfCaller;
-
-    with(MockXlFunction(xlfCaller, "foobar".toSRef(theGC))) {
-        auto oper = callerCell;
-        oper.shouldEqualDlang("foobar");
-    }
 }
