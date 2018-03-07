@@ -4,10 +4,8 @@ int main(string[] args)
 {
     return args.runTests!(
         "xlld.any",
-        "xlld.memorymanager",
-        "xlld.wrap.worksheet",
-        "xlld.wrap.traits",
         "xlld.wrap.wrap",
+        "xlld.wrap.traits",
         "xlld.sdk.xll",
         "xlld.test.util",
         "ut.wrap.module_",
