@@ -70,8 +70,9 @@ version(testingExcelD) {
  WorksheetFunction struct with the fields filled in accordingly.
  */
 WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
+    import xlld.wrap.wrap: pascalCase;
     import std.traits: ReturnType, Parameters, getUDAs;
-    import std.conv: text;
+    import std.conv: text, to;
 
     alias R = ReturnType!F;
     alias T = Parameters!F;
@@ -82,8 +83,9 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
     } else {
 
         WorksheetFunction ret;
-        ret.procedure = Procedure(__traits(identifier, F));
-        ret.functionText = FunctionText(__traits(identifier, F));
+        auto name = __traits(identifier, F).pascalCase.to!wstring;
+        ret.procedure = Procedure(name);
+        ret.functionText = FunctionText(name);
         ret.typeText = TypeText(getTypeText!F);
 
         // check to see if decorated with @Register
@@ -322,7 +324,7 @@ WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)() {
 
         static if(isWorksheetFunction!moduleMember) {
             try
-                ret ~= getWorksheetFunction!moduleMember;
+                ret ~= getWorksheetFunction!(moduleMember);
             catch(Exception ex)
                 assert(0); //can't happen
         } else static if(isWorksheetFunctionModuloLinkage!moduleMember) {

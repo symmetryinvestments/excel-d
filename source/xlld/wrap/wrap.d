@@ -213,7 +213,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
     ].join("\n");
 }
 
-private string pascalCase(in string func) @safe pure {
+string pascalCase(in string func) @safe pure {
     import std.uni: toUpper;
     import std.conv: to;
     return (func[0].toUpper ~ func[1..$].to!dstring).to!string;
