@@ -104,7 +104,9 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
 /**
  A string to use with `mixin` that wraps a D function
  */
-string wrapModuleFunctionStr(string moduleName, string funcName)(in string callingModule = __MODULE__) {
+string wrapModuleFunctionStr(string moduleName, string funcName)
+                            (in string callingModule = __MODULE__)
+{
 
     if(!__ctfe) {
         return "";
@@ -159,6 +161,8 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
         async = "@Async";
 
     const returnType = hasUDA!(func, Async) ? "void" : "XLOPER12*";
+    // The function name that Excel actually calls in the binary
+    const xlFuncName = funcName;
     const return_ = hasUDA!(func, Async) ? "" : "return ";
     const wrap = hasUDA!(func, Async)
         ? q{wrapAsync!wrappedFunc(Mallocator.instance, %s)}.format(argsCall)
@@ -175,7 +179,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
                 alias wrappedFunc = %s.%s;
                 %s%s;
             }
-        }.format(returnType, funcName, argsDecl, nogc, safe,
+        }.format(returnType, xlFuncName, argsDecl, nogc, safe,
                  moduleName,
                  moduleName, funcName,
                  return_, wrap),
