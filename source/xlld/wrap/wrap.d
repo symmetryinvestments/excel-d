@@ -22,37 +22,37 @@ static if(!is(Flaky))
     enum Flaky;
 
 
-private template isWorksheetFunction(alias F) {
-    import xlld.wrap.traits: isSupportedFunction;
-    import xlld.any: Any;
-    import std.datetime: DateTime;
 
+///
+string wrapAll(Modules...)(in string mainModule = __MODULE__) {
 
-    enum isWorksheetFunction =
-        isSupportedFunction!(F,
-                             bool,
-                             int,
-                             double, double[], double[][],
-                             string, string[], string[][],
-                             Any, Any[], Any[][],
-                             DateTime, DateTime[], DateTime[][],
-        );
+    if(!__ctfe) {
+        return "";
+    }
 
+    import xlld.wrap.traits: implGetWorksheetFunctionsString;
+    return
+        wrapWorksheetFunctionsString!Modules(mainModule) ~
+        "\n" ~
+        implGetWorksheetFunctionsString!(mainModule) ~
+        "\n" ~
+        `mixin GenerateDllDef!"` ~ mainModule ~ `";` ~
+        "\n";
 }
 
+///
+string wrapWorksheetFunctionsString(Modules...)(string callingModule = __MODULE__) {
 
-@("isWorksheetFunction")
-@safe pure unittest {
-    static import test.d_funcs;
-    // the line below checks that the code still compiles even with a private function
-    // it might stop compiling in a future version when the deprecation rules for
-    // visibility kick in
-    static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
-    static assert(isWorksheetFunction!(test.d_funcs.FuncThrows));
-    static assert(isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
-    static assert(isWorksheetFunction!(test.d_funcs.Twice));
-    static assert(isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
-    static assert(isWorksheetFunction!(test.d_funcs.BoolToInt));
+    if(!__ctfe) {
+        return "";
+    }
+
+    string ret;
+    foreach(module_; Modules) {
+        ret ~= wrapModuleWorksheetFunctionsString!module_(callingModule);
+    }
+
+    return ret;
 }
 
 /**
@@ -577,35 +577,35 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
     }
 }
 
-///
-string wrapWorksheetFunctionsString(Modules...)(string callingModule = __MODULE__) {
+private template isWorksheetFunction(alias F) {
+    import xlld.wrap.traits: isSupportedFunction;
+    import xlld.any: Any;
+    import std.datetime: DateTime;
 
-    if(!__ctfe) {
-        return "";
-    }
 
-    string ret;
-    foreach(module_; Modules) {
-        ret ~= wrapModuleWorksheetFunctionsString!module_(callingModule);
-    }
+    enum isWorksheetFunction =
+        isSupportedFunction!(F,
+                             bool,
+                             int,
+                             double, double[], double[][],
+                             string, string[], string[][],
+                             Any, Any[], Any[][],
+                             DateTime, DateTime[], DateTime[][],
+        );
 
-    return ret;
 }
 
 
-///
-string wrapAll(Modules...)(in string mainModule = __MODULE__) {
-
-    if(!__ctfe) {
-        return "";
-    }
-
-    import xlld.wrap.traits: implGetWorksheetFunctionsString;
-    return
-        wrapWorksheetFunctionsString!Modules(mainModule) ~
-        "\n" ~
-        implGetWorksheetFunctionsString!(mainModule) ~
-        "\n" ~
-        `mixin GenerateDllDef!"` ~ mainModule ~ `";` ~
-        "\n";
+@("isWorksheetFunction")
+@safe pure unittest {
+    static import test.d_funcs;
+    // the line below checks that the code still compiles even with a private function
+    // it might stop compiling in a future version when the deprecation rules for
+    // visibility kick in
+    static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
+    static assert(isWorksheetFunction!(test.d_funcs.FuncThrows));
+    static assert(isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
+    static assert(isWorksheetFunction!(test.d_funcs.Twice));
+    static assert(isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
+    static assert(isWorksheetFunction!(test.d_funcs.BoolToInt));
 }
