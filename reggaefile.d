@@ -3,10 +3,10 @@ import std.typecons;
 
 alias ut = dubTestTarget!(CompilerFlags("-g -debug"),
                           LinkerFlags(),
-                          No.allTogether);
+                          CompilationMode.package_);
 alias utl = dubConfigurationTarget!(Configuration("ut"),
                                     CompilerFlags("-unittest -version=unitThreadedLight -g -debug"),
                                     LinkerFlags(),
                                     Yes.main,
-                                    No.allTogether);
+                                    CompilationMode.package_);
 mixin build!(ut, utl.optional);
