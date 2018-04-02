@@ -6,6 +6,7 @@ module xlld.wrap.wrap;
 
 import xlld.wrap.worksheet;
 import xlld.sdk.xlcall: XLOPER12;
+import std.typecons: Flag, No;
 
 
 version(testingExcelD) {
@@ -24,7 +25,10 @@ static if(!is(Flaky))
 
 
 ///
-string wrapAll(Modules...)(in string mainModule = __MODULE__) {
+string wrapAll(Modules...)
+              (Flag!"onlyExports" onlyExports = No.onlyExports,
+               in string mainModule = __MODULE__)
+{
 
     if(!__ctfe) {
         return "";
@@ -32,7 +36,7 @@ string wrapAll(Modules...)(in string mainModule = __MODULE__) {
 
     import xlld.wrap.traits: implGetWorksheetFunctionsString;
     return
-        wrapWorksheetFunctionsString!Modules(mainModule) ~
+        wrapWorksheetFunctionsString!Modules(onlyExports, mainModule) ~
         "\n" ~
         implGetWorksheetFunctionsString!(mainModule) ~
         "\n" ~
@@ -41,7 +45,9 @@ string wrapAll(Modules...)(in string mainModule = __MODULE__) {
 }
 
 ///
-string wrapWorksheetFunctionsString(Modules...)(string callingModule = __MODULE__) {
+string wrapWorksheetFunctionsString(Modules...)
+                                   (Flag!"onlyExports" onlyExports = No.onlyExports, string callingModule = __MODULE__)
+{
 
     if(!__ctfe) {
         return "";
@@ -49,7 +55,7 @@ string wrapWorksheetFunctionsString(Modules...)(string callingModule = __MODULE_
 
     string ret;
     foreach(module_; Modules) {
-        ret ~= wrapModuleWorksheetFunctionsString!module_(callingModule);
+        ret ~= wrapModuleWorksheetFunctionsString!module_(onlyExports, callingModule);
     }
 
     return ret;
@@ -59,7 +65,9 @@ string wrapWorksheetFunctionsString(Modules...)(string callingModule = __MODULE_
    A string to mixin that wraps all eligible functions in the
    given module.
  */
-string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModule = __MODULE__) {
+string wrapModuleWorksheetFunctionsString(string moduleName)
+                                         (Flag!"onlyExports" onlyExports = No.onlyExports, string callingModule = __MODULE__)
+{
     if(!__ctfe) {
         return "";
     }
@@ -72,15 +80,18 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     string ret;
 
     foreach(moduleMemberStr; __traits(allMembers, module_))
-        ret ~= wrapModuleMember!(moduleName, moduleMemberStr)(callingModule);
+        ret ~= wrapModuleMember!(moduleName, moduleMemberStr)(onlyExports, callingModule);
 
     return ret;
 }
 
-string wrapModuleMember(string moduleName, string moduleMemberStr)(string callingModule = __MODULE__) {
+string wrapModuleMember(string moduleName, string moduleMemberStr)
+                       (Flag!"onlyExports" onlyExports = No.onlyExports, string callingModule = __MODULE__)
+{
     if(!__ctfe) return "";
 
     import xlld.wrap.traits: Identity;
+    import std.traits: functionAttributes, FunctionAttribute;
 
     mixin(`import ` ~ moduleName ~ `;`);
     alias module_ = Identity!(mixin(moduleName));
@@ -91,9 +102,14 @@ string wrapModuleMember(string moduleName, string moduleMemberStr)(string callin
 
     static if(isWorksheetFunction!moduleMember) {
         enum numOverloads = __traits(getOverloads, mixin(moduleName), moduleMemberStr).length;
-        static if(numOverloads == 1)
-            ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
-        else
+        static if(numOverloads == 1) {
+            // if onlyExports is true, then only functions that are "export" are allowed
+            // Otherwise, any function will do as long as they're visible (i.e. public)
+            const shouldWrap = (onlyExports && __traits(getProtection, moduleMember) == "export")
+                || __traits(getProtection, moduleMember) == "public";
+            if(shouldWrap)
+                ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
+        } else
             pragma(msg, "excel-d WARNING: Not wrapping ", moduleMemberStr, " due to it having ",
                    cast(int)numOverloads, " overloads");
     } else {
