@@ -208,7 +208,7 @@ private wstring getTypeText(alias F)() if(isSomeFunction!F) {
 
 
 // helper template for aliasing
-private alias Identity(alias T) = T;
+alias Identity(alias T) = T;
 
 
 /**

@@ -64,42 +64,52 @@ string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModul
     }
 
     import xlld.wrap.traits: Identity;
-    import std.array: join;
-    import std.traits: ReturnType, Parameters;
 
     mixin(`import ` ~ moduleName ~ `;`);
     alias module_ = Identity!(mixin(moduleName));
 
     string ret;
 
-    foreach(moduleMemberStr; __traits(allMembers, module_)) {
+    foreach(moduleMemberStr; __traits(allMembers, module_))
+        ret ~= wrapModuleMember!(moduleName, moduleMemberStr)(callingModule);
 
-        alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
+    return ret;
+}
 
-        static if(isWorksheetFunction!moduleMember) {
-            enum numOverloads = __traits(getOverloads, mixin(moduleName), moduleMemberStr).length;
-            static if(numOverloads == 1)
-                ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
-            else
-                pragma(msg, "excel-d WARNING: Not wrapping ", moduleMemberStr, " due to it having ",
-                       cast(int)numOverloads, " overloads");
-        } else {
-            /// trying to get a pointer to something is a good way of making sure we can
-            /// attempt to evaluate `isSomeFunction` - it's not always possible
-            enum canGetPointerToIt = __traits(compiles, &moduleMember);
-            static if(canGetPointerToIt) {
-                import xlld.wrap.worksheet: Register;
-                import std.traits: getUDAs;
-                alias registerAttrs = getUDAs!(moduleMember, Register);
-                static assert(registerAttrs.length == 0,
-                              "excel-d ERROR: Function `" ~ moduleMemberStr ~ "` not eligible for wrapping");
-            }
+string wrapModuleMember(string moduleName, string moduleMemberStr)(string callingModule = __MODULE__) {
+    if(!__ctfe) return "";
+
+    import xlld.wrap.traits: Identity;
+
+    mixin(`import ` ~ moduleName ~ `;`);
+    alias module_ = Identity!(mixin(moduleName));
+
+    string ret;
+
+    alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
+
+    static if(isWorksheetFunction!moduleMember) {
+        enum numOverloads = __traits(getOverloads, mixin(moduleName), moduleMemberStr).length;
+        static if(numOverloads == 1)
+            ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
+        else
+            pragma(msg, "excel-d WARNING: Not wrapping ", moduleMemberStr, " due to it having ",
+                   cast(int)numOverloads, " overloads");
+    } else {
+        /// trying to get a pointer to something is a good way of making sure we can
+        /// attempt to evaluate `isSomeFunction` - it's not always possible
+        enum canGetPointerToIt = __traits(compiles, &moduleMember);
+        static if(canGetPointerToIt) {
+            import xlld.wrap.worksheet: Register;
+            import std.traits: getUDAs;
+            alias registerAttrs = getUDAs!(moduleMember, Register);
+            static assert(registerAttrs.length == 0,
+                          "excel-d ERROR: Function `" ~ moduleMemberStr ~ "` not eligible for wrapping");
         }
     }
 
     return ret;
 }
-
 
 /**
  A string to use with `mixin` that wraps a D function
