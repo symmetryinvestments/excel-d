@@ -6,6 +6,8 @@ module xlld.wrap.wrap;
 
 import xlld.wrap.worksheet;
 import xlld.sdk.xlcall: XLOPER12;
+import std.typecons: Flag, No;
+
 
 version(testingExcelD) {
     import xlld.conv: toXlOper;
@@ -21,90 +23,117 @@ static if(!is(Flaky))
     enum Flaky;
 
 
-private template isWorksheetFunction(alias F) {
-    import xlld.wrap.traits: isSupportedFunction;
-    import xlld.any: Any;
-    import std.datetime: DateTime;
 
+///
+string wrapAll(Modules...)
+              (Flag!"onlyExports" onlyExports = No.onlyExports,
+               in string mainModule = __MODULE__)
+{
 
-    enum isWorksheetFunction =
-        isSupportedFunction!(F,
-                             bool,
-                             int,
-                             double, double[], double[][],
-                             string, string[], string[][],
-                             Any, Any[], Any[][],
-                             DateTime, DateTime[], DateTime[][],
-        );
+    if(!__ctfe) {
+        return "";
+    }
 
+    import xlld.wrap.traits: implGetWorksheetFunctionsString;
+    return
+        wrapWorksheetFunctionsString!Modules(onlyExports, mainModule) ~
+        "\n" ~
+        implGetWorksheetFunctionsString!(mainModule) ~
+        "\n" ~
+        `mixin GenerateDllDef!"` ~ mainModule ~ `";` ~
+        "\n";
 }
 
+///
+string wrapWorksheetFunctionsString(Modules...)
+                                   (Flag!"onlyExports" onlyExports = No.onlyExports, string callingModule = __MODULE__)
+{
 
-@("isWorksheetFunction")
-@safe pure unittest {
-    static import test.d_funcs;
-    // the line below checks that the code still compiles even with a private function
-    // it might stop compiling in a future version when the deprecation rules for
-    // visibility kick in
-    static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
-    static assert(isWorksheetFunction!(test.d_funcs.FuncThrows));
-    static assert(isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
-    static assert(isWorksheetFunction!(test.d_funcs.Twice));
-    static assert(isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
-    static assert(isWorksheetFunction!(test.d_funcs.BoolToInt));
+    if(!__ctfe) {
+        return "";
+    }
+
+    string ret;
+    foreach(module_; Modules) {
+        ret ~= wrapModuleWorksheetFunctionsString!module_(onlyExports, callingModule);
+    }
+
+    return ret;
 }
 
 /**
    A string to mixin that wraps all eligible functions in the
    given module.
  */
-string wrapModuleWorksheetFunctionsString(string moduleName)(string callingModule = __MODULE__) {
+string wrapModuleWorksheetFunctionsString(string moduleName)
+                                         (Flag!"onlyExports" onlyExports = No.onlyExports, string callingModule = __MODULE__)
+{
     if(!__ctfe) {
         return "";
     }
 
     import xlld.wrap.traits: Identity;
-    import std.array: join;
-    import std.traits: ReturnType, Parameters;
 
     mixin(`import ` ~ moduleName ~ `;`);
     alias module_ = Identity!(mixin(moduleName));
 
     string ret;
 
-    foreach(moduleMemberStr; __traits(allMembers, module_)) {
+    foreach(moduleMemberStr; __traits(allMembers, module_))
+        ret ~= wrapModuleMember!(moduleName, moduleMemberStr)(onlyExports, callingModule);
 
-        alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
+    return ret;
+}
 
-        static if(isWorksheetFunction!moduleMember) {
-            enum numOverloads = __traits(getOverloads, mixin(moduleName), moduleMemberStr).length;
-            static if(numOverloads == 1)
+string wrapModuleMember(string moduleName, string moduleMemberStr)
+                       (Flag!"onlyExports" onlyExports = No.onlyExports, string callingModule = __MODULE__)
+{
+    if(!__ctfe) return "";
+
+    import xlld.wrap.traits: Identity;
+    import std.traits: functionAttributes, FunctionAttribute;
+
+    mixin(`import ` ~ moduleName ~ `;`);
+    alias module_ = Identity!(mixin(moduleName));
+
+    string ret;
+
+    alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
+
+    static if(isWorksheetFunction!moduleMember) {
+        enum numOverloads = __traits(getOverloads, mixin(moduleName), moduleMemberStr).length;
+        static if(numOverloads == 1) {
+            // if onlyExports is true, then only functions that are "export" are allowed
+            // Otherwise, any function will do as long as they're visible (i.e. public)
+            const shouldWrap = (onlyExports && __traits(getProtection, moduleMember) == "export")
+                || __traits(getProtection, moduleMember) == "public";
+            if(shouldWrap)
                 ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
-            else
-                pragma(msg, "excel-d WARNING: Not wrapping ", moduleMemberStr, " due to it having ",
-                       cast(int)numOverloads, " overloads");
-        } else {
-            /// trying to get a pointer to something is a good way of making sure we can
-            /// attempt to evaluate `isSomeFunction` - it's not always possible
-            enum canGetPointerToIt = __traits(compiles, &moduleMember);
-            static if(canGetPointerToIt) {
-                import xlld.wrap.worksheet: Register;
-                import std.traits: getUDAs;
-                alias registerAttrs = getUDAs!(moduleMember, Register);
-                static assert(registerAttrs.length == 0,
-                              "excel-d ERROR: Function `" ~ moduleMemberStr ~ "` not eligible for wrapping");
-            }
+        } else
+            pragma(msg, "excel-d WARNING: Not wrapping ", moduleMemberStr, " due to it having ",
+                   cast(int)numOverloads, " overloads");
+    } else {
+        /// trying to get a pointer to something is a good way of making sure we can
+        /// attempt to evaluate `isSomeFunction` - it's not always possible
+        enum canGetPointerToIt = __traits(compiles, &moduleMember);
+        static if(canGetPointerToIt) {
+            import xlld.wrap.worksheet: Register;
+            import std.traits: getUDAs;
+            alias registerAttrs = getUDAs!(moduleMember, Register);
+            static assert(registerAttrs.length == 0,
+                          "excel-d ERROR: Function `" ~ moduleMemberStr ~ "` not eligible for wrapping");
         }
     }
 
     return ret;
 }
 
-
 /**
  A string to use with `mixin` that wraps a D function
  */
-string wrapModuleFunctionStr(string moduleName, string funcName)(in string callingModule = __MODULE__) {
+string wrapModuleFunctionStr(string moduleName, string funcName)
+                            (in string callingModule = __MODULE__)
+{
 
     if(!__ctfe) {
         return "";
@@ -159,6 +188,8 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
         async = "@Async";
 
     const returnType = hasUDA!(func, Async) ? "void" : "XLOPER12*";
+    // The function name that Excel actually calls in the binary
+    const xlFuncName = pascalCase(funcName);
     const return_ = hasUDA!(func, Async) ? "" : "return ";
     const wrap = hasUDA!(func, Async)
         ? q{wrapAsync!wrappedFunc(Mallocator.instance, %s)}.format(argsCall)
@@ -175,11 +206,17 @@ string wrapModuleFunctionStr(string moduleName, string funcName)(in string calli
                 alias wrappedFunc = %s.%s;
                 %s%s;
             }
-        }.format(returnType, funcName, argsDecl, nogc, safe,
+        }.format(returnType, xlFuncName, argsDecl, nogc, safe,
                  moduleName,
                  moduleName, funcName,
                  return_, wrap),
     ].join("\n");
+}
+
+private string pascalCase(in string func) @safe pure {
+    import std.uni: toUpper;
+    import std.conv: to;
+    return (func[0].toUpper ~ func[1..$].to!dstring).to!string;
 }
 
 void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle, T args) {
@@ -556,35 +593,35 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
     }
 }
 
-///
-string wrapWorksheetFunctionsString(Modules...)(string callingModule = __MODULE__) {
+private template isWorksheetFunction(alias F) {
+    import xlld.wrap.traits: isSupportedFunction;
+    import xlld.any: Any;
+    import std.datetime: DateTime;
 
-    if(!__ctfe) {
-        return "";
-    }
 
-    string ret;
-    foreach(module_; Modules) {
-        ret ~= wrapModuleWorksheetFunctionsString!module_(callingModule);
-    }
+    enum isWorksheetFunction =
+        isSupportedFunction!(F,
+                             bool,
+                             int,
+                             double, double[], double[][],
+                             string, string[], string[][],
+                             Any, Any[], Any[][],
+                             DateTime, DateTime[], DateTime[][],
+        );
 
-    return ret;
 }
 
 
-///
-string wrapAll(Modules...)(in string mainModule = __MODULE__) {
-
-    if(!__ctfe) {
-        return "";
-    }
-
-    import xlld.wrap.traits: implGetWorksheetFunctionsString;
-    return
-        wrapWorksheetFunctionsString!Modules(mainModule) ~
-        "\n" ~
-        implGetWorksheetFunctionsString!(mainModule) ~
-        "\n" ~
-        `mixin GenerateDllDef!"` ~ mainModule ~ `";` ~
-        "\n";
+@("isWorksheetFunction")
+@safe pure unittest {
+    static import test.d_funcs;
+    // the line below checks that the code still compiles even with a private function
+    // it might stop compiling in a future version when the deprecation rules for
+    // visibility kick in
+    static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
+    static assert(isWorksheetFunction!(test.d_funcs.FuncThrows));
+    static assert(isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
+    static assert(isWorksheetFunction!(test.d_funcs.Twice));
+    static assert(isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
+    static assert(isWorksheetFunction!(test.d_funcs.BoolToInt));
 }

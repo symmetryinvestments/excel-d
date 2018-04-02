@@ -26,7 +26,7 @@ alias autoFreeAllocator = Mallocator.instance;
 ///
 package alias MemoryPool = AllocatorList!((size_t n) => Region!Mallocator(max(n, size_t(1024 * 1024))), Mallocator);
 ///
-package MemoryPool gTempAllocator;
+MemoryPool gTempAllocator;
 
 ///
 T[][] makeArray2D(T, A)(ref A allocator, ref XLOPER12 oper) {

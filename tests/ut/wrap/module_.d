@@ -1,4 +1,4 @@
-module wrap.module_;
+module ut.wrap.module_;
 
 import xlld.wrap;
 import xlld.test.util;

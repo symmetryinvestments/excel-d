@@ -65,6 +65,12 @@ and then in Excel:
 
 Future functionality will include creating menu items and dialogue boxes.  Pull requests welcomed.
 
+Function spelling
+------------------
+
+excel-d will always convert the first character in the D function being wrapped to uppercase
+since that is the Excel convention.
+
 
 Variant type `Any`
 ---------------------
