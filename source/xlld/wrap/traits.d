@@ -20,6 +20,7 @@ import xlld.wrap.worksheet;
 import xlld.sdk.xlcall;
 import std.traits: isSomeFunction, isSomeString;
 import std.meta: allSatisfy;
+import std.typecons: Flag, No;
 
 /// import unit_threaded and introduce helper functions for testing
 version(testingExcelD) {
@@ -312,7 +313,9 @@ private template isWorksheetFunctionModuloLinkage(alias F) {
 /**
  Gets all Excel-callable functions in a given module
  */
-WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)() {
+WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)
+                                               (Flag!"onlyExports" onlyExports = No.onlyExports)
+{
     mixin(`import ` ~ moduleName ~ `;`);
     alias module_ = Identity!(mixin(moduleName));
 
@@ -323,9 +326,11 @@ WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)() {
         alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
 
         static if(isWorksheetFunction!moduleMember) {
-            try
-                ret ~= getWorksheetFunction!(moduleMember);
-            catch(Exception ex)
+            try {
+                const shouldWrap = onlyExports ? __traits(getProtection, moduleMember) == "export" : true;
+                if(shouldWrap)
+                    ret ~= getWorksheetFunction!(moduleMember);
+            } catch(Exception ex)
                 assert(0); //can't happen
         } else static if(isWorksheetFunctionModuloLinkage!moduleMember) {
             import std.traits: functionLinkage;
@@ -353,11 +358,14 @@ WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)() {
 /**
  Gets all Excel-callable functions from the given modules
  */
-WorksheetFunction[] getAllWorksheetFunctions(Modules...)() pure @safe if(allSatisfy!(isSomeString, typeof(Modules))) {
+WorksheetFunction[] getAllWorksheetFunctions(Modules...)
+                                            (Flag!"onlyExports" onlyExports = No.onlyExports)
+    pure @safe if(allSatisfy!(isSomeString, typeof(Modules)))
+{
     WorksheetFunction[] ret;
 
     foreach(module_; Modules) {
-        ret ~= getModuleWorksheetFunctions!module_;
+        ret ~= getModuleWorksheetFunctions!module_(onlyExports);
     }
 
     return ret;
@@ -473,8 +481,11 @@ struct Statement {
    used when writing the information out.
    This encapsulates all the functions to be exported by the DLL/XLL.
  */
-DllDefFile dllDefFile(Modules...)(string libName, string description)
-if(allSatisfy!(isSomeString, typeof(Modules)))
+DllDefFile dllDefFile(Modules...)
+                     (string libName,
+                      string description,
+                      Flag!"onlyExports" onlyExports = No.onlyExports)
+    if(allSatisfy!(isSomeString, typeof(Modules)))
 {
     import std.conv: to;
 
@@ -483,7 +494,7 @@ if(allSatisfy!(isSomeString, typeof(Modules)))
     ];
 
     string[] exports = ["xlAutoOpen", "xlAutoClose", "xlAutoFree12"];
-    foreach(func; getAllWorksheetFunctions!Modules) {
+    foreach(func; getAllWorksheetFunctions!Modules(onlyExports)) {
         exports ~= func.procedure.to!string;
     }
 
@@ -531,7 +542,10 @@ mixin template GenerateDllDef(string module_ = __MODULE__) {
 }
 
 ///
-void generateDllDef(string module_ = __MODULE__)(string[] args) {
+void generateDllDef(string module_ = __MODULE__,
+                    Flag!"onlyExports" onlyExports = No.onlyExports)
+                   (string[] args)
+{
     import std.stdio: File;
     import std.exception: enforce;
     import std.path: stripExtension;
@@ -548,7 +562,7 @@ void generateDllDef(string module_ = __MODULE__)(string[] args) {
         : "Simple D add-in to Excel";
 
     auto file = File(fileName, "w");
-    foreach(stmt; dllDefFile!module_(libName, description).statements)
+    foreach(stmt; dllDefFile!module_(libName, description, onlyExports).statements)
         file.writeln(stmt.toString);
 }
 

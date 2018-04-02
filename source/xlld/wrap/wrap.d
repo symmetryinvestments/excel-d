@@ -105,8 +105,7 @@ string wrapModuleMember(string moduleName, string moduleMemberStr)
         static if(numOverloads == 1) {
             // if onlyExports is true, then only functions that are "export" are allowed
             // Otherwise, any function will do as long as they're visible (i.e. public)
-            const shouldWrap = (onlyExports && __traits(getProtection, moduleMember) == "export")
-                || __traits(getProtection, moduleMember) == "public";
+            const shouldWrap = onlyExports ? __traits(getProtection, moduleMember) == "export" : true;
             if(shouldWrap)
                 ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
         } else
@@ -134,7 +133,6 @@ string wrapModuleMember(string moduleName, string moduleMemberStr)
 string wrapModuleFunctionStr(string moduleName, string funcName)
                             (in string callingModule = __MODULE__)
 {
-
     if(!__ctfe) {
         return "";
     }
