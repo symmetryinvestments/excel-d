@@ -7,6 +7,7 @@ module xlld.wrap.wrap;
 import xlld.wrap.worksheet;
 import xlld.sdk.xlcall: XLOPER12;
 
+
 version(testingExcelD) {
     import xlld.conv: toXlOper;
     import xlld.test.util: shouldEqualDlang, toSRef, MockXlFunction;
@@ -172,7 +173,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
 
     const returnType = hasUDA!(func, Async) ? "void" : "XLOPER12*";
     // The function name that Excel actually calls in the binary
-    const xlFuncName = funcName;
+    const xlFuncName = pascalCase(funcName);
     const return_ = hasUDA!(func, Async) ? "" : "return ";
     const wrap = hasUDA!(func, Async)
         ? q{wrapAsync!wrappedFunc(Mallocator.instance, %s)}.format(argsCall)
@@ -194,6 +195,12 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
                  moduleName, funcName,
                  return_, wrap),
     ].join("\n");
+}
+
+private string pascalCase(in string func) @safe pure {
+    import std.uni: toUpper;
+    import std.conv: to;
+    return (func[0].toUpper ~ func[1..$].to!dstring).to!string;
 }
 
 void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle, T args) {
