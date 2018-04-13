@@ -276,6 +276,21 @@ unittest {
     ret.shouldEqualDlang("Point(2, 3)");
 }
 
+@("Wrap a function that returns a tuple")
+unittest {
+    import xlld.conv.from: fromXlOper;
+    import xlld.conv.misc: stripMemoryBitmask;
+
+    auto arg1 = 42.toXlOper(theGC);
+    auto arg2 = "foo".toXlOper(theGC);
+    auto ret = () @trusted { return FuncTupleRet(&arg1, &arg2); }();
+
+    ret.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeMulti);
+    ret.val.array.rows.shouldEqual(1);
+    ret.val.array.columns.shouldEqual(2);
+    ret.val.array.lparray[0].fromXlOper!int(theGC).shouldEqual(42);
+    ret.val.array.lparray[1].fromXlOper!string(theGC).shouldEqual("foo");
+}
 
 ///
 @("wrapModuleFunctionStr")
