@@ -24,7 +24,7 @@ alias allocator = Mallocator.instance;
 alias autoFreeAllocator = Mallocator.instance;
 
 ///
-package alias MemoryPool = AllocatorList!((size_t n) => Region!Mallocator(max(n, size_t(1024 * 1024))), Mallocator);
+alias MemoryPool = AllocatorList!((size_t n) => Region!Mallocator(max(n, size_t(1024 * 1024))), Mallocator);
 ///
 MemoryPool gTempAllocator;
 
