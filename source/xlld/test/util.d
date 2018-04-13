@@ -156,7 +156,9 @@ void shouldEqualDlang(U)
 
     static if(!is(Unqual!U == string))
         if(type == XlType.xltypeStr)
-            fail(text("XLOPER is of string type. Value: ", actual.fromXlOper!string(GCAllocator.instance)), file, line);
+            fail(text(`XLOPER is of string type. Value: "`,
+                      actual.fromXlOper!string(GCAllocator.instance), `"`),
+                 file, line);
 
     actual.fromXlOper!U(allocator).shouldEqual(expected, file, line);
 }
