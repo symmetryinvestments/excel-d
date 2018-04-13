@@ -134,6 +134,10 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(Unqual!T == Any)) {
     return Any((*oper).dup(allocator));
 }
 
+private enum Dimensions {
+    One,
+    Two,
+}
 
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator)
@@ -145,13 +149,6 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator)
 }
 
 
-
-private enum Dimensions {
-    One,
-    Two,
-}
-
-
 /// 1D slices
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator)
     if(is(T: E[], E) &&
@@ -160,7 +157,6 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator)
 {
     return val.fromXlOperMulti!(Dimensions.One, typeof(T.init[0]))(allocator);
 }
-
 
 
 ///
@@ -184,6 +180,7 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
             static assert(0, "Unknown number of dimensions in fromXlOperMulti");
     }
 
+    // See ut.wrap.wrap.xltypeNum can convert to array
     if(stripMemoryBitmask(val.xltype) == XlType.xltypeNum) {
         static if(dim == Dimensions.Two) {
             import std.experimental.allocator: makeMultidimensionalArray;
@@ -266,7 +263,6 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
                 (cellVal.xltype == dlangToXlOperType!T.Type) ||
                 (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr) ||
                 is(Unqual!T == Any);
-
 
             F(shouldConvert, row, col, cellVal);
         }
@@ -437,19 +433,22 @@ template dlangToXlOperType(T) {
               is(Unqual!T == DateTime[]) || is(Unqual!T == DateTime[][]))
     {
         enum InputType = XlType.xltypeSRef;
-        enum Type = XlType.xltypeMulti;
+        enum      Type = XlType.xltypeMulti;
     } else static if(is(Unqual!T == double)) {
         enum InputType = XlType.xltypeNum;
-        enum Type = XlType.xltypeNum;
+        enum      Type = XlType.xltypeNum;
+    } else static if(is(Unqual!T == int)) {
+        enum InputType = XlType.xltypeInt;
+        enum      Type = XlType.xltypeInt;
     } else static if(is(Unqual!T == string)) {
         enum InputType = XlType.xltypeStr;
-        enum Type = XlType.xltypeStr;
+        enum      Type = XlType.xltypeStr;
     } else static if(is(Unqual!T == DateTime)) {
         enum InputType = XlType.xltypeNum;
-        enum Type = XlType.xltypeNum;
+        enum      Type = XlType.xltypeNum;
     } else {
         enum InputType = invalidXlOperType;
-        enum Type = invalidXlOperType;
+        enum      Type = invalidXlOperType;
     }
 }
 

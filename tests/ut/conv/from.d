@@ -251,6 +251,12 @@ unittest {
     doubles.toXlOper(theGC).fromXlOper!(double[])(theGC).shouldEqual(doubles);
 }
 
+@("fromXlOper!int[]")
+unittest {
+    auto ints = [1, 2, 3, 4];
+    ints.toXlOper(theGC).fromXlOper!(int[])(theGC).shouldEqual(ints);
+}
+
 
 ///
 @("fromXlOper!string[] TestAllocator")
