@@ -1,10 +1,8 @@
 module ut.wrap.module_;
 
+import test;
 import xlld.wrap;
-import xlld.test.util;
-import xlld.sdk.xlcall;
 import xlld.conv.to: toXlOper;
-import unit_threaded;
 import std.datetime;
 import std.experimental.allocator.mallocator: Mallocator;
 alias theMallocator = Mallocator.instance;

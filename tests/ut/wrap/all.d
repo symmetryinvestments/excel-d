@@ -1,10 +1,8 @@
 module ut.wrap.all;
 
+import test;
 import xlld.wrap;
-import xlld.test.util;
-import xlld.sdk.xlcall;
 import xlld.conv.to: toXlOper;
-import unit_threaded;
 
 mixin("import xlld.wrap.traits: Async;\n" ~ wrapAll!"test.d_funcs");
 
