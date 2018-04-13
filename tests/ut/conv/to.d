@@ -4,23 +4,6 @@ import test;
 import xlld.conv.to;
 
 
-@("isUserStruct")
-@safe pure unittest {
-    import std.datetime: DateTime;
-    import std.typecons: Tuple;
-    import xlld.any: Any;
-
-
-    static struct Foo {}
-
-    static assert( isUserStruct!Foo);
-    static assert(!isUserStruct!Any);
-    static assert(!isUserStruct!DateTime);
-    static assert(!isUserStruct!(Tuple!(int, int)));
-    static assert(!isUserStruct!(Tuple!(int, string)));
-    static assert(!isUserStruct!(Tuple!(int, Foo, double)));
-}
-
 ///
 @("toExcelOper!int")
 unittest {

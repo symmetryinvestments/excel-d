@@ -4,6 +4,7 @@
 module xlld.conv.to;
 
 import xlld.from;
+import xlld.conv.misc: isUserStruct;
 import xlld.sdk.xlcall: XLOPER12, XlType;
 import xlld.any: Any;
 import std.traits: isIntegral, Unqual;
@@ -14,12 +15,6 @@ alias FromEnumConversionFunction = string delegate(int) @safe;
 package __gshared FromEnumConversionFunction[string] gFromEnumConversions;
 shared from!"core.sync.mutex".Mutex gFromEnumMutex;
 
-enum isUserStruct(T) =
-    is(T == struct) &&
-    !is(Unqual!T == Any) &&
-    !is(Unqual!T == DateTime) &&
-    !is(Unqual!T: Tuple!A, A...)
-    ;
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(isIntegral!T) {
