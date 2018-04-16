@@ -283,7 +283,7 @@ unittest {
 
     auto arg1 = 42.toXlOper(theGC);
     auto arg2 = "foo".toXlOper(theGC);
-    auto ret = () @trusted { return FuncTupleRet(&arg1, &arg2); }();
+    auto ret = () @trusted { return FuncSimpleTupleRet(&arg1, &arg2); }();
 
     ret.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeMulti);
     ret.val.array.rows.shouldEqual(1);
