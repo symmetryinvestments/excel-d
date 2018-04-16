@@ -137,40 +137,48 @@ alias Identity(alias T) = T;
    of the function.
 */
 template isSupportedFunction(alias F, T...) {
-    import std.traits: isSomeFunction, ReturnType, Parameters, functionLinkage;
-    import std.meta: AliasSeq, allSatisfy;
+    import std.traits: ReturnType, Parameters;
+    import std.meta: allSatisfy;
+
+    enum isOneOfSupported(U) = isOneOf!(U, T);
+
+    static if(isCallableFunction!F) {
+        enum returnTypeOk = isOneOfSupported!(ReturnType!F) || is(ReturnType!F == void);
+        enum paramTypesOk = allSatisfy!(isOneOfSupported, Parameters!F);
+        enum isSupportedFunction = returnTypeOk && paramTypesOk;
+    } else
+        enum isSupportedFunction = false;
+}
+
+template isCallableFunction(alias F) {
+    import std.traits: isSomeFunction, Parameters;
     import std.typecons: Tuple;
 
     /// trying to get a pointer to something is a good way of making sure we can
     /// attempt to evaluate `isSomeFunction` - it's not always possible
     enum canGetPointerToIt = __traits(compiles, &F);
-    enum isOneOfSupported(U) = isSupportedType!(U, T) || is(U == enum) || is(U == struct);
 
     static if(canGetPointerToIt) {
-        static if(isSomeFunction!F) {
-
-            enum isSupportedFunction =
-                __traits(compiles, F(Tuple!(Parameters!F)().expand)) &&
-                (isOneOfSupported!(ReturnType!F) || is(ReturnType!F == void)) &&
-                allSatisfy!(isOneOfSupported, Parameters!F);
-        } else
-            enum isSupportedFunction = false;
+        static if(isSomeFunction!F)
+            enum isCallableFunction = __traits(compiles, F(Tuple!(Parameters!F)().expand));
+         else
+             enum isCallableFunction = false;
     } else
-        enum isSupportedFunction = false;
+        enum isCallableFunction = false;
 }
 
 
-// if T is one of U
-private template isSupportedType(T, U...) {
-    static if(U.length == 0)
-        enum isSupportedType = false;
+// if T is one of A
+template isOneOf(T, A...) {
+    static if(A.length == 0)
+        enum isOneOf = false;
     else
-        enum isSupportedType = is(T == U[0]) || isSupportedType!(T, U[1..$]);
+        enum isOneOf = is(T == A[0]) || isOneOf!(T, A[1..$]);
 }
 
 @safe pure unittest {
-    static assert(isSupportedType!(int, int, int));
-    static assert(!isSupportedType!(int, double, string));
+    static assert(isOneOf!(int, int, int));
+    static assert(!isOneOf!(int, double, string));
 }
 
 // whether or not this is a function that can be called from Excel
