@@ -3,6 +3,7 @@ module ut.conv.to;
 import test;
 import xlld.conv.to;
 
+
 ///
 @("toExcelOper!int")
 unittest {
@@ -305,4 +306,12 @@ unittest {
 @safe unittest {
     static struct Foo { int x, y; }
     Foo(2, 3).toXlOper(theGC).shouldEqualDlang("Foo(2, 3)");
+}
+
+@("toXlOper!Tuple!(int, int)")
+@safe unittest {
+    import std.typecons: tuple;
+    import xlld.conv.from: fromXlOper;
+    auto oper = tuple(42, 33).toXlOper(theGC);
+    oper.shouldEqualDlang([42, 33]);
 }

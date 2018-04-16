@@ -6,6 +6,22 @@ module xlld.conv.misc;
 import xlld.from;
 
 ///
+template isUserStruct(T) {
+    import xlld.any: Any;
+    import std.datetime: DateTime;
+    import std.typecons: Tuple;
+    import std.traits: Unqual;
+
+    enum isUserStruct =
+        is(T == struct) &&
+        !is(Unqual!T == Any) &&
+        !is(Unqual!T == DateTime) &&
+        !is(Unqual!T: Tuple!A, A...)
+        ;
+}
+
+
+///
 __gshared immutable gDupMemoryException = new Exception("Failed to allocate memory in dup");
 
 

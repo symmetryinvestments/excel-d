@@ -301,3 +301,14 @@ int FuncPointArg(Point p) @safe {
 Point FuncPointRet(int x, int y) @safe {
     return Point(x, y);
 }
+
+auto FuncSimpleTupleRet(int i, string s) @safe {
+    import std.typecons: tuple;
+    return tuple(i, s);
+}
+
+auto FuncComplexTupleRet(int d1, int d2) @safe {
+    import std.typecons: tuple;
+    return tuple([DateTime(2017, 1, d1), DateTime(2017, 2, d1)],
+                 [DateTime(2018, 1, d1), DateTime(2018, 2, d2)]);
+}

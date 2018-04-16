@@ -276,6 +276,60 @@ unittest {
     ret.shouldEqualDlang("Point(2, 3)");
 }
 
+@("Wrap a function that returns a simple tuple")
+unittest {
+    import xlld.conv.from: fromXlOper;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import std.conv: to;
+
+    auto arg1 = 42.toXlOper(theGC);
+    auto arg2 = "foo".toXlOper(theGC);
+    auto ret = () @trusted { return FuncSimpleTupleRet(&arg1, &arg2); }();
+
+    if(ret.xltype.stripMemoryBitmask != XlType.xltypeMulti) {
+        if(ret.xltype.stripMemoryBitmask == XlType.xltypeStr)
+            throw new Exception(ret.fromXlOper!string(theGC));
+        else
+            throw new Exception("Oper not of multi type: " ~ to!string(*ret));
+    }
+
+    ret.val.array.rows.shouldEqual(1);
+    ret.val.array.columns.shouldEqual(2);
+    ret.val.array.lparray[0].fromXlOper!int(theGC).shouldEqual(42);
+    ret.val.array.lparray[1].fromXlOper!string(theGC).shouldEqual("foo");
+}
+
+@("Wrap a function that returns a complex tuple")
+unittest {
+    import xlld.conv.from: fromXlOper;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import std.conv: to;
+
+    auto dates = MockDates([1.0, 2.0, 3.0, 4.0]);
+    auto times = MockTimes([101.0, 102.0, 103.0, 104.0]);
+    auto dateTimes = MockDateTimes(DateTime(2017, 1, 2), DateTime(2017, 2, 2),
+                                   DateTime(2018, 1, 3), DateTime(2018, 2, 3));
+    auto arg1 = 2.toXlOper(theGC);
+    auto arg2 = 3.toXlOper(theGC);
+    auto ret = () @trusted { return FuncComplexTupleRet(&arg1, &arg2); }();
+
+    if(ret.xltype.stripMemoryBitmask != XlType.xltypeMulti) {
+        if(ret.xltype.stripMemoryBitmask == XlType.xltypeStr)
+            throw new Exception(ret.fromXlOper!string(theGC));
+        else
+            throw new Exception("Oper not of multi type: " ~ to!string(*ret));
+    }
+
+    ret.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeMulti);
+    ret.val.array.rows.shouldEqual(1);
+    ret.val.array.columns.shouldEqual(2);
+
+    ret.val.array.lparray[0].fromXlOper!(DateTime[])(theGC).shouldEqual(
+        [DateTime(2017, 1, 2), DateTime(2017, 2, 2)]);
+
+    ret.val.array.lparray[1].fromXlOper!(DateTime[])(theGC).shouldEqual(
+        [DateTime(2018, 1, 3), DateTime(2018, 2, 3)]);
+}
 
 ///
 @("wrapModuleFunctionStr")

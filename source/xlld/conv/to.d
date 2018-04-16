@@ -4,10 +4,12 @@
 module xlld.conv.to;
 
 import xlld.from;
+import xlld.conv.misc: isUserStruct;
 import xlld.sdk.xlcall: XLOPER12, XlType;
 import xlld.any: Any;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
+import std.typecons: Tuple;
 
 alias FromEnumConversionFunction = string delegate(int) @safe;
 package __gshared FromEnumConversionFunction[string] gFromEnumConversions;
@@ -235,7 +237,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) @trusted if(is(T == enum)) {
 }
 
 XLOPER12 toXlOper(T, A)(T value, ref A allocator)
-    if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
+    if(isUserStruct!T)
 {
     import std.conv: text;
     import core.memory: GC;
@@ -247,6 +249,27 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator)
 
     return ret;
 }
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator)
+    @trusted
+    if(is(T: Tuple!A, A...))
+{
+    import std.experimental.allocator: makeArray;
+
+    XLOPER12 oper;
+
+    oper.xltype = XlType.xltypeMulti;
+    oper.val.array.rows = 1;
+    oper.val.array.columns = value.length;
+    oper.val.array.lparray = allocator.makeArray!XLOPER12(T.length).ptr;
+
+    static foreach(i; 0 .. T.length) {
+        oper.val.array.lparray[i] = value[i].toXlOper(allocator);
+    }
+
+    return oper;
+}
+
 
 /**
   creates an XLOPER12 that can be returned to Excel which

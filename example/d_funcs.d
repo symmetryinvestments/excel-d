@@ -6,6 +6,7 @@
 
 import xlld;
 import std.datetime: DateTime;
+import std.typecons: Tuple;
 
 double[][] dlookup(string[][] haystack, string[] needles, double columnNumberD) nothrow
 {
@@ -278,4 +279,15 @@ int FuncPointArg(Point point) @safe {
 
 Point FuncPointRet(int x, int y) @safe {
     return Point(x + 1, y + 2);
+}
+
+auto FuncSimpleTupleRet(double d, string s) @safe {
+    import std.typecons: tuple;
+    return tuple(d, s);
+}
+
+auto FuncComplexTupleRet(int d1, int d2) @safe {
+    import std.typecons: tuple;
+    return tuple([DateTime(2017, 1, d1), DateTime(2017, 2, d1)],
+                 [DateTime(2018, 1, d1), DateTime(2018, 2, d2)]);
 }

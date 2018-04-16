@@ -489,3 +489,24 @@ private auto toFrom(R, T)(T val) {
     import std.experimental.allocator.gc_allocator: GCAllocator;
     return val.toXlOper(GCAllocator.instance).fromXlOper!R(GCAllocator.instance);
 }
+
+
+@("fromXlOper!(Tuple!(double, double))")
+@system unittest {
+    import std.typecons: tuple, Tuple;
+    import xlld.conv.from: fromXlOper;
+    tuple(22.2, 33.3)
+        .toXlOper(theGC)
+        .fromXlOper!(Tuple!(double, double))(theGC)
+        .shouldEqual(tuple(22.2, 33.3));
+}
+
+@("fromXlOper!(Tuple!(int, int, int))")
+@system unittest {
+    import std.typecons: tuple, Tuple;
+    import xlld.conv.from: fromXlOper;
+    tuple(1, 2, 3)
+        .toXlOper(theGC)
+        .fromXlOper!(Tuple!(int, int, int))(theGC)
+        .shouldEqual(tuple(1, 2, 3));
+}
