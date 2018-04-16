@@ -331,6 +331,51 @@ unittest {
         [DateTime(2018, 1, 3), DateTime(2018, 2, 3)]);
 }
 
+@("Wrap a function that returns an array of tuples")
+unittest {
+    import xlld.conv.from: fromXlOper;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import std.conv: to;
+
+    auto dates = MockDates([0.1, 0.2, 0.3]);
+    auto times = MockTimes([10.1, 11.1, 12.1]);
+    auto dateTimes = MockDateTimes(DateTime(2017, 1, 1), DateTime(2018, 1, 1), DateTime(2019, 1, 1));
+
+    auto oper = () @trusted { return FuncTupleArrayRet(); }();
+
+    void assertMulti(in XLOPER12 oper) {
+        if(oper.xltype.stripMemoryBitmask != XlType.xltypeMulti) {
+            if(oper.xltype.stripMemoryBitmask == XlType.xltypeStr)
+                throw new Exception(oper.fromXlOper!string(theGC));
+            else
+                throw new Exception("Oper not of multi type: " ~ to!string(oper));
+        }
+    }
+
+    assertMulti(*oper);
+    oper.val.array.rows.shouldEqual(1);
+    oper.val.array.columns.shouldEqual(3);
+
+    auto elts = oper.val.array.lparray[0 .. 3];
+    foreach(elt; elts) assertMulti(elt);
+
+    elts[0].val.array.lparray[0].fromXlOper!DateTime(theGC).shouldEqual(DateTime(2017, 1, 1));
+    elts[0].val.array.lparray[1].fromXlOper!double(theGC).shouldEqual(11.1);
+
+    elts[1].val.array.lparray[0].fromXlOper!DateTime(theGC).shouldEqual(DateTime(2018, 1, 1));
+    elts[1].val.array.lparray[1].fromXlOper!double(theGC).shouldEqual(22.2);
+
+    elts[2].val.array.lparray[0].fromXlOper!DateTime(theGC).shouldEqual(DateTime(2019, 1, 1));
+    elts[2].val.array.lparray[1].fromXlOper!double(theGC).shouldEqual(33.3);
+}
+
+@("Wrap a function that takes an enum array")
+unittest {
+    import test.d_funcs: MyEnum;
+    auto arg = [MyEnum.foo].toXlOper(theGC);
+    FuncEnumArray(&arg);
+}
+
 ///
 @("wrapModuleFunctionStr")
 @system unittest {

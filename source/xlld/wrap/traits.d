@@ -131,46 +131,51 @@ alias Identity(alias T) = T;
 
 
 /**
-   Whether or not this is a function that has the "right" types.
-   T are all the types that are valid return or parameter types.
-   void is a special type that is always valid for the return type
-   of the function.
-*/
-template isSupportedFunction(alias F, T...) {
-    import std.traits: isSomeFunction, ReturnType, Parameters, functionLinkage;
-    import std.meta: AliasSeq, allSatisfy;
-    import std.typecons: Tuple;
+   Is true if F is a callable function and functionTypePredicate is true
+   for the return type and all parameter types of F.
+ */
+template isSupportedFunction(alias F, alias functionTypePredicate) {
+    import std.traits: ReturnType, Parameters;
+    import std.meta: allSatisfy;
 
-    /// trying to get a pointer to something is a good way of making sure we can
-    /// attempt to evaluate `isSomeFunction` - it's not always possible
-    enum canGetPointerToIt = __traits(compiles, &F);
-    enum isOneOfSupported(U) = isSupportedType!(U, T) || is(U == enum) || is(U == struct);
-
-    static if(canGetPointerToIt) {
-        static if(isSomeFunction!F) {
-
-            enum isSupportedFunction =
-                __traits(compiles, F(Tuple!(Parameters!F)().expand)) &&
-                (isOneOfSupported!(ReturnType!F) || is(ReturnType!F == void)) &&
-                allSatisfy!(isOneOfSupported, Parameters!F);
-        } else
-            enum isSupportedFunction = false;
+    static if(isCallableFunction!F) {
+        enum returnTypeOk = functionTypePredicate!(ReturnType!F) || is(ReturnType!F == void);
+        enum paramTypesOk = allSatisfy!(functionTypePredicate, Parameters!F);
+        enum isSupportedFunction = returnTypeOk && paramTypesOk;
     } else
         enum isSupportedFunction = false;
 }
 
 
-// if T is one of U
-private template isSupportedType(T, U...) {
-    static if(U.length == 0)
-        enum isSupportedType = false;
+template isCallableFunction(alias F) {
+    import std.traits: isSomeFunction, Parameters;
+    import std.typecons: Tuple;
+
+    /// trying to get a pointer to something is a good way of making sure we can
+    /// attempt to evaluate `isSomeFunction` - it's not always possible
+    enum canGetPointerToIt = __traits(compiles, &F);
+
+    static if(canGetPointerToIt) {
+        static if(isSomeFunction!F)
+            enum isCallableFunction = __traits(compiles, F(Tuple!(Parameters!F)().expand));
+         else
+             enum isCallableFunction = false;
+    } else
+        enum isCallableFunction = false;
+}
+
+
+// if T is one of A
+template isOneOf(T, A...) {
+    static if(A.length == 0)
+        enum isOneOf = false;
     else
-        enum isSupportedType = is(T == U[0]) || isSupportedType!(T, U[1..$]);
+        enum isOneOf = is(T == A[0]) || isOneOf!(T, A[1..$]);
 }
 
 @safe pure unittest {
-    static assert(isSupportedType!(int, int, int));
-    static assert(!isSupportedType!(int, double, string));
+    static assert(isOneOf!(int, int, int));
+    static assert(!isOneOf!(int, double, string));
 }
 
 // whether or not this is a function that can be called from Excel
@@ -192,13 +197,13 @@ template isWorksheetFunctionModuloLinkage(alias F) {
     else {
 
         enum isEnum(T) = is(T == enum);
+        enum isOneOfSupported(U) = isOneOf!(U, double, FP12*, LPXLOPER12);
 
         enum isWorksheetFunctionModuloLinkage =
-            isSupportedFunction!(F, double, FP12*, LPXLOPER12) &&
+            isSupportedFunction!(F, isOneOfSupported) &&
             !is(ReturnType!F == enum) &&
             !anySatisfy!(isEnum, Parameters!F);
     }
-
 }
 
 

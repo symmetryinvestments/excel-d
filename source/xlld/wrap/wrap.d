@@ -348,24 +348,31 @@ auto toDArgs(alias wrappedFunc, A, T...)
 private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs) {
 
     import xlld.wrap.worksheet: Dispose;
+    import xlld.sdk.xlcall: XlType;
     import nogc.conv: text;
-    import std.traits: hasUDA, getUDAs;
+    import std.traits: hasUDA, getUDAs, ReturnType;
 
     static XLOPER12 ret;
 
      try {
         // call the wrapped function with D types
-        auto wrappedRet = wrappedFunc(dArgs.expand);
-        ret = excelRet(wrappedRet);
+         static if(is(ReturnType!wrappedFunc == void)) {
+             wrappedFunc(dArgs.expand);
+             ret.xltype = XlType.xltypeNil;
+             return &ret;
+         } else {
+             auto wrappedRet = wrappedFunc(dArgs.expand);
+             ret = excelRet(wrappedRet);
 
-        // dispose of the memory allocated in the wrapped function
-        static if(hasUDA!(wrappedFunc, Dispose)) {
-            alias disposes = getUDAs!(wrappedFunc, Dispose);
-            static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
-            disposes[0].dispose(wrappedRet);
-        }
+             // dispose of the memory allocated in the wrapped function
+             static if(hasUDA!(wrappedFunc, Dispose)) {
+                 alias disposes = getUDAs!(wrappedFunc, Dispose);
+                 static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
+                 disposes[0].dispose(wrappedRet);
+             }
 
-        return &ret;
+             return &ret;
+         }
 
     } catch(Exception ex) {
          ret = stringOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", ex.msg));
@@ -461,23 +468,40 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
     }
 }
 
+// if a function can be wrapped to be baclled by Excel
 private template isWorksheetFunction(alias F) {
     import xlld.wrap.traits: isSupportedFunction;
+    enum isWorksheetFunction = isSupportedFunction!(F, isWantedType);
+}
+
+template isWantedType(T) {
+    import xlld.wrap.traits: isOneOf;
     import xlld.any: Any;
     import std.datetime: DateTime;
+    import std.traits: Unqual;
 
+    alias U = Unqual!T;
 
-    enum isWorksheetFunction =
-        isSupportedFunction!(F,
-                             bool,
-                             int,
-                             double, double[], double[][],
-                             string, string[], string[][],
-                             Any, Any[], Any[][],
-                             DateTime, DateTime[], DateTime[][],
+    enum isOneOfTypes = isOneOf!(
+        U,
+        bool,
+        int,
+        double, double[], double[][],
+        string, string[], string[][],
+        Any, Any[], Any[][],
+        DateTime, DateTime[], DateTime[][],
         );
 
+    static if(isOneOfTypes)
+        enum isWantedType = true;
+    else static if(is(U == enum) || is(U == struct))
+        enum isWantedType = true;
+    else static if(is(U: E[], E))
+        enum isWantedType = isWantedType!E;
+    else
+        enum isWantedType = false;
 }
+
 
 
 @("isWorksheetFunction")
@@ -487,9 +511,12 @@ private template isWorksheetFunction(alias F) {
     // it might stop compiling in a future version when the deprecation rules for
     // visibility kick in
     static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
-    static assert(isWorksheetFunction!(test.d_funcs.FuncThrows));
-    static assert(isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
-    static assert(isWorksheetFunction!(test.d_funcs.Twice));
-    static assert(isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
-    static assert(isWorksheetFunction!(test.d_funcs.BoolToInt));
+    static assert( isWorksheetFunction!(test.d_funcs.FuncThrows));
+    static assert( isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
+    static assert( isWorksheetFunction!(test.d_funcs.Twice));
+    static assert( isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
+    static assert( isWorksheetFunction!(test.d_funcs.BoolToInt));
+    static assert( isWorksheetFunction!(test.d_funcs.FuncSimpleTupleRet));
+    static assert( isWorksheetFunction!(test.d_funcs.FuncTupleArrayRet));
+    static assert( isWorksheetFunction!(test.d_funcs.FuncDateAndStringRet));
 }

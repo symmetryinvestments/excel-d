@@ -7,6 +7,7 @@ import xlld.from;
 import xlld.conv.misc: isUserStruct;
 import xlld.sdk.xlcall: XLOPER12, XlType;
 import xlld.any: Any;
+import xlld.wrap.wrap: isWantedType;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
 import std.typecons: Tuple;
@@ -18,12 +19,14 @@ shared from!"core.sync.mutex".Mutex gFromEnumMutex;
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(isIntegral!T) {
+    import xlld.sdk.xlcall: XlType;
+
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeInt;
     ret.val.w = val;
+
     return ret;
 }
-
 
 
 ///
@@ -79,21 +82,20 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
 
 
 ///
-XLOPER12 toXlOper(T, A)(T values, ref A allocator)
-    if(is(Unqual!T == string[]) || is(Unqual!T == double[]) ||
-       is(Unqual!T == int[]) || is(Unqual!T == DateTime[]) || is(Unqual!T == Any[]))
+XLOPER12 toXlOper(T, A)(T[] values, ref A allocator)
+    if(isWantedType!T && (!is(T: E[], E) || is(Unqual!T == string)))
 {
-    T[1] realValues = [values];
+    T[][1] realValues = [values];
     return realValues[].toXlOper(allocator);
 }
+
 
 ///
 __gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
 
 ///
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
-    if(is(Unqual!T == double) || is(Unqual!T == string) || is(Unqual!T == Any)
-       || is(Unqual!T == int) || is(Unqual!T == DateTime))
+    if(isWantedType!T && (!is(T: E[], E) || is(Unqual!T == string)))
 {
     import xlld.conv.misc: multi;
     import std.algorithm: map, all;
