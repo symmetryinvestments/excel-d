@@ -462,12 +462,14 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 }
 
 private template isWorksheetFunction(alias F) {
+    import xlld.wrap.traits: isSupportedFunction, isOneOf;
     import xlld.any: Any;
     import std.datetime: DateTime;
 
-    enum isWorksheetFunction =
-        isSupportedFunction!(
-            F,
+    template isWantedType(U) {
+
+        enum isOneOfTypes = isOneOf!(
+            U,
             bool,
             int,
             double, double[], double[][],
@@ -476,36 +478,18 @@ private template isWorksheetFunction(alias F) {
             DateTime, DateTime[], DateTime[][],
         );
 
-}
-
-/**
-   Whether or not this is a function that has the "right" types.
-   T are all the types that are valid return or parameter types.
-   void is a special type that is always valid for the return type
-   of the function.
-*/
-private template isSupportedFunction(alias F, T...) {
-    import xlld.wrap.traits: isCallableFunction, isOneOf;
-    import std.traits: ReturnType, Parameters;
-    import std.meta: allSatisfy;
-
-    template isOneOfSupported(U) {
-        static if(isOneOf!(U, T))
-            enum isOneOfSupported = true;
+        static if(isOneOfTypes)
+            enum isWantedType = true;
         else static if(is(U == enum) || is(U == struct))
-            enum isOneOfSupported = true;
+            enum isWantedType = true;
         else static if(is(U: E[], E))
-            enum isOneOfSupported = isOneOfSupported!E;
+            enum isWantedType = isWantedType!E;
         else
-            enum isOneOfSupported = false;
+            enum isWantedType = false;
     }
 
-    static if(isCallableFunction!F) {
-        enum returnTypeOk = isOneOfSupported!(ReturnType!F) || is(ReturnType!F == void);
-        enum paramTypesOk = allSatisfy!(isOneOfSupported, Parameters!F);
-        enum isSupportedFunction = returnTypeOk && paramTypesOk;
-    } else
-        enum isSupportedFunction = false;
+    enum isWorksheetFunction = isSupportedFunction!(F, isWantedType);
+
 }
 
 

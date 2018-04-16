@@ -131,24 +131,21 @@ alias Identity(alias T) = T;
 
 
 /**
-   Whether or not this is a function that has the "right" types.
-   T are all the types that are valid return or parameter types.
-   void is a special type that is always valid for the return type
-   of the function.
-*/
-template isSupportedFunction(alias F, T...) {
+   Is true if F is a callable function and functionTypePredicate is true
+   for the return type and all parameter types of F.
+ */
+template isSupportedFunction(alias F, alias functionTypePredicate) {
     import std.traits: ReturnType, Parameters;
     import std.meta: allSatisfy;
 
-    enum isOneOfSupported(U) = isOneOf!(U, T);
-
     static if(isCallableFunction!F) {
-        enum returnTypeOk = isOneOfSupported!(ReturnType!F) || is(ReturnType!F == void);
-        enum paramTypesOk = allSatisfy!(isOneOfSupported, Parameters!F);
+        enum returnTypeOk = functionTypePredicate!(ReturnType!F) || is(ReturnType!F == void);
+        enum paramTypesOk = allSatisfy!(functionTypePredicate, Parameters!F);
         enum isSupportedFunction = returnTypeOk && paramTypesOk;
     } else
         enum isSupportedFunction = false;
 }
+
 
 template isCallableFunction(alias F) {
     import std.traits: isSomeFunction, Parameters;
@@ -200,13 +197,13 @@ template isWorksheetFunctionModuloLinkage(alias F) {
     else {
 
         enum isEnum(T) = is(T == enum);
+        enum isOneOfSupported(U) = isOneOf!(U, double, FP12*, LPXLOPER12);
 
         enum isWorksheetFunctionModuloLinkage =
-            isSupportedFunction!(F, double, FP12*, LPXLOPER12) &&
+            isSupportedFunction!(F, isOneOfSupported) &&
             !is(ReturnType!F == enum) &&
             !anySatisfy!(isEnum, Parameters!F);
     }
-
 }
 
 
