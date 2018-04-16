@@ -361,3 +361,10 @@ unittest {
     elts[2].val.array.lparray[0].fromXlOper!DateTime(theGC).shouldEqual(DateTime(2019, 1, 1));
     elts[2].val.array.lparray[1].fromXlOper!double(theGC).shouldEqual(33.3);
 }
+
+@("toXlOper array of user structs")
+unittest {
+    import test.d_funcs: DateAndString;
+    import std.datetime: DateTime;
+    auto oper = [DateAndString(DateTime(2017, 1, 2), "foobar")].toXlOper(theGC);
+}

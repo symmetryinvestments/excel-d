@@ -461,36 +461,40 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
     }
 }
 
+// if a function can be wrapped to be baclled by Excel
 private template isWorksheetFunction(alias F) {
-    import xlld.wrap.traits: isSupportedFunction, isOneOf;
+    import xlld.wrap.traits: isSupportedFunction;
+    enum isWorksheetFunction = isSupportedFunction!(F, isWantedType);
+}
+
+template isWantedType(T) {
+    import xlld.wrap.traits: isOneOf;
     import xlld.any: Any;
     import std.datetime: DateTime;
+    import std.traits: Unqual;
 
-    template isWantedType(U) {
+    alias U = Unqual!T;
 
-        enum isOneOfTypes = isOneOf!(
-            U,
-            bool,
-            int,
-            double, double[], double[][],
-            string, string[], string[][],
-            Any, Any[], Any[][],
-            DateTime, DateTime[], DateTime[][],
+    enum isOneOfTypes = isOneOf!(
+        U,
+        bool,
+        int,
+        double, double[], double[][],
+        string, string[], string[][],
+        Any, Any[], Any[][],
+        DateTime, DateTime[], DateTime[][],
         );
 
-        static if(isOneOfTypes)
-            enum isWantedType = true;
-        else static if(is(U == enum) || is(U == struct))
-            enum isWantedType = true;
-        else static if(is(U: E[], E))
-            enum isWantedType = isWantedType!E;
-        else
-            enum isWantedType = false;
-    }
-
-    enum isWorksheetFunction = isSupportedFunction!(F, isWantedType);
-
+    static if(isOneOfTypes)
+        enum isWantedType = true;
+    else static if(is(U == enum) || is(U == struct))
+        enum isWantedType = true;
+    else static if(is(U: E[], E))
+        enum isWantedType = isWantedType!E;
+    else
+        enum isWantedType = false;
 }
+
 
 
 @("isWorksheetFunction")
@@ -507,4 +511,5 @@ private template isWorksheetFunction(alias F) {
     static assert( isWorksheetFunction!(test.d_funcs.BoolToInt));
     static assert( isWorksheetFunction!(test.d_funcs.FuncSimpleTupleRet));
     static assert( isWorksheetFunction!(test.d_funcs.FuncTupleArrayRet));
+    static assert( isWorksheetFunction!(test.d_funcs.FuncDateAndStringRet));
 }

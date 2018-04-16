@@ -7,6 +7,7 @@ import xlld.from;
 import xlld.conv.misc: isUserStruct;
 import xlld.sdk.xlcall: XLOPER12, XlType;
 import xlld.any: Any;
+import xlld.wrap.wrap: isWantedType;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
 import std.typecons: Tuple;
@@ -81,12 +82,10 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
 
 
 ///
-XLOPER12 toXlOper(T, A)(T values, ref A allocator)
-    if(is(Unqual!T == string[]) || is(Unqual!T == double[]) ||
-       is(Unqual!T == int[]) || is(Unqual!T == DateTime[]) || is(Unqual!T == Any[]) ||
-       is(Unqual!T: Tuple!U[], U...))
+XLOPER12 toXlOper(T, A)(T[] values, ref A allocator)
+    if(isWantedType!T && (!is(T: E[], E) || is(Unqual!T == string)))
 {
-    T[1] realValues = [values];
+    T[][1] realValues = [values];
     return realValues[].toXlOper(allocator);
 }
 
@@ -96,8 +95,7 @@ __gshared immutable toXlOperShapeException = new Exception("# of columns must al
 
 ///
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
-    if(is(Unqual!T == double) || is(Unqual!T == string) || is(Unqual!T == Any)
-       || is(Unqual!T == int) || is(Unqual!T == DateTime) ||  is(Unqual!T: Tuple!U, U...))
+    if(isWantedType!T && (!is(T: E[], E) || is(Unqual!T == string)))
 {
     import xlld.conv.misc: multi;
     import std.algorithm: map, all;

@@ -321,3 +321,12 @@ auto FuncTupleArrayRet() @safe {
         tuple(DateTime(2019, 1, 1), 33.3),
     ];
 }
+
+struct DateAndString {
+    DateTime dateTime;
+    string string_;
+}
+
+DateAndString[] FuncDateAndStringRet() {
+    return [DateAndString(DateTime(2017, 1, 2), "foobar")];
+}
