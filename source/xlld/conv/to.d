@@ -79,8 +79,16 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
 
 
 ///
-__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
+XLOPER12 toXlOper(T, A)(T values, ref A allocator)
+    if(is(Unqual!T == string[]) || is(Unqual!T == double[]) ||
+       is(Unqual!T == int[]) || is(Unqual!T == DateTime[]) || is(Unqual!T == Any[]))
+{
+    T[1] realValues = [values];
+    return realValues[].toXlOper(allocator);
+}
 
+///
+__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
 
 ///
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
@@ -107,15 +115,6 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     }
 
     return ret;
-}
-
-
-
-///
-XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(Unqual!T == string[]) || is(Unqual!T == double[]) ||
-                                                      is(Unqual!T == int[]) || is(Unqual!T == DateTime[]) || is(Unqual!T == Any[])) {
-    T[1] realValues = [values];
-    return realValues[].toXlOper(allocator);
 }
 
 
