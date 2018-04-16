@@ -312,3 +312,12 @@ auto FuncComplexTupleRet(int d1, int d2) @safe {
     return tuple([DateTime(2017, 1, d1), DateTime(2017, 2, d1)],
                  [DateTime(2018, 1, d1), DateTime(2018, 2, d2)]);
 }
+
+auto FuncTupleArrayRet() @safe {
+    import std.typecons: tuple;
+    return [
+        tuple(DateTime(2017, 1, 1), 11.1),
+        tuple(DateTime(2018, 1, 1), 22.2),
+        tuple(DateTime(2019, 1, 1), 33.3),
+    ];
+}

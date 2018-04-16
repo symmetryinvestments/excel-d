@@ -462,21 +462,50 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
 }
 
 private template isWorksheetFunction(alias F) {
-    import xlld.wrap.traits: isSupportedFunction;
     import xlld.any: Any;
     import std.datetime: DateTime;
 
-
     enum isWorksheetFunction =
-        isSupportedFunction!(F,
-                             bool,
-                             int,
-                             double, double[], double[][],
-                             string, string[], string[][],
-                             Any, Any[], Any[][],
-                             DateTime, DateTime[], DateTime[][],
+        isSupportedFunction!(
+            F,
+            bool,
+            int,
+            double, double[], double[][],
+            string, string[], string[][],
+            Any, Any[], Any[][],
+            DateTime, DateTime[], DateTime[][],
         );
 
+}
+
+/**
+   Whether or not this is a function that has the "right" types.
+   T are all the types that are valid return or parameter types.
+   void is a special type that is always valid for the return type
+   of the function.
+*/
+private template isSupportedFunction(alias F, T...) {
+    import xlld.wrap.traits: isCallableFunction, isOneOf;
+    import std.traits: ReturnType, Parameters;
+    import std.meta: allSatisfy;
+
+    template isOneOfSupported(U) {
+        static if(isOneOf!(U, T))
+            enum isOneOfSupported = true;
+        else static if(is(U == enum) || is(U == struct))
+            enum isOneOfSupported = true;
+        else static if(is(U: E[], E))
+            enum isOneOfSupported = isOneOfSupported!E;
+        else
+            enum isOneOfSupported = false;
+    }
+
+    static if(isCallableFunction!F) {
+        enum returnTypeOk = isOneOfSupported!(ReturnType!F) || is(ReturnType!F == void);
+        enum paramTypesOk = allSatisfy!(isOneOfSupported, Parameters!F);
+        enum isSupportedFunction = returnTypeOk && paramTypesOk;
+    } else
+        enum isSupportedFunction = false;
 }
 
 
@@ -487,9 +516,11 @@ private template isWorksheetFunction(alias F) {
     // it might stop compiling in a future version when the deprecation rules for
     // visibility kick in
     static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
-    static assert(isWorksheetFunction!(test.d_funcs.FuncThrows));
-    static assert(isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
-    static assert(isWorksheetFunction!(test.d_funcs.Twice));
-    static assert(isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
-    static assert(isWorksheetFunction!(test.d_funcs.BoolToInt));
+    static assert( isWorksheetFunction!(test.d_funcs.FuncThrows));
+    static assert( isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
+    static assert( isWorksheetFunction!(test.d_funcs.Twice));
+    static assert( isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
+    static assert( isWorksheetFunction!(test.d_funcs.BoolToInt));
+    static assert( isWorksheetFunction!(test.d_funcs.FuncSimpleTupleRet));
+    static assert( isWorksheetFunction!(test.d_funcs.FuncTupleArrayRet));
 }
