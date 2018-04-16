@@ -311,7 +311,53 @@ unittest {
 @("toXlOper!Tuple!(int, int)")
 @safe unittest {
     import std.typecons: tuple;
-    import xlld.conv.from: fromXlOper;
     auto oper = tuple(42, 33).toXlOper(theGC);
     oper.shouldEqualDlang([42, 33]);
+}
+
+@("toXlOper!(Tuple!(DateTime, double)[])")
+@system unittest {
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.test.util: MockDates;
+    import xlld.conv.from: fromXlOper;
+    import std.typecons: tuple;
+    import std.conv: to;
+    import std.algorithm: map;
+
+    auto dates = MockDates([0.1, 0.2, 0.3]);
+    auto times = MockTimes([0.1, 0.2, 0.3]);
+
+    auto oper = [
+        tuple(DateTime(2017, 1, 1), 11.1),
+        tuple(DateTime(2018, 1, 1), 22.2),
+        tuple(DateTime(2019, 1, 1), 33.3),
+    ].toXlOper(theGC);
+
+    void assertMulti(in XLOPER12 oper) {
+        if(oper.xltype.stripMemoryBitmask != XlType.xltypeMulti) {
+            if(oper.xltype.stripMemoryBitmask == XlType.xltypeStr)
+                throw new Exception(oper.fromXlOper!string(theGC));
+            else
+                throw new Exception("Oper not of multi type: " ~ to!string(oper));
+        }
+    }
+
+
+    assertMulti(oper);
+    oper.val.array.rows.shouldEqual(1);
+    oper.val.array.columns.shouldEqual(3);
+
+    auto dateTimes = MockDateTimes(DateTime(2017, 1, 1), DateTime(2018, 1, 1), DateTime(2019, 1, 1));
+
+    auto elts = oper.val.array.lparray[0 .. 3];
+    foreach(elt; elts) assertMulti(elt);
+
+    elts[0].val.array.lparray[0].fromXlOper!DateTime(theGC).shouldEqual(DateTime(2017, 1, 1));
+    elts[0].val.array.lparray[1].fromXlOper!double(theGC).shouldEqual(11.1);
+
+    elts[1].val.array.lparray[0].fromXlOper!DateTime(theGC).shouldEqual(DateTime(2018, 1, 1));
+    elts[1].val.array.lparray[1].fromXlOper!double(theGC).shouldEqual(22.2);
+
+    elts[2].val.array.lparray[0].fromXlOper!DateTime(theGC).shouldEqual(DateTime(2019, 1, 1));
+    elts[2].val.array.lparray[1].fromXlOper!double(theGC).shouldEqual(33.3);
 }

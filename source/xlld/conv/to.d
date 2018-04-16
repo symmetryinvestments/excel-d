@@ -18,12 +18,14 @@ shared from!"core.sync.mutex".Mutex gFromEnumMutex;
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(isIntegral!T) {
+    import xlld.sdk.xlcall: XlType;
+
     auto ret = XLOPER12();
     ret.xltype = XlType.xltypeInt;
     ret.val.w = val;
+
     return ret;
 }
-
 
 
 ///
@@ -81,11 +83,13 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
 ///
 XLOPER12 toXlOper(T, A)(T values, ref A allocator)
     if(is(Unqual!T == string[]) || is(Unqual!T == double[]) ||
-       is(Unqual!T == int[]) || is(Unqual!T == DateTime[]) || is(Unqual!T == Any[]))
+       is(Unqual!T == int[]) || is(Unqual!T == DateTime[]) || is(Unqual!T == Any[]) ||
+       is(Unqual!T: Tuple!U[], U...))
 {
     T[1] realValues = [values];
     return realValues[].toXlOper(allocator);
 }
+
 
 ///
 __gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
@@ -93,7 +97,7 @@ __gshared immutable toXlOperShapeException = new Exception("# of columns must al
 ///
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     if(is(Unqual!T == double) || is(Unqual!T == string) || is(Unqual!T == Any)
-       || is(Unqual!T == int) || is(Unqual!T == DateTime))
+       || is(Unqual!T == int) || is(Unqual!T == DateTime) ||  is(Unqual!T: Tuple!U, U...))
 {
     import xlld.conv.misc: multi;
     import std.algorithm: map, all;
