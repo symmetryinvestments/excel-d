@@ -348,24 +348,31 @@ auto toDArgs(alias wrappedFunc, A, T...)
 private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs) {
 
     import xlld.wrap.worksheet: Dispose;
+    import xlld.sdk.xlcall: XlType;
     import nogc.conv: text;
-    import std.traits: hasUDA, getUDAs;
+    import std.traits: hasUDA, getUDAs, ReturnType;
 
     static XLOPER12 ret;
 
      try {
         // call the wrapped function with D types
-        auto wrappedRet = wrappedFunc(dArgs.expand);
-        ret = excelRet(wrappedRet);
+         static if(is(ReturnType!wrappedFunc == void)) {
+             wrappedFunc(dArgs.expand);
+             ret.xltype = XlType.xltypeNil;
+             return &ret;
+         } else {
+             auto wrappedRet = wrappedFunc(dArgs.expand);
+             ret = excelRet(wrappedRet);
 
-        // dispose of the memory allocated in the wrapped function
-        static if(hasUDA!(wrappedFunc, Dispose)) {
-            alias disposes = getUDAs!(wrappedFunc, Dispose);
-            static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
-            disposes[0].dispose(wrappedRet);
-        }
+             // dispose of the memory allocated in the wrapped function
+             static if(hasUDA!(wrappedFunc, Dispose)) {
+                 alias disposes = getUDAs!(wrappedFunc, Dispose);
+                 static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
+                 disposes[0].dispose(wrappedRet);
+             }
 
-        return &ret;
+             return &ret;
+         }
 
     } catch(Exception ex) {
          ret = stringOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", ex.msg));

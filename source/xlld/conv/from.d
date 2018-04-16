@@ -6,6 +6,7 @@ module xlld.conv.from;
 import xlld.from;
 import xlld.sdk.xlcall: XLOPER12;
 import xlld.any: Any;
+import xlld.wrap.wrap: isWantedType;
 import std.traits: Unqual;
 import std.datetime: DateTime;
 
@@ -142,8 +143,8 @@ private enum Dimensions {
 ///
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator)
     if(is(T: E[][], E) &&
-       (is(Unqual!E == string) || is(Unqual!E == double) || is(Unqual!E == int)
-        || is(Unqual!E == Any) || is(Unqual!E == DateTime)))
+       !(is(Unqual!T == string[])) &&
+       (!is(T: EE[][][], EE) || is(Unqual!(typeof(T.init[0][0])) == string)))
 {
     return val.fromXlOperMulti!(Dimensions.Two, typeof(T.init[0][0]))(allocator);
 }
@@ -152,8 +153,8 @@ auto fromXlOper(T, A)(XLOPER12* val, ref A allocator)
 /// 1D slices
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator)
     if(is(T: E[], E) &&
-       (is(Unqual!E == string) || is(Unqual!E == double) || is(Unqual!E == int)
-        || is(Unqual!E == Any) || is(Unqual!E == DateTime)))
+       !(is(Unqual!T == string)) &&
+       (!is(T: EE[][], EE) || is(Unqual!(typeof(T.init[0])) == string)))
 {
     return val.fromXlOperMulti!(Dimensions.One, typeof(T.init[0]))(allocator);
 }

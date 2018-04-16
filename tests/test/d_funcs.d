@@ -330,3 +330,8 @@ struct DateAndString {
 DateAndString[] FuncDateAndStringRet() {
     return [DateAndString(DateTime(2017, 1, 2), "foobar")];
 }
+
+
+void FuncEnumArray(MyEnum[]) {
+
+}

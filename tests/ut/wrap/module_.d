@@ -369,6 +369,12 @@ unittest {
     elts[2].val.array.lparray[1].fromXlOper!double(theGC).shouldEqual(33.3);
 }
 
+@("Wrap a function that takes an enum array")
+unittest {
+    import test.d_funcs: MyEnum;
+    auto arg = [MyEnum.foo].toXlOper(theGC);
+    FuncEnumArray(&arg);
+}
 
 ///
 @("wrapModuleFunctionStr")
