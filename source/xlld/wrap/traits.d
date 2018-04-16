@@ -174,7 +174,7 @@ private template isSupportedType(T, U...) {
 }
 
 // whether or not this is a function that can be called from Excel
-private template isWorksheetFunction(alias F) {
+template isWorksheetFunction(alias F) {
     static if(isWorksheetFunctionModuloLinkage!F) {
         import std.traits: functionLinkage;
         enum isWorksheetFunction = functionLinkage!F == "Windows";
@@ -183,7 +183,7 @@ private template isWorksheetFunction(alias F) {
 }
 
 /// if the types match for a worksheet function but without checking the linkage
-private template isWorksheetFunctionModuloLinkage(alias F) {
+template isWorksheetFunctionModuloLinkage(alias F) {
     import std.traits: ReturnType, Parameters, isCallable;
     import std.meta: anySatisfy;
 
