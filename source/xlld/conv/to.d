@@ -113,7 +113,7 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
 
 ///
 XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(Unqual!T == string[]) || is(Unqual!T == double[]) ||
-                                                      is(Unqual!T == int[]) || is(Unqual!T == DateTime[])) {
+                                                      is(Unqual!T == int[]) || is(Unqual!T == DateTime[]) || is(Unqual!T == Any[])) {
     T[1] realValues = [values];
     return realValues[].toXlOper(allocator);
 }
@@ -123,12 +123,6 @@ XLOPER12 toXlOper(T, A)(T values, ref A allocator) if(is(Unqual!T == string[]) |
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any)) {
     import xlld.conv.misc: dup;
     return value.dup(allocator);
-}
-
-
-///
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any[])) {
-    return [value].toXlOper(allocator);
 }
 
 
