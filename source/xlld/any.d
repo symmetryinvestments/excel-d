@@ -3,13 +3,6 @@
  */
 module xlld.any;
 
-
-version(testingExcelD) {
-    import unit_threaded;
-    import std.experimental.allocator.gc_allocator: GCAllocator;
-    alias theGC = GCAllocator.instance;
-}
-
 ///
 struct Any {
     import xlld.sdk.xlcall: XLOPER12;
@@ -51,21 +44,6 @@ struct Any {
 
             return true;
         }
-    }
-
-
-    @("opEquals str")
-    unittest {
-        any("foo", theGC).shouldEqual(any("foo", theGC));
-        any("foo", theGC).shouldNotEqual(any("bar", theGC));
-        any("foo", theGC).shouldNotEqual(any(33.3, theGC));
-    }
-
-    @("opEquals multi")
-    unittest {
-        any([1.0, 2.0], theGC).shouldEqual(any([1.0, 2.0], theGC));
-        any([1.0, 2.0], theGC).shouldNotEqual(any("foo", theGC));
-        any([1.0, 2.0], theGC).shouldNotEqual(any([2.0, 2.0], theGC));
     }
 
     ///

@@ -503,20 +503,21 @@ template isWantedType(T) {
 }
 
 
-
-@("isWorksheetFunction")
-@safe pure unittest {
-    static import test.d_funcs;
-    // the line below checks that the code still compiles even with a private function
-    // it might stop compiling in a future version when the deprecation rules for
-    // visibility kick in
-    static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
-    static assert( isWorksheetFunction!(test.d_funcs.FuncThrows));
-    static assert( isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
-    static assert( isWorksheetFunction!(test.d_funcs.Twice));
-    static assert( isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
-    static assert( isWorksheetFunction!(test.d_funcs.BoolToInt));
-    static assert( isWorksheetFunction!(test.d_funcs.FuncSimpleTupleRet));
-    static assert( isWorksheetFunction!(test.d_funcs.FuncTupleArrayRet));
-    static assert( isWorksheetFunction!(test.d_funcs.FuncDateAndStringRet));
+version(testingExcelD) {
+    @("isWorksheetFunction")
+        @safe pure unittest {
+        static import test.d_funcs;
+        // the line below checks that the code still compiles even with a private function
+        // it might stop compiling in a future version when the deprecation rules for
+        // visibility kick in
+        static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
+        static assert( isWorksheetFunction!(test.d_funcs.FuncThrows));
+        static assert( isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
+        static assert( isWorksheetFunction!(test.d_funcs.Twice));
+        static assert( isWorksheetFunction!(test.d_funcs.DateTimeToDouble));
+        static assert( isWorksheetFunction!(test.d_funcs.BoolToInt));
+        static assert( isWorksheetFunction!(test.d_funcs.FuncSimpleTupleRet));
+        static assert( isWorksheetFunction!(test.d_funcs.FuncTupleArrayRet));
+        static assert( isWorksheetFunction!(test.d_funcs.FuncDateAndStringRet));
+    }
 }

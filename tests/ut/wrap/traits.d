@@ -179,3 +179,31 @@ unittest {
         )
     );
 }
+
+
+@("getTypeText")
+@safe pure unittest {
+    import std.conv: to; // working around unit-threaded bug
+
+    double foo(double);
+    getTypeText!foo.to!string.shouldEqual("BB");
+
+    double bar(FP12*);
+    getTypeText!bar.to!string.shouldEqual("BK%");
+
+    FP12* baz(FP12*);
+    getTypeText!baz.to!string.shouldEqual("K%K%");
+
+    FP12* qux(double);
+    getTypeText!qux.to!string.shouldEqual("K%B");
+
+    LPXLOPER12 fun(LPXLOPER12);
+    getTypeText!fun.to!string.shouldEqual("UU");
+
+    void void_(LPXLOPER12, LPXLOPER12);
+    getTypeText!void_.to!string.shouldEqual(">UU");
+
+    @Async
+    void async(LPXLOPER12, LPXLOPER12);
+    getTypeText!async.to!string.shouldEqual(">UX");
+}

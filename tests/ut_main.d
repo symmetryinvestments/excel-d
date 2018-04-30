@@ -16,5 +16,6 @@ int main(string[] args)
         "ut.func.xlf",
         "ut.wrap.wrap",
         "ut.wrap.traits",
+        "ut.misc",
     );
 }

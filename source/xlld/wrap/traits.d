@@ -64,7 +64,7 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
 }
 
 
-private wstring getTypeText(alias F)() if(isSomeFunction!F) {
+wstring getTypeText(alias F)() if(isSomeFunction!F) {
     import std.traits: ReturnType, Parameters, Unqual, hasUDA;
 
     wstring typeToString(T)() {
@@ -93,35 +93,6 @@ private wstring getTypeText(alias F)() if(isSomeFunction!F) {
     }
 
     return retType;
-}
-
-
-///
-@("getTypeText")
-@safe pure unittest {
-    import std.conv: to; // working around unit-threaded bug
-
-    double foo(double);
-    getTypeText!foo.to!string.shouldEqual("BB");
-
-    double bar(FP12*);
-    getTypeText!bar.to!string.shouldEqual("BK%");
-
-    FP12* baz(FP12*);
-    getTypeText!baz.to!string.shouldEqual("K%K%");
-
-    FP12* qux(double);
-    getTypeText!qux.to!string.shouldEqual("K%B");
-
-    LPXLOPER12 fun(LPXLOPER12);
-    getTypeText!fun.to!string.shouldEqual("UU");
-
-    void void_(LPXLOPER12, LPXLOPER12);
-    getTypeText!void_.to!string.shouldEqual(">UU");
-
-    @Async
-    void async(LPXLOPER12, LPXLOPER12);
-    getTypeText!async.to!string.shouldEqual(">UX");
 }
 
 
@@ -402,3 +373,12 @@ void generateDllDef(string module_ = __MODULE__,
    UDA for functions to be executed asynchronously
  */
 enum Async;
+
+version(unittest) {
+// to link
+    extern(C) auto getWorksheetFunctions() @safe pure nothrow {
+        import xlld: WorksheetFunction;
+        WorksheetFunction[] ret;
+        return ret;
+    }
+}

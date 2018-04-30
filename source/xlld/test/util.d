@@ -3,8 +3,10 @@
 */
 module xlld.test.util;
 
+version(testingExcelD):
+
 import xlld.sdk.xlcall: XLOPER12, XlType;
-version(testingExcelD) import unit_threaded;
+import unit_threaded;
 
 ///
 TestAllocator gTestAllocator;

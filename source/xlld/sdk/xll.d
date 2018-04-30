@@ -31,25 +31,10 @@ void registerAutoCloseFunc(void function() nothrow func) nothrow {
     gAutoCloseFuncs ~= { func(); };
 }
 
-private void callRegisteredAutoCloseFuncs() nothrow {
+void callRegisteredAutoCloseFuncs() nothrow {
     foreach(func; gAutoCloseFuncs) func();
 }
 
-@("registerAutoClose delegate")
-unittest {
-    int i;
-    registerAutoCloseFunc({ ++i; });
-    callRegisteredAutoCloseFuncs();
-    i.shouldEqual(1);
-}
-
-@("registerAutoClose function")
-unittest {
-    const old = gAutoCloseCounter;
-    registerAutoCloseFunc(&testAutoCloseFunc);
-    callRegisteredAutoCloseFuncs();
-    (gAutoCloseCounter - old).shouldEqual(1);
-}
 
 version(Windows) {
     version(exceldDef)
@@ -209,24 +194,5 @@ version(Windows) {
         try
             trace(args);
         catch(Exception ex) {}
-    }
-}
-
-version(unittest) {
-    // to link
-    extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow {
-        return [];
-    }
-
-    int gAutoCloseCounter;
-
-    version(testingExcelD)
-        import unit_threaded: DontTest;
-    else
-        enum DontTest;
-
-    @DontTest
-        void testAutoCloseFunc() nothrow {
-        ++gAutoCloseCounter;
     }
 }
