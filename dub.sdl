@@ -10,8 +10,10 @@ configuration "default" {
 }
 
 configuration "testLibrary" {
-    targetType "library"
+    // FIXME: static constructors don't get run if the targetType is "library"
+    targetType "sourceLibrary"
     versions "testLibraryExcelD"
+    dependency "unit-threaded" version="~>0.7.0"
 }
 
 configuration "unittest" {

@@ -4,7 +4,7 @@
 module xlld.static_;
 
 ///
-shared static this() {
+shared static this() nothrow {
     import xlld.conv.from: gToEnumMutex;
     import xlld.conv.to: gFromEnumMutex;
     import core.sync.mutex: Mutex;
@@ -15,15 +15,13 @@ shared static this() {
 
 version(testLibraryExcelD):
 
-///
-shared static this() {
+shared static this() nothrow {
     import xlld.sdk.xlcall: XLOPER12;
     import xlld.test.util: gAsyncReturns, AA;
     gAsyncReturns = AA!(XLOPER12, XLOPER12).create;
 }
 
-///
-static this() {
+static this() nothrow {
     import xlld.test.util: excel12UnitTest;
     import xlld.sdk.xlcallcpp: SetExcel12EntryPt;
     // this effectively "implements" the Excel12v function
