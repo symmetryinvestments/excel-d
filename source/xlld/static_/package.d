@@ -15,14 +15,12 @@ shared static this() {
 
 version(testLibraryExcelD):
 
-///
 shared static this() {
     import xlld.sdk.xlcall: XLOPER12;
     import xlld.test.util: gAsyncReturns, AA;
     gAsyncReturns = AA!(XLOPER12, XLOPER12).create;
 }
 
-///
 static this() {
     import xlld.test.util: excel12UnitTest;
     import xlld.sdk.xlcallcpp: SetExcel12EntryPt;

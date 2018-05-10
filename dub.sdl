@@ -12,6 +12,7 @@ configuration "default" {
 configuration "testLibrary" {
     targetType "library"
     versions "testLibraryExcelD"
+    dependency "unit-threaded" version="~>0.7.0"
 }
 
 configuration "unittest" {

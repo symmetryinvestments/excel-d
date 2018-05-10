@@ -3,10 +3,9 @@
 */
 module xlld.test.util;
 
-version(testingExcelD):
+version(testLibraryExcelD):
 
 import xlld.sdk.xlcall: XLOPER12, XlType;
-import unit_threaded;
 
 ///
 TestAllocator gTestAllocator;
@@ -145,6 +144,7 @@ void shouldEqualDlang(U)
     import xlld.conv.from: fromXlOper;
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.sdk.xlcall: XlType;
+    import unit_threaded;
     import std.traits: Unqual;
     import std.conv: text;
     import std.experimental.allocator.gc_allocator: GCAllocator;
@@ -396,6 +396,7 @@ struct AA(K, V, int N = 100) {
 
 @("AA")
 @safe unittest {
+    import unit_threaded;
     import core.exception: AssertError;
     auto aa = AA!(string, int).create;
     aa["foo"] = 5;
