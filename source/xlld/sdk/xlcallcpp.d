@@ -56,9 +56,7 @@ void FetchExcel12EntryPt() nothrow @nogc
    First try to fetch the known good entry point,
    then set the passed in address.
 */
-
-//pascal
-extern(Windows) void SetExcel12EntryPt(EXCEL12PROC gExcel12New)
+extern(Windows) void SetExcel12EntryPt(EXCEL12PROC gExcel12New) @nogc nothrow
 {
 	if (gExcel12 is null)
 	{
