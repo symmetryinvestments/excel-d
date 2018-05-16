@@ -276,7 +276,8 @@ private bool isGC(alias F)() {
  Implement a wrapper for a regular D function
  */
 XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
-                                  (ref A allocator, T args) {
+                                (ref A allocator, T args)
+{
     static XLOPER12 ret;
 
     alias DArgs = typeof(toDArgs!wrappedFunc(allocator, args));
