@@ -374,7 +374,7 @@ void generateDllDef(string module_ = __MODULE__,
  */
 enum Async;
 
-version(unittest) {
+version(testingExcelD) {
 // to link
     extern(C) auto getWorksheetFunctions() @safe pure nothrow {
         import xlld: WorksheetFunction;
