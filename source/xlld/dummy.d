@@ -1,8 +1,21 @@
 /**
- Enables linking on  Windows without having to link to the real implementations
- Only for unit testing.
+ Deals with linking issues such as on Windows without having to link to the
+ real implementations or dependent packages' unittest builds.
+ Only for testing.
  */
 module xlld.dummy;
+
+
+
+version(XllDummyGetter) {
+    // to be able to link
+    extern(C) auto getWorksheetFunctions() @safe pure nothrow {
+        import xlld: WorksheetFunction;
+        WorksheetFunction[] ret;
+        return ret;
+    }
+}
+
 
 version(testingExcelD)
     enum useDummy = true;

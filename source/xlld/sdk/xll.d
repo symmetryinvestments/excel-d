@@ -85,7 +85,7 @@ static if(dllMain) {
 extern(C) WorksheetFunction[] getWorksheetFunctions() @safe pure nothrow;
 
 extern(Windows) int xlAutoOpen() {
-    import core.runtime:rt_init;
+    import core.runtime: rt_init;
 
     rt_init(); // move to DllOpen?
     registerAllWorkSheetFunctions;

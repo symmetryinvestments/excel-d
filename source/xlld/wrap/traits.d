@@ -373,12 +373,3 @@ void generateDllDef(string module_ = __MODULE__,
    UDA for functions to be executed asynchronously
  */
 enum Async;
-
-version(testingExcelD) {
-// to link
-    extern(C) auto getWorksheetFunctions() @safe pure nothrow {
-        import xlld: WorksheetFunction;
-        WorksheetFunction[] ret;
-        return ret;
-    }
-}
