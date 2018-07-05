@@ -122,3 +122,19 @@ unittest {
         oper.val.array.columns.shouldEqual(4);
     }
 }
+
+@("toDArgs optional arguments")
+unittest {
+    import std.typecons: tuple;
+
+    static int add(int i, int j = 42);
+
+    XLOPER12 missing;
+    missing.xltype = XlType.xltypeMissing;
+
+    auto i = 2.toXlOper(theGC);
+    auto j = 3.toXlOper(theGC);
+
+    toDArgs!add(theGC, &i, &j).shouldEqual(tuple(2, 3));
+    toDArgs!add(theGC, &i, &missing).shouldEqual(tuple(2, 42));
+}
