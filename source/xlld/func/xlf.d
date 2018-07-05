@@ -1,5 +1,5 @@
 /**
-   This module provides D versions of xlf Excel functions
+   This module provides D versions of xlf Excel "functions"
  */
 module xlld.func.xlf;
 
@@ -91,6 +91,10 @@ int rtd(XLOPER12 comId,
 
 __gshared immutable callerException = new Exception("Error calling xlfCaller");
 
+/**
+   Returns the caller. The returned XLOPER12 is documented here:
+   https://docs.microsoft.com/en-us/office/client-developer/excel/xlfcaller
+ */
 auto caller() @safe {
     import xlld.sdk.xlcall: xlfCaller, xlretSuccess;
     import xlld.sdk.framework: Excel12f;
