@@ -9,7 +9,6 @@ mixin("import xlld.wrap.traits: Async;\n" ~ wrapAll!"test.d_funcs");
 ///
 @("wrapAll function that returns Any[][]")
 @safe unittest {
-    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
     import xlld.memorymanager: autoFree;
 
     auto oper = [[1.0, 2.0], [3.0, 4.0]].toSRef(theGC);
@@ -27,7 +26,6 @@ mixin("import xlld.wrap.traits: Async;\n" ~ wrapAll!"test.d_funcs");
 ///
 @("wrapAll function that takes Any[][]")
 unittest {
-    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
     import xlld.memorymanager: allocatorContext;
 
     XLOPER12* ret;
@@ -46,7 +44,6 @@ unittest {
 ///
 @("wrapAll Any[][] -> Any[][]")
 unittest {
-    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
     import xlld.memorymanager: allocatorContext;
     import xlld.any: Any;
 
@@ -71,7 +68,6 @@ unittest {
 ///
 @("wrapAll Any[][] -> Any[][] -> Any[][]")
 unittest {
-    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
     import xlld.memorymanager: allocatorContext;
     import xlld.any: Any;
 
@@ -96,8 +92,6 @@ unittest {
 ///
 @("wrapAll overloaded functions are not wrapped")
 unittest {
-    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
-
     auto double_ = (42.0).toXlOper(theGC);
     auto string_ = "foobar".toXlOper(theGC);
     static assert(!__traits(compiles, Overloaded(&double_).shouldEqualDlang(84.0)));
@@ -107,8 +101,6 @@ unittest {
 ///
 @("wrapAll bool -> int")
 @safe unittest {
-    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
-
     auto string_ = "true".toXlOper(theGC);
     () @trusted { BoolToInt(&string_).shouldEqualDlang(1); }();
 }
@@ -117,7 +109,6 @@ unittest {
 @("wrapAll FuncAddEverything")
 unittest  {
     import xlld.memorymanager: allocator;
-    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
     auto arg = toSRef(cast(double[][])[[1, 2, 3, 4], [11, 12, 13, 14]], allocator);
     FuncAddEverything(&arg).shouldEqualDlang(60.0);
@@ -130,7 +121,6 @@ unittest  {
 @safe unittest {
     import xlld.test.util: gTestAllocator;
     import xlld.memorymanager: gTempAllocator;
-    import xlld.wrap.traits: getAllWorksheetFunctions, GenerateDllDef; // for wrapAll
 
     // this is needed since gTestAllocator is global, so we can't rely
     // on its destructor
