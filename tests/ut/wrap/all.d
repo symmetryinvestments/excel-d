@@ -1,10 +1,9 @@
 module ut.wrap.all;
 
 import test;
+import ut.wrap.wrapped;
 import xlld.wrap;
 import xlld.conv.to: toXlOper;
-
-mixin("import xlld.wrap.traits: Async;\n" ~ wrapAll!"test.d_funcs");
 
 ///
 @("wrapAll function that returns Any[][]")
