@@ -1,3 +1,9 @@
+/**
+   Autowrapping of D functions to be made available to call from Excel, plus
+   helper functions for accessing Excel functionality.
+
+   For most users, xlld.wrap will be enough.
+ */
 module xlld;
 
 public import xlld.sdk.xlcall;
