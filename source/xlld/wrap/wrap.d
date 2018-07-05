@@ -23,6 +23,8 @@ string wrapAll(Modules...)
 
     import xlld.wrap.traits: implGetWorksheetFunctionsString;
     return
+        q{import xlld;} ~
+        "\n" ~
         wrapWorksheetFunctionsString!Modules(onlyExports, mainModule) ~
         "\n" ~
         implGetWorksheetFunctionsString!(mainModule) ~

@@ -1,6 +1,6 @@
 module example.myxll;
 
-import xlld;
+import xlld: wrapAll;
 
 // wrapAll takes a list of modules, in this case we're only wrapping
 // one, but there's no limit
