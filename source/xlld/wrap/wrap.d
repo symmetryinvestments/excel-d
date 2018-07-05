@@ -291,7 +291,8 @@ XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
         ret = stringOper("#ERROR converting argument to call " ~ __traits(identifier, wrappedFunc));
         return &ret;
     } catch(Throwable t) {
-        ret = stringOper("#FATAL ERROR converting argument to call " ~ __traits(identifier, wrappedFunc));
+        ret = stringOper("#FATAL ERROR converting argument to call " ~
+                         __traits(identifier, wrappedFunc));
         return &ret;
     }
 
@@ -311,35 +312,45 @@ auto toDArgs(alias wrappedFunc, A, T...)
     import xlld.func.xl: coerce, free;
     import xlld.sdk.xlcall: XlType;
     import xlld.conv.from: fromXlOper;
-    import std.traits: Parameters, Unqual;
+    import std.traits: Parameters, ParameterDefaults, Unqual;
     import std.typecons: Tuple;
     import std.meta: staticMap;
 
     static XLOPER12 ret;
 
-    XLOPER12[T.length] realArgs;
+    XLOPER12[T.length] coercedOperArgs;
     // must 1st convert each argument to the "real" type.
     // 2D arrays are passed in as SRefs, for instance
     foreach(i, InputType; Parameters!wrappedFunc) {
         if(args[i].xltype == XlType.xltypeMissing) {
-            realArgs[i] = *args[i];
+            coercedOperArgs[i] = *args[i];
             continue;
         }
-        realArgs[i] = coerce(args[i]);
+        coercedOperArgs[i] = coerce(args[i]);
     }
 
     // scopedCoerce doesn't work with actual Excel
     scope(exit) {
-        foreach(ref arg; realArgs)
-            free(&arg);
+        static foreach(i; 0 .. args.length) {
+            if(args[i].xltype != XlType.xltypeMissing)
+                free(&coercedOperArgs[i]);
+        }
     }
 
     // the D types to pass to the wrapped function
     Tuple!(staticMap!(Unqual, Parameters!wrappedFunc)) dArgs;
 
     // convert all Excel types to D types
-    foreach(i, InputType; Parameters!wrappedFunc) {
-        dArgs[i] = () @trusted { return fromXlOper!InputType(&realArgs[i], allocator); }();
+    static foreach(i, InputType; Parameters!wrappedFunc) {
+
+        // here we must be careful to use a default value if it exists _and_
+        // the oper that was passed in was xlTypeMissing
+        static if(is(ParameterDefaults!wrappedFunc[i] == void))
+            dArgs[i] = () @trusted { return fromXlOper!InputType(&coercedOperArgs[i], allocator); }();
+        else
+            dArgs[i] = args[i].xltype == XlType.xltypeMissing
+                ? ParameterDefaults!wrappedFunc[i]
+                : () @trusted { return fromXlOper!InputType(&coercedOperArgs[i], allocator); }();
     }
 
     return dArgs;

@@ -181,9 +181,9 @@ version(Windows) {
     void log(T...)(T args) {
         import std.conv: text, to;
         try
-            OutputDebugStringW(text(args).to!wstring.toWStringz);
+            () @trusted { OutputDebugStringW(text(args).to!wstring.toWStringz); }();
         catch(Exception)
-            OutputDebugStringW("[DataServer] outputDebug itself failed"w.toWStringz);
+            () @trusted { OutputDebugStringW("[DataServer] outputDebug itself failed"w.toWStringz); }();
     }
 } else version(unittest) {
     void log(T...)(T args) {

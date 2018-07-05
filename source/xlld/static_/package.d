@@ -34,5 +34,5 @@ static this() nothrow {
 static ~this() {
     import xlld.test.util: gAllocated, gFreed, gNumXlAllocated, gNumXlFree;
     import unit_threaded.should: shouldBeSameSetAs;
-    gAllocated[0 .. gNumXlAllocated].shouldBeSameSetAs(gFreed[0 .. gNumXlFree]);
+    gFreed[0 .. gNumXlFree].shouldBeSameSetAs(gAllocated[0 .. gNumXlAllocated]);
 }

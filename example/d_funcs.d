@@ -291,3 +291,11 @@ auto FuncComplexTupleRet(int d1, int d2) @safe {
     return tuple([DateTime(2017, 1, d1), DateTime(2017, 2, d1)],
                  [DateTime(2018, 1, d1), DateTime(2018, 2, d2)]);
 }
+
+int FuncAddOptional(int i, int j = 42) @safe {
+    return i + j;
+}
+
+string FuncAppendOptional(string a, string b = "quux") @safe {
+    return a ~ b;
+}
