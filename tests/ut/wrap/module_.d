@@ -1,15 +1,12 @@
 module ut.wrap.module_;
 
 import test;
+import ut.wrap.wrapped;
 import xlld.wrap;
 import xlld.conv.to: toXlOper;
 import std.datetime;
 import std.experimental.allocator.mallocator: Mallocator;
 alias theMallocator = Mallocator.instance;
-
-
-mixin("import xlld.wrap.traits: Async;\n" ~
-      wrapModuleWorksheetFunctionsString!"test.d_funcs");
 
 
 ///
