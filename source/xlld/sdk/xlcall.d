@@ -4,7 +4,7 @@
 
     File:           INCLUDE\XLCALL.H
     Description:    Header file for for Excel callbacks
-    import std.c.windows.windows;import std.c.windows.windows;latform:       Microsoft Windows
+    Platform:       Microsoft Windows
 
     DEPENDENCY:
     Include <windows.h> before you include this.

@@ -54,7 +54,6 @@ static if(dllMain) {
     extern(Windows) BOOL DllMain( HANDLE hDLL, DWORD dwReason, LPVOID lpReserved )
     {
         import core.runtime;
-        import std.c.windows.windows;
         import core.sys.windows.dll;
         switch (dwReason)
         {
