@@ -246,9 +246,11 @@ pre.d_code  { background-color: #fdf6e3; color: #002b36; padding: 0.25em; border
 	padding-left: 2em;
 }
 
+/*
 .aggregate-member::after {
 	content: ";";
 }
+*/
 
 .aggregate-member > a {
 	color: inherit;
@@ -1243,6 +1245,7 @@ tr.leading-row th {
 .side-by-side {
 	table-layout: fixed;
 	border: none;
+	width: 100%;
 }
 
 .side-by-side > tbody > tr > td {
