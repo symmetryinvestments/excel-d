@@ -73,6 +73,13 @@ excel-d will always convert the first character in the D function being wrapped 
 since that is the Excel convention.
 
 
+WARNING: Memory for parameters passed to D functions
+---------------------------------------------------
+
+Any parameters with indirections (pointers, slices) should NOT be escaped. The memory for those
+parameters WILL be reused and might cause crashes.
+
+
 Variant type `Any`
 ---------------------
 
