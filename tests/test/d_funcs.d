@@ -335,3 +335,17 @@ DateAndString[] FuncDateAndStringRet() {
 void FuncEnumArray(MyEnum[]) {
 
 }
+
+double[] Leaker() {
+    import core.memory : GC;
+    import xlld.sdk.xll: log;
+
+    GC.collect;
+    GC.minimize;
+    log(GC.stats.usedSize);
+    auto ret = new double[](10_000_000);
+    log(GC.stats.usedSize);
+    log;
+
+    return ret;
+}

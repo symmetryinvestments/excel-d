@@ -170,7 +170,16 @@ extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction) {
     return &xInfo;
 }
 
-version(Windows) {
+
+version(testingExcelD) {
+    void log(A...)(auto ref A args) {
+        import unit_threaded: writelnUt;
+        try
+            writelnUt(args);
+        catch(Exception _)
+            assert(0);
+    }
+} else version(Windows) {
     extern(Windows) void OutputDebugStringW(const wchar* fmt) nothrow @nogc;
 
     const(wchar)* toWStringz(in wstring str) @safe nothrow {

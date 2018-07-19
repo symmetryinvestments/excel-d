@@ -17,5 +17,6 @@ int main(string[] args)
         "ut.wrap.wrap",
         "ut.wrap.traits",
         "ut.misc",
+        "ut.issues",
     );
 }
