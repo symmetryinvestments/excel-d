@@ -4,11 +4,10 @@
 */
 module xlld.wrap.wrap;
 
+
 import xlld.wrap.worksheet;
 import xlld.sdk.xlcall: XLOPER12;
 import std.typecons: Flag, No;
-
-
 
 
 /**
@@ -210,73 +209,6 @@ string pascalCase(in string func) @safe pure {
     import std.uni: toUpper;
     import std.conv: to;
     return (func[0].toUpper ~ func[1..$].to!dstring).to!string;
-}
-
-void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle, T args) {
-
-    import xlld.sdk.xlcall: XlType, xlAsyncReturn;
-    import xlld.sdk.framework: Excel12f;
-    import std.concurrency: spawn;
-    import std.format: format;
-
-    string toDArgsStr() {
-        import std.string: join;
-        import std.conv: text;
-
-        string[] pointers;
-        foreach(i; 0 .. T.length) {
-            pointers ~= text("&args[", i, "]");
-        }
-
-        return q{toDArgs!F(allocator, %s)}.format(pointers.join(", "));
-    }
-
-    mixin(q{alias DArgs = typeof(%s);}.format(toDArgsStr));
-    DArgs dArgs;
-
-    // Convert all Excel types to D types. This needs to be done here because the
-    // asynchronous part of the computation can't call back into Excel, and converting
-    // to D types requires calling coerce.
-    try {
-        mixin(q{dArgs = %s;}.format(toDArgsStr));
-    } catch(Throwable t) {
-        static if(isGC!F) {
-            import xlld.sdk.xll: log;
-            log("ERROR: Could not convert to D args for asynchronous function " ~
-                __traits(identifier, F));
-        }
-    }
-
-    try
-        spawn(&wrapAsyncImpl!(F, A, DArgs), allocator, asyncHandle, cast(immutable)dArgs);
-    catch(Exception ex) {
-        XLOPER12 functionRet, ret;
-        functionRet.xltype = XlType.xltypeErr;
-        Excel12f(xlAsyncReturn, &ret, cast(XLOPER12*)&asyncHandle, &functionRet);
-    }
-}
-
-
-void wrapAsyncImpl(alias F, A, T)(ref A allocator, XLOPER12 asyncHandle, T dArgs) {
-    import xlld.sdk.framework: Excel12f;
-    import xlld.sdk.xlcall: xlAsyncReturn;
-    import std.traits: Unqual;
-
-    // get rid of the temporary memory allocations for the conversions
-    scope(exit) freeDArgs(allocator, cast(Unqual!T)dArgs);
-
-    auto functionRet = callWrapped!F(dArgs);
-    XLOPER12 xl12ret;
-    const errorCode = () @trusted {
-        return Excel12f(xlAsyncReturn, &xl12ret, &asyncHandle, functionRet);
-    }();
-}
-
-// if a function is not @nogc, i.e. it uses the GC
-private bool isGC(alias F)() {
-    import std.traits: functionAttributes, FunctionAttribute;
-    enum nogc = functionAttributes!F & FunctionAttribute.nogc;
-    return !nogc;
 }
 
 
@@ -487,6 +419,76 @@ private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
         }
     }
 }
+
+
+void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle, T args) {
+
+    import xlld.sdk.xlcall: XlType, xlAsyncReturn;
+    import xlld.sdk.framework: Excel12f;
+    import std.concurrency: spawn;
+    import std.format: format;
+
+    string toDArgsStr() {
+        import std.string: join;
+        import std.conv: text;
+
+        string[] pointers;
+        foreach(i; 0 .. T.length) {
+            pointers ~= text("&args[", i, "]");
+        }
+
+        return q{toDArgs!F(allocator, %s)}.format(pointers.join(", "));
+    }
+
+    mixin(q{alias DArgs = typeof(%s);}.format(toDArgsStr));
+    DArgs dArgs;
+
+    // Convert all Excel types to D types. This needs to be done here because the
+    // asynchronous part of the computation can't call back into Excel, and converting
+    // to D types requires calling coerce.
+    try {
+        mixin(q{dArgs = %s;}.format(toDArgsStr));
+    } catch(Throwable t) {
+        static if(isGC!F) {
+            import xlld.sdk.xll: log;
+            log("ERROR: Could not convert to D args for asynchronous function " ~
+                __traits(identifier, F));
+        }
+    }
+
+    try
+        spawn(&wrapAsyncImpl!(F, A, DArgs), allocator, asyncHandle, cast(immutable)dArgs);
+    catch(Exception ex) {
+        XLOPER12 functionRet, ret;
+        functionRet.xltype = XlType.xltypeErr;
+        Excel12f(xlAsyncReturn, &ret, cast(XLOPER12*)&asyncHandle, &functionRet);
+    }
+}
+
+
+void wrapAsyncImpl(alias F, A, T)(ref A allocator, XLOPER12 asyncHandle, T dArgs) {
+    import xlld.sdk.framework: Excel12f;
+    import xlld.sdk.xlcall: xlAsyncReturn;
+    import std.traits: Unqual;
+
+    // get rid of the temporary memory allocations for the conversions
+    scope(exit) freeDArgs(allocator, cast(Unqual!T)dArgs);
+
+    auto functionRet = callWrapped!F(dArgs);
+    XLOPER12 xl12ret;
+    const errorCode = () @trusted {
+        return Excel12f(xlAsyncReturn, &xl12ret, &asyncHandle, functionRet);
+    }();
+}
+
+// if a function is not @nogc, i.e. it uses the GC
+private bool isGC(alias F)() {
+    import std.traits: functionAttributes, FunctionAttribute;
+    enum nogc = functionAttributes!F & FunctionAttribute.nogc;
+    return !nogc;
+}
+
+
 
 // if a function can be wrapped to be baclled by Excel
 private template isWorksheetFunction(alias F) {

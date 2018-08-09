@@ -335,3 +335,9 @@ DateAndString[] FuncDateAndStringRet() {
 void FuncEnumArray(MyEnum[]) {
 
 }
+
+
+void Sneaky(string s) {
+    static string oops;
+    oops = s;
+}
