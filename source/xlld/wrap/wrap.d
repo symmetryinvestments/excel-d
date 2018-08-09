@@ -137,7 +137,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
     import xlld.wrap.traits: Async, Identity;
     import xlld.wrap.worksheet: Register;
     import std.array: join;
-    import std.traits: Parameters, functionAttributes, FunctionAttribute, getUDAs, hasUDA;
+    import std.traits: Parameters, hasFunctionAttributes, getUDAs, hasUDA;
     import std.conv: text;
     import std.algorithm: map;
     import std.range: iota;
@@ -161,12 +161,9 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
             map!(a => `cast(immutable)` ~ a)
             .join(", ");
     }
-    const nogc = functionAttributes!(mixin(funcName)) & FunctionAttribute.nogc
-        ? "@nogc "
-        : "";
-    const safe = functionAttributes!(mixin(funcName)) & FunctionAttribute.safe
-        ? "@trusted "
-        : "";
+
+    const safe = hasFunctionAttributes!(func, "@safe") ? "@trusted " : "";
+    const nogc = hasFunctionAttributes!(func, "@nogc") ? "@nogc " : "";
 
     alias registerAttrs = getUDAs!(mixin(funcName), Register);
     static assert(registerAttrs.length == 0 || registerAttrs.length == 1,
