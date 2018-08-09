@@ -183,6 +183,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
     // The function name that Excel actually calls in the binary
     const xlFuncName = pascalCase(funcName);
     const return_ = hasUDA!(func, Async) ? "" : "return ";
+    const returnErrorRet = hasUDA!(func, Async) ? "" : "return &errorRet;";
     const wrap = hasUDA!(func, Async)
         ? q{wrapAsync!wrappedFunc(Mallocator.instance, %s)}.format(argsCall)
         : q{wrapModuleFunctionImpl!wrappedFunc(gTempAllocator, %s)}.format(argsCall);
@@ -191,17 +192,30 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
         register,
         async,
         q{
-            extern(Windows) %s %s(%s) nothrow %s %s {
+            extern(Windows) %s %s(%s) nothrow @trusted /* catch Error */ %s {
                 static import %s;
+                import xlld.wrap.wrap: stringAutoFreeOper;
                 import xlld.memorymanager: gTempAllocator;
+                import nogc.conv: text;
                 import std.experimental.allocator.mallocator: Mallocator;
                 alias wrappedFunc = %s.%s;
-                %s%s;
+
+                static XLOPER12 errorRet;
+
+                try
+                    %s() %s {%s%s;}();
+                catch(Exception e)
+                    errorRet = stringAutoFreeOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
+                catch(Error e)
+                    errorRet = stringAutoFreeOper(text("#FATAL ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
+
+                %s
             }
-        }.format(returnType, xlFuncName, argsDecl, nogc, safe,
+        }.format(returnType, xlFuncName, argsDecl, nogc,
                  moduleName,
                  moduleName, funcName,
-                 return_, wrap),
+                 return_, safe, return_, wrap,
+                 returnErrorRet),
     ].join("\n");
 }
 
@@ -213,7 +227,7 @@ string pascalCase(in string func) @safe pure {
 
 
 /**
- Implement a wrapper for a regular D function
+   Implement a wrapper for a regular D function
  */
 XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
                                 (ref A allocator, T args)
@@ -239,7 +253,7 @@ private struct OrErrorMsg(T) {
  */
 auto maybeToDArgs(alias wrappedFunc, A, T...)
                  (ref A allocator, T args)
-    @trusted  // catching Throwable
+    @trusted  // catching Error
 {
 
     static XLOPER12 errorMessage;
@@ -250,10 +264,10 @@ auto maybeToDArgs(alias wrappedFunc, A, T...)
     try
         return Return(null, toDArgs!wrappedFunc(allocator, args));
     catch(Exception e)
-        errorMessage = stringOper("#ERROR converting argument to call " ~
+        errorMessage = stringAutoFreeOper("#ERROR converting argument to call " ~
                               __traits(identifier, wrappedFunc));
     catch(Error e)
-        errorMessage = stringOper("#FATAL ERROR converting argument to call " ~
+        errorMessage = stringAutoFreeOper("#FATAL ERROR converting argument to call " ~
                               __traits(identifier, wrappedFunc));
 
     return Return(&errorMessage);
@@ -332,38 +346,18 @@ private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs)
     try
         callWrappedImpl!wrappedFunc(&ret, dArgs);
     catch(Exception e)
-        ret = stringOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
+        ret = stringAutoFreeOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
     catch(Error e)
-        ret = stringOper(text("#FATAL ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
+        ret = stringAutoFreeOper(text("#FATAL ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
 
      return &ret;
 }
 
-private void callWrappedImpl(alias wrappedFunc, T)(scope XLOPER12* ret, T dArgs) {
 
-    import xlld.wrap.worksheet: Dispose;
-    import xlld.sdk.xlcall: XlType;
-    import std.traits: hasUDA, getUDAs, ReturnType;
-
-    // call the wrapped function with D types
-    static if(is(ReturnType!wrappedFunc == void)) {
-        wrappedFunc(dArgs.expand);
-        ret.xltype = XlType.xltypeNil;
-    } else {
-        auto wrappedRet = wrappedFunc(dArgs.expand);
-        *ret = excelRet(wrappedRet);
-
-        // dispose of the memory allocated in the wrapped function
-        static if(hasUDA!(wrappedFunc, Dispose)) {
-            alias disposes = getUDAs!(wrappedFunc, Dispose);
-            static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
-            disposes[0].dispose(wrappedRet);
-        }
-    }
-}
-
-
-private XLOPER12 stringOper(in string msg) @safe @nogc nothrow {
+/**
+   Return an autofreeable XLOPER12 from a string to return to Excel.
+ */
+XLOPER12 stringAutoFreeOper(in string msg) @safe @nogc nothrow {
     import xlld.conv: toAutoFreeOper;
     import xlld.sdk.xlcall: XlType;
 
