@@ -232,13 +232,23 @@ string pascalCase(in string func) @safe pure {
 XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
                                 (ref A allocator, T args)
 {
-    scope maybeDArgs = maybeToDArgs!wrappedFunc(allocator, args);
-    if(maybeDArgs.errorMessage) return maybeDArgs.errorMessage;
+    import nogc.conv: text;
+
+    static immutable conversionException =
+        new Exception("Could not convert call to " ~ __traits(identifier, wrappedFunc) ~ ": ");
+
+    scope DArgsTupleType!wrappedFunc dArgs;
 
     // Get rid of the temporary memory allocations for the conversions
-    scope(exit) freeDArgs(allocator, maybeDArgs.result);
+    scope(exit) freeDArgs(allocator, dArgs);
 
-    return callWrapped!wrappedFunc(maybeDArgs.result);
+    try
+        dArgs = toDArgs!wrappedFunc(allocator, args);
+    catch(Exception e) {
+        throw conversionException;
+    }
+
+    return callWrapped!wrappedFunc(dArgs);
 }
 
 // Either!(L, R) with the error type fixed to XLOPER12* for an error message
@@ -247,31 +257,6 @@ private struct OrErrorMsg(T) {
     T result;
 }
 
-
-/**
-   Wrap toDArgs in a try block
- */
-auto maybeToDArgs(alias wrappedFunc, A, T...)
-                 (ref A allocator, T args)
-    @trusted  // catching Error
-{
-
-    static XLOPER12 errorMessage;
-
-    alias Return = OrErrorMsg!(DArgsTupleType!wrappedFunc);
-
-    // convert all Excel types to D types
-    try
-        return Return(null, toDArgs!wrappedFunc(allocator, args));
-    catch(Exception e)
-        errorMessage = stringAutoFreeOper("#ERROR converting argument to call " ~
-                              __traits(identifier, wrappedFunc));
-    catch(Error e)
-        errorMessage = stringAutoFreeOper("#FATAL ERROR converting argument to call " ~
-                              __traits(identifier, wrappedFunc));
-
-    return Return(&errorMessage);
-}
 
 /**
    Converts a variadic number of XLOPER12* to their equivalent D types
@@ -351,6 +336,43 @@ private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs)
         ret = stringAutoFreeOper(text("#FATAL ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
 
      return &ret;
+}
+
+// @safe pure unittest {
+//     import std.traits: hasFunctionAttributes, functionAttributes;
+//     import std.typecons: Tuple;
+//     import std.conv: text;
+
+//     static int add(int i, int j) @safe;
+//     static assert(hasFunctionAttributes!(callWrapped!(add, Tuple!(int, int)), "@safe"),
+//                      functionAttributes!(callWrapped!(add, Tuple!(int, int))).text);
+
+//     static int div(int i, int j) @system;
+//     static assert(hasFunctionAttributes!(callWrapped!(div, Tuple!(int, int)), "@system"),
+//                      functionAttributes!(callWrapped!(add, Tuple!(int, int))).text);
+// }
+
+private void callWrappedImpl(alias wrappedFunc, T)(scope XLOPER12* ret, T dArgs) {
+
+    import xlld.wrap.worksheet: Dispose;
+    import xlld.sdk.xlcall: XlType;
+    import std.traits: hasUDA, getUDAs, ReturnType;
+
+    // call the wrapped function with D types
+    static if(is(ReturnType!wrappedFunc == void)) {
+        wrappedFunc(dArgs.expand);
+        ret.xltype = XlType.xltypeNil;
+    } else {
+        auto wrappedRet = wrappedFunc(dArgs.expand);
+        *ret = excelRet(wrappedRet);
+
+        // dispose of the memory allocated in the wrapped function
+        static if(hasUDA!(wrappedFunc, Dispose)) {
+            alias disposes = getUDAs!(wrappedFunc, Dispose);
+            static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
+            disposes[0].dispose(wrappedRet);
+        }
+    }
 }
 
 
