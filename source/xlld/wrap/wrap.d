@@ -229,8 +229,6 @@ string pascalCase(in string func) @safe pure {
 XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
                                 (ref A allocator, T args)
 {
-    import nogc.conv: text;
-
     static immutable conversionException =
         new Exception("Could not convert call to " ~ __traits(identifier, wrappedFunc) ~ ": ");
 
@@ -239,19 +237,34 @@ XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     // Get rid of the temporary memory allocations for the conversions
     scope(exit) freeDArgs(allocator, dArgs);
 
-    try
-        dArgs = toDArgs!wrappedFunc(allocator, args);
-    catch(Exception e) {
+    try {
+        // Tuple.opAssign is not @safe
+        auto ret = toDArgs!wrappedFunc(allocator, args);
+        () @trusted { dArgs = ret; }();
+    } catch(Exception e)
         throw conversionException;
-    }
 
     return callWrapped!wrappedFunc(dArgs);
 }
 
-// Either!(L, R) with the error type fixed to XLOPER12* for an error message
-private struct OrErrorMsg(T) {
-    XLOPER12* errorMessage;  // null if result is to be used
-    T result;
+version(testingExcelD) {
+    @safe pure unittest {
+        import xlld.test.util: gTestAllocator;
+        import std.traits: hasFunctionAttributes, functionAttributes;
+        import std.typecons: Tuple;
+        import std.conv: text;
+
+        alias Allocator = typeof(gTestAllocator);
+        alias X = XLOPER12*;
+
+        static int add(int i, int j) @safe;
+        static assert(hasFunctionAttributes!(wrapModuleFunctionImpl!(add, Allocator, X, X), "@safe"),
+                      functionAttributes!(wrapModuleFunctionImpl!(add, Allocator, X, X)).text);
+
+        static int div(int i, int j) @system;
+        static assert(hasFunctionAttributes!(wrapModuleFunctionImpl!(div, Allocator, X, X), "@system"),
+                      functionAttributes!(wrapModuleFunctionImpl!(div, Allocator, X, X)).text);
+    }
 }
 
 
@@ -318,7 +331,7 @@ private template DArgsTupleType(alias wrappedFunc) {
 
 // Takes a tuple returned by `toDArgs`, calls the wrapped function and returns
 // the XLOPER12 result
-private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs)
+private XLOPER12* callWrapped(alias wrappedFunc, T)(scope T dArgs)
 {
     import xlld.wrap.worksheet: Dispose;
     import xlld.sdk.xlcall: XlType;
