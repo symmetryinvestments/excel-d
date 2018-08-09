@@ -4,11 +4,10 @@
 */
 module xlld.wrap.wrap;
 
+
 import xlld.wrap.worksheet;
 import xlld.sdk.xlcall: XLOPER12;
 import std.typecons: Flag, No;
-
-
 
 
 /**
@@ -138,7 +137,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
     import xlld.wrap.traits: Async, Identity;
     import xlld.wrap.worksheet: Register;
     import std.array: join;
-    import std.traits: Parameters, functionAttributes, FunctionAttribute, getUDAs, hasUDA;
+    import std.traits: Parameters, hasFunctionAttributes, getUDAs, hasUDA;
     import std.conv: text;
     import std.algorithm: map;
     import std.range: iota;
@@ -150,7 +149,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
 
     const argsLength = Parameters!(mixin(funcName)).length;
     // e.g. XLOPER12* arg0, XLOPER12* arg1, ...
-    auto argsDecl = argsLength.iota.map!(a => `XLOPER12* arg` ~ a.text).join(", ");
+    auto argsDecl = argsLength.iota.map!(a => `scope XLOPER12* arg` ~ a.text).join(", ");
     // e.g. arg0, arg1, ...
     static if(!hasUDA!(func, Async))
         const argsCall = argsLength.iota.map!(a => `arg` ~ a.text).join(", ");
@@ -162,12 +161,9 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
             map!(a => `cast(immutable)` ~ a)
             .join(", ");
     }
-    const nogc = functionAttributes!(mixin(funcName)) & FunctionAttribute.nogc
-        ? "@nogc "
-        : "";
-    const safe = functionAttributes!(mixin(funcName)) & FunctionAttribute.safe
-        ? "@trusted "
-        : "";
+
+    const safe = hasFunctionAttributes!(func, "@safe") ? "@trusted " : "";
+    const nogc = hasFunctionAttributes!(func, "@nogc") ? "@nogc " : "";
 
     alias registerAttrs = getUDAs!(mixin(funcName), Register);
     static assert(registerAttrs.length == 0 || registerAttrs.length == 1,
@@ -184,6 +180,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
     // The function name that Excel actually calls in the binary
     const xlFuncName = pascalCase(funcName);
     const return_ = hasUDA!(func, Async) ? "" : "return ";
+    const returnErrorRet = hasUDA!(func, Async) ? "" : "return &errorRet;";
     const wrap = hasUDA!(func, Async)
         ? q{wrapAsync!wrappedFunc(Mallocator.instance, %s)}.format(argsCall)
         : q{wrapModuleFunctionImpl!wrappedFunc(gTempAllocator, %s)}.format(argsCall);
@@ -192,17 +189,30 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
         register,
         async,
         q{
-            extern(Windows) %s %s(%s) nothrow %s %s {
+            extern(Windows) %s %s(%s) nothrow @trusted /* catch Error */ %s {
                 static import %s;
+                import xlld.wrap.wrap: stringAutoFreeOper;
                 import xlld.memorymanager: gTempAllocator;
+                import nogc.conv: text;
                 import std.experimental.allocator.mallocator: Mallocator;
                 alias wrappedFunc = %s.%s;
-                %s%s;
+
+                static XLOPER12 errorRet;
+
+                try
+                    %s() %s {%s%s;}();
+                catch(Exception e)
+                    errorRet = stringAutoFreeOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
+                catch(Error e)
+                    errorRet = stringAutoFreeOper(text("#FATAL ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
+
+                %s
             }
-        }.format(returnType, xlFuncName, argsDecl, nogc, safe,
+        }.format(returnType, xlFuncName, argsDecl, nogc,
                  moduleName,
                  moduleName, funcName,
-                 return_, wrap),
+                 return_, safe, return_, wrap,
+                 returnErrorRet),
     ].join("\n");
 }
 
@@ -211,6 +221,272 @@ string pascalCase(in string func) @safe pure {
     import std.conv: to;
     return (func[0].toUpper ~ func[1..$].to!dstring).to!string;
 }
+
+
+/**
+   Implement a wrapper for a regular D function
+ */
+XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
+                                (ref A allocator, T args)
+{
+    static immutable conversionException =
+        new Exception("Could not convert call to " ~ __traits(identifier, wrappedFunc) ~ ": ");
+
+    scope DArgsTupleType!wrappedFunc dArgs;
+
+    // Get rid of the temporary memory allocations for the conversions
+    scope(exit) freeDArgs(allocator, dArgs);
+
+    try {
+        // Tuple.opAssign is not @safe
+        auto ret = toDArgs!wrappedFunc(allocator, args);
+        () @trusted { dArgs = ret; }();
+    } catch(Exception e)
+        throw conversionException;
+
+    return callWrapped!wrappedFunc(dArgs);
+}
+
+version(testingExcelD) {
+    @safe pure unittest {
+        import xlld.test.util: gTestAllocator;
+        import std.traits: hasFunctionAttributes, functionAttributes;
+        import std.typecons: Tuple;
+        import std.conv: text;
+
+        alias Allocator = typeof(gTestAllocator);
+        alias X = XLOPER12*;
+
+        static int add(int i, int j) @safe;
+        static assert(hasFunctionAttributes!(wrapModuleFunctionImpl!(add, Allocator, X, X), "@safe"),
+                      functionAttributes!(wrapModuleFunctionImpl!(add, Allocator, X, X)).text);
+
+        static int div(int i, int j) @system;
+        static assert(hasFunctionAttributes!(wrapModuleFunctionImpl!(div, Allocator, X, X), "@system"),
+                      functionAttributes!(wrapModuleFunctionImpl!(div, Allocator, X, X)).text);
+    }
+}
+
+
+/**
+   Converts a variadic number of XLOPER12* to their equivalent D types
+   and returns a tuple
+ */
+auto toDArgs(alias wrappedFunc, A, T...)
+            (ref A allocator, T args)
+{
+    import xlld.func.xl: coerce, free;
+    import xlld.sdk.xlcall: XlType;
+    import xlld.conv.from: fromXlOper;
+    import std.traits: Parameters, ParameterDefaults;
+
+    static XLOPER12 ret;
+
+    scope XLOPER12[T.length] coercedOperArgs;
+    // must 1st convert each argument to the "real" type.
+    // 2D arrays are passed in as SRefs, for instance
+    foreach(i, InputType; Parameters!wrappedFunc) {
+        if(args[i].xltype == XlType.xltypeMissing) {
+            coercedOperArgs[i] = *args[i];
+            continue;
+        }
+        coercedOperArgs[i] = coerce(args[i]);
+    }
+
+    // scopedCoerce doesn't work with actual Excel
+    scope(exit) {
+        static foreach(i; 0 .. args.length) {
+            if(args[i].xltype != XlType.xltypeMissing)
+                free(coercedOperArgs[i]);
+        }
+    }
+
+    // the D types to pass to the wrapped function
+    DArgsTupleType!wrappedFunc dArgs;
+
+    // convert all Excel types to D types
+    static foreach(i, InputType; Parameters!wrappedFunc) {
+
+        // here we must be careful to use a default value if it exists _and_
+        // the oper that was passed in was xlTypeMissing
+        static if(is(ParameterDefaults!wrappedFunc[i] == void))
+            dArgs[i] = () @trusted { return fromXlOper!InputType(&coercedOperArgs[i], allocator); }();
+        else
+            dArgs[i] = args[i].xltype == XlType.xltypeMissing
+                ? ParameterDefaults!wrappedFunc[i]
+                : () @trusted { return fromXlOper!InputType(&coercedOperArgs[i], allocator); }();
+    }
+
+    return dArgs;
+}
+
+private template DArgsTupleType(alias wrappedFunc) {
+    import std.typecons: Tuple;
+    import std.meta: staticMap;
+    import std.traits: Parameters, Unqual;
+
+    alias DArgsTupleType = Tuple!(staticMap!(Unqual, Parameters!wrappedFunc));
+}
+
+
+// Takes a tuple returned by `toDArgs`, calls the wrapped function and returns
+// the XLOPER12 result
+private XLOPER12* callWrapped(alias wrappedFunc, T)(scope T dArgs)
+{
+    import xlld.wrap.worksheet: Dispose;
+    import xlld.sdk.xlcall: XlType;
+    import std.traits: hasUDA, getUDAs, ReturnType, hasFunctionAttributes;
+
+    static XLOPER12 ret;
+
+    // we want callWrapped to be @safe if wrappedFunc is, otherwise let inference take over
+    auto callWrappedImpl() {
+        static if(hasFunctionAttributes!(wrappedFunc, "@safe"))
+            return () @safe { return wrappedFunc(dArgs.expand); }();
+        else
+            return wrappedFunc(dArgs.expand);
+    }
+
+    // call the wrapped function with D types
+    static if(is(ReturnType!wrappedFunc == void)) {
+        callWrappedImpl;
+        ret.xltype = XlType.xltypeNil;
+    } else {
+        auto wrappedRet = callWrappedImpl;
+        ret = excelRet(wrappedRet);
+
+        // dispose of the memory allocated in the wrapped function
+        static if(hasUDA!(wrappedFunc, Dispose)) {
+            alias disposes = getUDAs!(wrappedFunc, Dispose);
+            static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
+            disposes[0].dispose(wrappedRet);
+        }
+    }
+
+     return &ret;
+}
+
+@safe pure unittest {
+    import std.traits: hasFunctionAttributes, functionAttributes;
+    import std.typecons: Tuple;
+    import std.conv: text;
+
+    static int add(int i, int j) @safe;
+    static assert(hasFunctionAttributes!(callWrapped!(add, Tuple!(int, int)), "@safe"),
+                     functionAttributes!(callWrapped!(add, Tuple!(int, int))).text);
+
+    static int div(int i, int j) @system;
+    static assert(hasFunctionAttributes!(callWrapped!(div, Tuple!(int, int)), "@system"),
+                     functionAttributes!(callWrapped!(add, Tuple!(int, int))).text);
+}
+
+@safe unittest {
+    import std.typecons: tuple;
+    import std.conv: text;
+
+    // make sure we can't escape parameters
+    static int oops(int* i) @safe;
+    static int good(scope int* i) @safe;
+    int val = 42;
+    auto valPtr = () @trusted { return &val; }();
+
+    // calling directly is ok
+    static assert(__traits(compiles, good(valPtr)));
+    static assert(__traits(compiles, oops(valPtr)));
+
+    // calling through callWrapped only ok if the param is `scope`
+    static assert( __traits(compiles, callWrapped!good(tuple(valPtr))));
+    static assert(!__traits(compiles, callWrapped!oops(tuple(valPtr))));
+}
+
+
+/**
+   Return an autofreeable XLOPER12 from a string to return to Excel.
+ */
+XLOPER12 stringAutoFreeOper(in string msg) @safe @nogc nothrow {
+    import xlld.conv: toAutoFreeOper;
+    import xlld.sdk.xlcall: XlType;
+
+    try
+        return () @trusted { return msg.toAutoFreeOper; }();
+    catch(Exception _) {
+        XLOPER12 ret;
+        ret.xltype = XlType.xltypeErr;
+        return ret;
+    }
+}
+
+
+
+// get excel return value from D return value of wrapped function
+XLOPER12 excelRet(T)(T wrappedRet) {
+
+    import xlld.conv: toAutoFreeOper;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.sdk.xlcall: XlType;
+    import std.traits: isArray;
+
+    static if(isArray!(typeof(wrappedRet))) {
+
+        // Excel crashes if it's returned an empty array, so stop that from happening
+        if(wrappedRet.length == 0) {
+            return () @trusted { return "#ERROR: empty result".toAutoFreeOper; }();
+        }
+
+        static if(isArray!(typeof(wrappedRet[0]))) {
+            if(wrappedRet[0].length == 0) {
+                return () @trusted { return "#ERROR: empty result".toAutoFreeOper; }();
+            }
+        }
+    }
+
+    // convert the return value to an Excel type, tell Excel to call
+    // us back to free it afterwards
+    auto ret = () @trusted { return toAutoFreeOper(wrappedRet); }();
+
+    // convert 1D arrays called from a column into a column instead of the default row
+    static if(isArray!(typeof(wrappedRet))) {
+        static if(!isArray!(typeof(wrappedRet[0]))) { // 1D array
+            import xlld.func.xlf: xlfCaller = caller;
+            import std.algorithm: swap;
+
+            try {
+                auto caller = xlfCaller;
+                if(caller.xltype.stripMemoryBitmask == XlType.xltypeSRef) {
+                    const isColumnCaller = caller.val.sref.ref_.colLast == caller.val.sref.ref_.colFirst;
+                    if(isColumnCaller) () @trusted { swap(ret.val.array.rows, ret.val.array.columns); }();
+                }
+            } catch(Exception _) {}
+        }
+    }
+
+    return ret;
+}
+
+
+
+
+private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
+    static if(__traits(compiles, allocator.deallocateAll))
+        () @trusted { allocator.deallocateAll; }();
+    else {
+        foreach(ref dArg; dArgs) {
+            import std.traits: isPointer, isArray;
+            static if(isArray!(typeof(dArg)))
+            {
+                import std.experimental.allocator: disposeMultidimensionalArray;
+                () @trusted { allocator.disposeMultidimensionalArray(dArg[]); }();
+            }
+            else
+                static if(isPointer!(typeof(dArg)))
+                {
+                    import std.experimental.allocator: dispose;
+                    allocator.dispose(dArg);
+                }
+        }
+    }
+}
+
 
 void wrapAsync(alias F, A, T...)(ref A allocator, immutable XLOPER12 asyncHandle, T args) {
 
@@ -280,213 +556,6 @@ private bool isGC(alias F)() {
 }
 
 
-/**
- Implement a wrapper for a regular D function
- */
-XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
-                                (ref A allocator, T args)
-{
-    static XLOPER12 ret;
-
-    alias DArgs = typeof(toDArgs!wrappedFunc(allocator, args));
-    DArgs dArgs;
-    // convert all Excel types to D types
-    try {
-        dArgs = toDArgs!wrappedFunc(allocator, args);
-    } catch(Exception ex) {
-        ret = stringOper("#ERROR converting argument to call " ~ __traits(identifier, wrappedFunc));
-        return &ret;
-    } catch(Throwable t) {
-        ret = stringOper("#FATAL ERROR converting argument to call " ~
-                         __traits(identifier, wrappedFunc));
-        return &ret;
-    }
-
-    // get rid of the temporary memory allocations for the conversions
-    scope(exit) freeDArgs(allocator, dArgs);
-
-    return callWrapped!wrappedFunc(dArgs);
-}
-
-/**
-   Converts a variadic number of XLOPER12* to their equivalent D types
-   and returns a tuple
- */
-auto toDArgs(alias wrappedFunc, A, T...)
-            (ref A allocator, T args)
-{
-    import xlld.func.xl: coerce, free;
-    import xlld.sdk.xlcall: XlType;
-    import xlld.conv.from: fromXlOper;
-    import std.traits: Parameters, ParameterDefaults, Unqual;
-    import std.typecons: Tuple;
-    import std.meta: staticMap;
-
-    static XLOPER12 ret;
-
-    XLOPER12[T.length] coercedOperArgs;
-    // must 1st convert each argument to the "real" type.
-    // 2D arrays are passed in as SRefs, for instance
-    foreach(i, InputType; Parameters!wrappedFunc) {
-        if(args[i].xltype == XlType.xltypeMissing) {
-            coercedOperArgs[i] = *args[i];
-            continue;
-        }
-        coercedOperArgs[i] = coerce(args[i]);
-    }
-
-    // scopedCoerce doesn't work with actual Excel
-    scope(exit) {
-        static foreach(i; 0 .. args.length) {
-            if(args[i].xltype != XlType.xltypeMissing)
-                free(&coercedOperArgs[i]);
-        }
-    }
-
-    // the D types to pass to the wrapped function
-    Tuple!(staticMap!(Unqual, Parameters!wrappedFunc)) dArgs;
-
-    // convert all Excel types to D types
-    static foreach(i, InputType; Parameters!wrappedFunc) {
-
-        // here we must be careful to use a default value if it exists _and_
-        // the oper that was passed in was xlTypeMissing
-        static if(is(ParameterDefaults!wrappedFunc[i] == void))
-            dArgs[i] = () @trusted { return fromXlOper!InputType(&coercedOperArgs[i], allocator); }();
-        else
-            dArgs[i] = args[i].xltype == XlType.xltypeMissing
-                ? ParameterDefaults!wrappedFunc[i]
-                : () @trusted { return fromXlOper!InputType(&coercedOperArgs[i], allocator); }();
-    }
-
-    return dArgs;
-}
-
-
-// Takes a tuple returned by `toDArgs`, calls the wrapped function and returns
-// the XLOPER12 result
-private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs) {
-
-    import xlld.wrap.worksheet: Dispose;
-    import xlld.sdk.xlcall: XlType;
-    import nogc.conv: text;
-    import std.traits: hasUDA, getUDAs, ReturnType;
-
-    static XLOPER12 ret;
-
-     try {
-        // call the wrapped function with D types
-         static if(is(ReturnType!wrappedFunc == void)) {
-             wrappedFunc(dArgs.expand);
-             ret.xltype = XlType.xltypeNil;
-             return &ret;
-         } else {
-             auto wrappedRet = wrappedFunc(dArgs.expand);
-             ret = excelRet(wrappedRet);
-
-             // dispose of the memory allocated in the wrapped function
-             static if(hasUDA!(wrappedFunc, Dispose)) {
-                 alias disposes = getUDAs!(wrappedFunc, Dispose);
-                 static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
-                 disposes[0].dispose(wrappedRet);
-             }
-
-             return &ret;
-         }
-
-    } catch(Exception ex) {
-         ret = stringOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", ex.msg));
-         return &ret;
-    } catch(Throwable t) {
-         ret = stringOper(text("#FATAL ERROR calling ", __traits(identifier, wrappedFunc), ": ", t.msg));
-         return &ret;
-    }
-}
-
-
-private XLOPER12 stringOper(in string msg) @safe @nogc nothrow {
-    import xlld.conv: toAutoFreeOper;
-    import xlld.sdk.xlcall: XlType;
-
-    try
-        return () @trusted { return msg.toAutoFreeOper; }();
-    catch(Exception _) {
-        XLOPER12 ret;
-        ret.xltype = XlType.xltypeErr;
-        return ret;
-    }
-}
-
-
-
-// get excel return value from D return value of wrapped function
-XLOPER12 excelRet(T)(T wrappedRet) {
-
-    import xlld.conv: toAutoFreeOper;
-    import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.sdk.xlcall: XlType;
-    import std.traits: isArray;
-
-    static if(isArray!(typeof(wrappedRet))) {
-
-        // Excel crashes if it's returned an empty array, so stop that from happening
-        if(wrappedRet.length == 0) {
-            return "#ERROR: empty result".toAutoFreeOper;
-        }
-
-        static if(isArray!(typeof(wrappedRet[0]))) {
-            if(wrappedRet[0].length == 0) {
-                return "#ERROR: empty result".toAutoFreeOper;
-            }
-        }
-    }
-
-    // convert the return value to an Excel type, tell Excel to call
-    // us back to free it afterwards
-    auto ret = toAutoFreeOper(wrappedRet);
-
-    // convert 1D arrays called from a column into a column instead of the default row
-    static if(isArray!(typeof(wrappedRet))) {
-        static if(!isArray!(typeof(wrappedRet[0]))) { // 1D array
-            import xlld.func.xlf: xlfCaller = caller;
-            import std.algorithm: swap;
-
-            try {
-                auto caller = xlfCaller;
-                if(caller.xltype.stripMemoryBitmask == XlType.xltypeSRef) {
-                    const isColumnCaller = caller.val.sref.ref_.colLast == caller.val.sref.ref_.colFirst;
-                    if(isColumnCaller) swap(ret.val.array.rows, ret.val.array.columns);
-                }
-            } catch(Exception _) {}
-        }
-    }
-
-    return ret;
-}
-
-
-
-
-private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
-    static if(__traits(compiles, allocator.deallocateAll))
-        allocator.deallocateAll;
-    else {
-        foreach(ref dArg; dArgs) {
-            import std.traits: isPointer, isArray;
-            static if(isArray!(typeof(dArg)))
-            {
-                import std.experimental.allocator: disposeMultidimensionalArray;
-                allocator.disposeMultidimensionalArray(dArg[]);
-            }
-            else
-                static if(isPointer!(typeof(dArg)))
-                {
-                    import std.experimental.allocator: dispose;
-                    allocator.dispose(dArg);
-                }
-        }
-    }
-}
 
 // if a function can be wrapped to be baclled by Excel
 private template isWorksheetFunction(alias F) {

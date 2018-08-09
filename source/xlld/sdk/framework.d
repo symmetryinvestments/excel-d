@@ -113,12 +113,16 @@ int Excel12f(int xlfn, LPXLOPER12 pxResult, in LPXLOPER12[] args...) nothrow @no
 }
 
 ///
-int Excel12f(int xlfn, LPXLOPER12 result, in XLOPER12[] args...) nothrow {
+int Excel12f(int xlfn, LPXLOPER12 result, scope const(XLOPER12)[] args...) nothrow {
 
-    auto ptrArgs = new const(XLOPER12)*[args.length];
+    import std.experimental.allocator: makeArray, dispose;
+    import std.experimental.allocator.mallocator: Mallocator;
+
+    scope ptrArgs = Mallocator.instance.makeArray!(const(XLOPER12)*)(args.length);
+    scope(exit) Mallocator.instance.dispose(ptrArgs);
 
     foreach(i, ref arg; args)
-        ptrArgs[i] = () @trusted { return &arg; }();
+        ptrArgs[i] = (return scope ref const(XLOPER12) a) { return &a; }(arg);
 
     return Excel12f(xlfn, result, ptrArgs);
 }

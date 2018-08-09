@@ -177,10 +177,10 @@ void shouldEqualDlang(U)(XLOPER12 actual, U expected, string file = __FILE__, si
 
 
 ///
-XLOPER12 toSRef(T, A)(T val, ref A allocator) @trusted {
+XLOPER12 toSRef(T, A)(scope T val, ref A allocator) @safe {
     import xlld.conv: toXlOper;
 
-    auto ret = toXlOper(val, allocator);
+    auto ret = () @trusted { return toXlOper(val, allocator); }();
     //hide real type somewhere to retrieve it
     gReferencedType = ret.xltype;
     ret.xltype = XlType.xltypeSRef;
@@ -481,7 +481,7 @@ struct MockDateTimes {
         fromRange(dateTimes);
     }
 
-    private void fromRange(R)(R dateTimes) @trusted if(isInputRange!R && is(Unqual!(ElementType!R) == DateTime)) {
+    private void fromRange(R)(scope R dateTimes) @trusted if(isInputRange!R && is(Unqual!(ElementType!R) == DateTime)) {
         foreach(dateTime; dateTimes)
             mocks ~= MockDateTime(dateTime.year, dateTime.month, dateTime.day,
                                   dateTime.hour, dateTime.minute, dateTime.second);

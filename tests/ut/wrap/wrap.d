@@ -31,16 +31,17 @@ double twice(double d) { return d * 2; }
 }
 
 @("xltypeNum can convert to array")
-unittest {
+@safe unittest {
     import std.typecons: tuple;
 
     void fun(double[] arg) {}
     auto arg = 33.3.toSRef(theGC);
-    toDArgs!fun(theGC, &arg).shouldEqual(tuple([33.3]));
+    auto argPtr = () @trusted { return &arg; }();
+    toDArgs!fun(theGC, argPtr).shouldEqual(tuple([33.3]));
 }
 
 @("xltypeNil can convert to array")
-unittest {
+@safe unittest {
     import xlld.sdk.xlcall: XlType;
     import std.typecons: tuple;
 
@@ -48,7 +49,8 @@ unittest {
     XLOPER12 arg;
     arg.xltype = XlType.xltypeNil;
     double[] empty;
-    toDArgs!fun(theGC, &arg).shouldEqual(tuple(empty));
+    auto argPtr = () @trusted { return &arg; }();
+    toDArgs!fun(theGC, argPtr).shouldEqual(tuple(empty));
 }
 
 
@@ -124,7 +126,7 @@ unittest {
 }
 
 @("toDArgs optional arguments")
-unittest {
+@safe unittest {
     import std.typecons: tuple;
 
     static int add(int i, int j = 42);
@@ -135,6 +137,10 @@ unittest {
     auto i = 2.toXlOper(theGC);
     auto j = 3.toXlOper(theGC);
 
-    toDArgs!add(theGC, &i, &j).shouldEqual(tuple(2, 3));
-    toDArgs!add(theGC, &i, &missing).shouldEqual(tuple(2, 42));
+    auto iPtr = () @trusted { return &i; }();
+    auto jPtr = () @trusted { return &j; }();
+    auto missingPtr = () @trusted { return &missing; }();
+
+    toDArgs!add(theGC, iPtr, jPtr).shouldEqual(tuple(2, 3));
+    toDArgs!add(theGC, iPtr, missingPtr).shouldEqual(tuple(2, 42));
 }

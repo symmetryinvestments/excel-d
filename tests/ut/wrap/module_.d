@@ -625,3 +625,16 @@ unittest {
     mixin(wrapModuleFunctionStr!("test.d_funcs", "NaN"));
     NaN().shouldEqualDlang("#NaN");
 }
+
+
+
+@("wrapModuleFunctionImpl gTempAllocator @safe")
+@safe unittest {
+    import xlld.memorymanager: gTempAllocator;
+    import test.d_funcs: Twice;
+
+    auto arg = 3.toXlOper(theGC);
+    auto argPtr = () @trusted { return &arg; }();
+    auto oper = wrapModuleFunctionImpl!Twice(gTempAllocator, argPtr);
+    oper.shouldEqualDlang(6);
+}

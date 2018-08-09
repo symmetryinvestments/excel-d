@@ -4,6 +4,7 @@ license "BSD 3-clause"
 dependency "excel-d" path=".."  # normally this would be version="~>0.0.1" or similar
 sourceFiles "myxll.d" "d_funcs.d"
 targetType "dynamicLibrary"
+dflags "-dip25" "-dip1000"
 
 configuration "xll" {
     preBuildCommands "dub run -c def --nodeps -q -- myxll.def"

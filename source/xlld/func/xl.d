@@ -17,12 +17,12 @@ XLOPER12 coerce(in LPXLOPER12 oper) nothrow @nogc @trusted {
 }
 
 ///
-void free(ref const(XLOPER12) oper) nothrow @nogc @trusted {
+void free(scope ref const(XLOPER12) oper) nothrow @nogc @trusted {
     free(&oper);
 }
 
 ///
-void free(in LPXLOPER12 oper) nothrow @nogc @trusted {
+void free(scope const(XLOPER12)* oper) nothrow @nogc @trusted {
     import xlld.sdk.framework: Excel12f;
     import xlld.sdk.xlcall: xlFree;
 
