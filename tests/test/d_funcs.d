@@ -149,7 +149,7 @@ double FuncAsserts(double) {
 })
 
 ///
-double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
+double[] FuncReturnArrayNoGc(scope double[] numbers) @nogc @safe nothrow {
     import xlld.test.util: gTestAllocator;
     import std.experimental.allocator: makeArray;
     import std.algorithm: map;
@@ -163,7 +163,7 @@ double[] FuncReturnArrayNoGc(double[] numbers) @nogc @safe nothrow {
 
 
 ///
-Any[][] DoubleArrayToAnyArray(double[][] values) @safe nothrow {
+Any[][] DoubleArrayToAnyArray(scope double[][] values) @safe nothrow {
     import std.experimental.allocator.mallocator: Mallocator;
     import std.conv: to;
 
@@ -245,7 +245,7 @@ double DateTimeToDouble(DateTime d) @safe nothrow {
     return d.year * 2;
 }
 
-string DateTimesToString(DateTime[] ds) @safe nothrow {
+string DateTimesToString(scope DateTime[] ds) @safe nothrow {
     import std.algorithm: map;
     import std.string: join;
     import std.conv: text;
@@ -334,10 +334,4 @@ DateAndString[] FuncDateAndStringRet() {
 
 void FuncEnumArray(MyEnum[]) {
 
-}
-
-
-void Sneaky(string s) {
-    static string oops;
-    oops = s;
 }
