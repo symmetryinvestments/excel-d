@@ -335,16 +335,24 @@ private XLOPER12* callWrapped(alias wrappedFunc, T)(scope T dArgs)
 {
     import xlld.wrap.worksheet: Dispose;
     import xlld.sdk.xlcall: XlType;
-    import std.traits: hasUDA, getUDAs, ReturnType;
+    import std.traits: hasUDA, getUDAs, ReturnType, hasFunctionAttributes;
 
     static XLOPER12 ret;
 
+    // we want callWrapped to be @safe if wrappedFunc is, otherwise let inference take over
+    auto callWrappedImpl() {
+        static if(hasFunctionAttributes!(wrappedFunc, "@safe"))
+            return () @safe { return wrappedFunc(dArgs.expand); }();
+        else
+            return wrappedFunc(dArgs.expand);
+    }
+
     // call the wrapped function with D types
     static if(is(ReturnType!wrappedFunc == void)) {
-        wrappedFunc(dArgs.expand);
+        callWrappedImpl;
         ret.xltype = XlType.xltypeNil;
     } else {
-        auto wrappedRet = wrappedFunc(dArgs.expand);
+        auto wrappedRet = callWrappedImpl;
         ret = excelRet(wrappedRet);
 
         // dispose of the memory allocated in the wrapped function
@@ -403,19 +411,19 @@ XLOPER12 excelRet(T)(T wrappedRet) {
 
         // Excel crashes if it's returned an empty array, so stop that from happening
         if(wrappedRet.length == 0) {
-            return "#ERROR: empty result".toAutoFreeOper;
+            return () @trusted { return "#ERROR: empty result".toAutoFreeOper; }();
         }
 
         static if(isArray!(typeof(wrappedRet[0]))) {
             if(wrappedRet[0].length == 0) {
-                return "#ERROR: empty result".toAutoFreeOper;
+                return () @trusted { return "#ERROR: empty result".toAutoFreeOper; }();
             }
         }
     }
 
     // convert the return value to an Excel type, tell Excel to call
     // us back to free it afterwards
-    auto ret = toAutoFreeOper(wrappedRet);
+    auto ret = () @trusted { return toAutoFreeOper(wrappedRet); }();
 
     // convert 1D arrays called from a column into a column instead of the default row
     static if(isArray!(typeof(wrappedRet))) {
@@ -427,7 +435,7 @@ XLOPER12 excelRet(T)(T wrappedRet) {
                 auto caller = xlfCaller;
                 if(caller.xltype.stripMemoryBitmask == XlType.xltypeSRef) {
                     const isColumnCaller = caller.val.sref.ref_.colLast == caller.val.sref.ref_.colFirst;
-                    if(isColumnCaller) swap(ret.val.array.rows, ret.val.array.columns);
+                    if(isColumnCaller) () @trusted { swap(ret.val.array.rows, ret.val.array.columns); }();
                 }
             } catch(Exception _) {}
         }
