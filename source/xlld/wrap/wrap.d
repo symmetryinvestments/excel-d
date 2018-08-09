@@ -256,7 +256,7 @@ auto toDArgs(alias wrappedFunc, A, T...)
 
     static XLOPER12 ret;
 
-    XLOPER12[T.length] coercedOperArgs;
+    scope XLOPER12[T.length] coercedOperArgs;
     // must 1st convert each argument to the "real" type.
     // 2D arrays are passed in as SRefs, for instance
     foreach(i, InputType; Parameters!wrappedFunc) {
@@ -271,7 +271,7 @@ auto toDArgs(alias wrappedFunc, A, T...)
     scope(exit) {
         static foreach(i; 0 .. args.length) {
             if(args[i].xltype != XlType.xltypeMissing)
-                free(&coercedOperArgs[i]);
+                free(coercedOperArgs[i]);
         }
     }
 
