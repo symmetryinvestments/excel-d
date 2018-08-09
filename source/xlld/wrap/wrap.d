@@ -366,6 +366,7 @@ private XLOPER12* callWrapped(alias wrappedFunc, T)(scope T dArgs)
      return &ret;
 }
 
+@("callWrapped is @safe when wrappedFunc is")
 @safe pure unittest {
     import std.traits: hasFunctionAttributes, functionAttributes;
     import std.typecons: Tuple;
@@ -380,6 +381,8 @@ private XLOPER12* callWrapped(alias wrappedFunc, T)(scope T dArgs)
                      functionAttributes!(callWrapped!(add, Tuple!(int, int))).text);
 }
 
+
+@("@safe functions have to use scope on parameters with indirections")
 @safe unittest {
     import std.typecons: tuple;
     import std.conv: text;
