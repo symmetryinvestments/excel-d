@@ -25,7 +25,7 @@ configuration "unittest" {
     mainSourceFile "tests/ut_main.d"
     dependency "unit-threaded" version="~>0.7.0"
     versions "testingExcelD" "testLibraryExcelD"
-    dflags "-dip1000" "-dip25"
+    dflags "-dip1000" "-dip25" platform="dmd"
 }
 
 configuration "utl" {
