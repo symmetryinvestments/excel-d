@@ -366,6 +366,7 @@ private XLOPER12* callWrapped(alias wrappedFunc, T)(scope T dArgs)
      return &ret;
 }
 
+@("callWrapped is @safe when wrappedFunc is")
 @safe pure unittest {
     import std.traits: hasFunctionAttributes, functionAttributes;
     import std.typecons: Tuple;
@@ -380,25 +381,28 @@ private XLOPER12* callWrapped(alias wrappedFunc, T)(scope T dArgs)
                      functionAttributes!(callWrapped!(add, Tuple!(int, int))).text);
 }
 
-@safe unittest {
-    import std.typecons: tuple;
-    import std.conv: text;
 
-    // make sure we can't escape parameters
-    static int oops(int* i) @safe;
-    static int good(scope int* i) @safe;
-    int val = 42;
-    auto valPtr = () @trusted { return &val; }();
+version(DIP1000) {
+    @("@safe functions have to use scope on parameters with indirections")
+        @safe unittest {
+        import std.typecons: tuple;
+        import std.conv: text;
 
-    // calling directly is ok
-    static assert(__traits(compiles, good(valPtr)));
-    static assert(__traits(compiles, oops(valPtr)));
+        // make sure we can't escape parameters
+        static int oops(int* i) @safe;
+        static int good(scope int* i) @safe;
+        int val = 42;
+        auto valPtr = () @trusted { return &val; }();
 
-    // calling through callWrapped only ok if the param is `scope`
-    static assert( __traits(compiles, callWrapped!good(tuple(valPtr))));
-    static assert(!__traits(compiles, callWrapped!oops(tuple(valPtr))));
+        // calling directly is ok
+        static assert(__traits(compiles, good(valPtr)));
+        static assert(__traits(compiles, oops(valPtr)));
+
+        // calling through callWrapped only ok if the param is `scope`
+        static assert( __traits(compiles, callWrapped!good(tuple(valPtr))));
+        static assert(!__traits(compiles, callWrapped!oops(tuple(valPtr))));
+    }
 }
-
 
 /**
    Return an autofreeable XLOPER12 from a string to return to Excel.
