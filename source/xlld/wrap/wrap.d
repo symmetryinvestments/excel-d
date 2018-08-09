@@ -218,26 +218,45 @@ string pascalCase(in string func) @safe pure {
 XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
                                 (ref A allocator, T args)
 {
-    static XLOPER12 ret;
+    scope maybeDArgs = maybeToDArgs!wrappedFunc(allocator, args);
+    if(maybeDArgs.errorMessage) return maybeDArgs.errorMessage;
 
-    alias DArgs = typeof(toDArgs!wrappedFunc(allocator, args));
-    DArgs dArgs;
+    // Get rid of the temporary memory allocations for the conversions
+    scope(exit) freeDArgs(allocator, maybeDArgs.result);
+
+    return callWrapped!wrappedFunc(maybeDArgs.result);
+}
+
+// Either!(L, R) with the error type fixed to XLOPER12* for an error message
+private struct OrErrorMsg(T) {
+    XLOPER12* errorMessage;  // null if result is to be used
+    T result;
+}
+
+
+/**
+   Wrap toDArgs in a try block
+ */
+auto maybeToDArgs(alias wrappedFunc, A, T...)
+                 (ref A allocator, T args)
+    @trusted  // catching Throwable
+{
+
+    static XLOPER12 errorMessage;
+
+    alias Return = OrErrorMsg!(DArgsTupleType!wrappedFunc);
+
     // convert all Excel types to D types
-    try {
-        dArgs = toDArgs!wrappedFunc(allocator, args);
-    } catch(Exception ex) {
-        ret = stringOper("#ERROR converting argument to call " ~ __traits(identifier, wrappedFunc));
-        return &ret;
-    } catch(Throwable t) {
-        ret = stringOper("#FATAL ERROR converting argument to call " ~
-                         __traits(identifier, wrappedFunc));
-        return &ret;
-    }
+    try
+        return Return(null, toDArgs!wrappedFunc(allocator, args));
+    catch(Exception e)
+        errorMessage = stringOper("#ERROR converting argument to call " ~
+                              __traits(identifier, wrappedFunc));
+    catch(Error e)
+        errorMessage = stringOper("#FATAL ERROR converting argument to call " ~
+                              __traits(identifier, wrappedFunc));
 
-    // get rid of the temporary memory allocations for the conversions
-    scope(exit) freeDArgs(allocator, dArgs);
-
-    return callWrapped!wrappedFunc(dArgs);
+    return Return(&errorMessage);
 }
 
 /**
@@ -250,9 +269,7 @@ auto toDArgs(alias wrappedFunc, A, T...)
     import xlld.func.xl: coerce, free;
     import xlld.sdk.xlcall: XlType;
     import xlld.conv.from: fromXlOper;
-    import std.traits: Parameters, ParameterDefaults, Unqual;
-    import std.typecons: Tuple;
-    import std.meta: staticMap;
+    import std.traits: Parameters, ParameterDefaults;
 
     static XLOPER12 ret;
 
@@ -276,7 +293,7 @@ auto toDArgs(alias wrappedFunc, A, T...)
     }
 
     // the D types to pass to the wrapped function
-    Tuple!(staticMap!(Unqual, Parameters!wrappedFunc)) dArgs;
+    DArgsTupleType!wrappedFunc dArgs;
 
     // convert all Excel types to D types
     static foreach(i, InputType; Parameters!wrappedFunc) {
@@ -294,44 +311,54 @@ auto toDArgs(alias wrappedFunc, A, T...)
     return dArgs;
 }
 
+private template DArgsTupleType(alias wrappedFunc) {
+    import std.typecons: Tuple;
+    import std.meta: staticMap;
+    import std.traits: Parameters, Unqual;
+
+    alias DArgsTupleType = Tuple!(staticMap!(Unqual, Parameters!wrappedFunc));
+}
+
 
 // Takes a tuple returned by `toDArgs`, calls the wrapped function and returns
 // the XLOPER12 result
-private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs) {
-
-    import xlld.wrap.worksheet: Dispose;
-    import xlld.sdk.xlcall: XlType;
+private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs)
+    @trusted  // catch Error
+{
     import nogc.conv: text;
-    import std.traits: hasUDA, getUDAs, ReturnType;
 
     static XLOPER12 ret;
 
-     try {
-        // call the wrapped function with D types
-         static if(is(ReturnType!wrappedFunc == void)) {
-             wrappedFunc(dArgs.expand);
-             ret.xltype = XlType.xltypeNil;
-             return &ret;
-         } else {
-             auto wrappedRet = wrappedFunc(dArgs.expand);
-             ret = excelRet(wrappedRet);
+    try
+        callWrappedImpl!wrappedFunc(&ret, dArgs);
+    catch(Exception e)
+        ret = stringOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
+    catch(Error e)
+        ret = stringOper(text("#FATAL ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
 
-             // dispose of the memory allocated in the wrapped function
-             static if(hasUDA!(wrappedFunc, Dispose)) {
-                 alias disposes = getUDAs!(wrappedFunc, Dispose);
-                 static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
-                 disposes[0].dispose(wrappedRet);
-             }
+     return &ret;
+}
 
-             return &ret;
-         }
+private void callWrappedImpl(alias wrappedFunc, T)(scope XLOPER12* ret, T dArgs) {
 
-    } catch(Exception ex) {
-         ret = stringOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", ex.msg));
-         return &ret;
-    } catch(Throwable t) {
-         ret = stringOper(text("#FATAL ERROR calling ", __traits(identifier, wrappedFunc), ": ", t.msg));
-         return &ret;
+    import xlld.wrap.worksheet: Dispose;
+    import xlld.sdk.xlcall: XlType;
+    import std.traits: hasUDA, getUDAs, ReturnType;
+
+    // call the wrapped function with D types
+    static if(is(ReturnType!wrappedFunc == void)) {
+        wrappedFunc(dArgs.expand);
+        ret.xltype = XlType.xltypeNil;
+    } else {
+        auto wrappedRet = wrappedFunc(dArgs.expand);
+        *ret = excelRet(wrappedRet);
+
+        // dispose of the memory allocated in the wrapped function
+        static if(hasUDA!(wrappedFunc, Dispose)) {
+            alias disposes = getUDAs!(wrappedFunc, Dispose);
+            static assert(disposes.length == 1, "Too many @Dispose for " ~ wrappedFunc.stringof);
+            disposes[0].dispose(wrappedRet);
+        }
     }
 }
 
@@ -401,14 +428,14 @@ XLOPER12 excelRet(T)(T wrappedRet) {
 
 private void freeDArgs(A, T)(ref A allocator, ref T dArgs) {
     static if(__traits(compiles, allocator.deallocateAll))
-        allocator.deallocateAll;
+        () @trusted { allocator.deallocateAll; }();
     else {
         foreach(ref dArg; dArgs) {
             import std.traits: isPointer, isArray;
             static if(isArray!(typeof(dArg)))
             {
                 import std.experimental.allocator: disposeMultidimensionalArray;
-                allocator.disposeMultidimensionalArray(dArg[]);
+                () @trusted { allocator.disposeMultidimensionalArray(dArg[]); }();
             }
             else
                 static if(isPointer!(typeof(dArg)))
