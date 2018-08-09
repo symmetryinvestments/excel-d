@@ -139,7 +139,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
     import xlld.wrap.worksheet: Register;
     import std.array: join;
     import std.traits: Parameters, functionAttributes, FunctionAttribute, getUDAs, hasUDA;
-    import std.conv: to;
+    import std.conv: text;
     import std.algorithm: map;
     import std.range: iota;
     import std.format: format;
@@ -150,10 +150,10 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
 
     const argsLength = Parameters!(mixin(funcName)).length;
     // e.g. XLOPER12* arg0, XLOPER12* arg1, ...
-    auto argsDecl = argsLength.iota.map!(a => `XLOPER12* arg` ~ a.to!string).join(", ");
+    auto argsDecl = argsLength.iota.map!(a => `XLOPER12* arg` ~ a.text).join(", ");
     // e.g. arg0, arg1, ...
     static if(!hasUDA!(func, Async))
-        const argsCall = argsLength.iota.map!(a => `arg` ~ a.to!string).join(", ");
+        const argsCall = argsLength.iota.map!(a => `arg` ~ a.text).join(", ");
     else {
         import std.range: only, chain, iota;
         import std.conv: text;
@@ -175,7 +175,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
 
     string register;
     static if(registerAttrs.length)
-        register = `@` ~ registerAttrs[0].to!string;
+        register = `@` ~ registerAttrs[0].text;
     string async;
     static if(hasUDA!(func, Async))
         async = "@Async";
