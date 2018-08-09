@@ -66,18 +66,27 @@ and then in Excel:
 
 Future functionality will include creating menu items and dialogue boxes.  Pull requests welcomed.
 
-Function spelling
-------------------
-
-excel-d will always convert the first character in the D function being wrapped to uppercase
-since that is the Excel convention.
-
 
 WARNING: Memory for parameters passed to D functions
 ---------------------------------------------------
 
 Any parameters with indirections (pointers, slices) should NOT be escaped. The memory for those
 parameters WILL be reused and might cause crashes.
+
+There is support to fail at compile-time if user-written D functions attempt to escape their
+arguments but unfortunately given the current D defaults requires user intervention. Annotate
+all D code to be called by Excel with `@safe` and compile with `-dip1000` - all parameters will
+then need to be `scope` or the code will compile.
+
+It is *strongly* advised to compile with `-dip1000` and to make all your functions `@safe`,
+or your add-ins could cause Excel to crash.
+
+
+Function spelling
+------------------
+
+excel-d will always convert the first character in the D function being wrapped to uppercase
+since that is the Excel convention.
 
 
 Variant type `Any`
