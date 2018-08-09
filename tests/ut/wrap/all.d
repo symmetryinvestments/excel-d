@@ -126,7 +126,7 @@ unittest  {
     scope(exit) gTestAllocator.verify;
 
     double[4] args = [1.0, 2.0, 3.0, 4.0];
-    auto oper = args[].toSRef(gTempAllocator); // don't use TestAllocator
+    auto oper = args[].toSRef(gTempAllocator); // don't use gTestAllocator
     auto arg = () @trusted { return &oper; }();
     auto ret = () @safe @nogc { return FuncReturnArrayNoGc(arg); }();
     ret.shouldEqualDlang([2.0, 4.0, 6.0, 8.0]);

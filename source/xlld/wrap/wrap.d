@@ -150,7 +150,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
 
     const argsLength = Parameters!(mixin(funcName)).length;
     // e.g. XLOPER12* arg0, XLOPER12* arg1, ...
-    auto argsDecl = argsLength.iota.map!(a => `XLOPER12* arg` ~ a.text).join(", ");
+    auto argsDecl = argsLength.iota.map!(a => `scope XLOPER12* arg` ~ a.text).join(", ");
     // e.g. arg0, arg1, ...
     static if(!hasUDA!(func, Async))
         const argsCall = argsLength.iota.map!(a => `arg` ~ a.text).join(", ");
