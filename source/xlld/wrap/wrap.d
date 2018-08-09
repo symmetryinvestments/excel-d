@@ -11,7 +11,10 @@ import std.typecons: Flag, No;
 
 
 
-///
+/**
+   Wrap all modules given as strings.
+   Also deals with some necessary boilerplate.
+ */
 string wrapAll(Modules...)
               (Flag!"onlyExports" onlyExports = No.onlyExports,
                in string mainModule = __MODULE__)
@@ -33,7 +36,10 @@ string wrapAll(Modules...)
         "\n";
 }
 
-///
+
+/**
+   Wrap all modules given as strings.
+ */
 string wrapWorksheetFunctionsString(Modules...)
                                    (Flag!"onlyExports" onlyExports = No.onlyExports, string callingModule = __MODULE__)
 {
