@@ -322,41 +322,12 @@ private template DArgsTupleType(alias wrappedFunc) {
 // Takes a tuple returned by `toDArgs`, calls the wrapped function and returns
 // the XLOPER12 result
 private XLOPER12* callWrapped(alias wrappedFunc, T)(T dArgs)
-    @trusted  // catch Error
 {
-    import nogc.conv: text;
-
-    static XLOPER12 ret;
-
-    try
-        callWrappedImpl!wrappedFunc(&ret, dArgs);
-    catch(Exception e)
-        ret = stringAutoFreeOper(text("#ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
-    catch(Error e)
-        ret = stringAutoFreeOper(text("#FATAL ERROR calling ", __traits(identifier, wrappedFunc), ": ", e.msg));
-
-     return &ret;
-}
-
-// @safe pure unittest {
-//     import std.traits: hasFunctionAttributes, functionAttributes;
-//     import std.typecons: Tuple;
-//     import std.conv: text;
-
-//     static int add(int i, int j) @safe;
-//     static assert(hasFunctionAttributes!(callWrapped!(add, Tuple!(int, int)), "@safe"),
-//                      functionAttributes!(callWrapped!(add, Tuple!(int, int))).text);
-
-//     static int div(int i, int j) @system;
-//     static assert(hasFunctionAttributes!(callWrapped!(div, Tuple!(int, int)), "@system"),
-//                      functionAttributes!(callWrapped!(add, Tuple!(int, int))).text);
-// }
-
-private void callWrappedImpl(alias wrappedFunc, T)(scope XLOPER12* ret, T dArgs) {
-
     import xlld.wrap.worksheet: Dispose;
     import xlld.sdk.xlcall: XlType;
     import std.traits: hasUDA, getUDAs, ReturnType;
+
+    static XLOPER12 ret;
 
     // call the wrapped function with D types
     static if(is(ReturnType!wrappedFunc == void)) {
@@ -364,7 +335,7 @@ private void callWrappedImpl(alias wrappedFunc, T)(scope XLOPER12* ret, T dArgs)
         ret.xltype = XlType.xltypeNil;
     } else {
         auto wrappedRet = wrappedFunc(dArgs.expand);
-        *ret = excelRet(wrappedRet);
+        ret = excelRet(wrappedRet);
 
         // dispose of the memory allocated in the wrapped function
         static if(hasUDA!(wrappedFunc, Dispose)) {
@@ -373,6 +344,22 @@ private void callWrappedImpl(alias wrappedFunc, T)(scope XLOPER12* ret, T dArgs)
             disposes[0].dispose(wrappedRet);
         }
     }
+
+     return &ret;
+}
+
+@safe pure unittest {
+    import std.traits: hasFunctionAttributes, functionAttributes;
+    import std.typecons: Tuple;
+    import std.conv: text;
+
+    static int add(int i, int j) @safe;
+    static assert(hasFunctionAttributes!(callWrapped!(add, Tuple!(int, int)), "@safe"),
+                     functionAttributes!(callWrapped!(add, Tuple!(int, int))).text);
+
+    static int div(int i, int j) @system;
+    static assert(hasFunctionAttributes!(callWrapped!(div, Tuple!(int, int)), "@system"),
+                     functionAttributes!(callWrapped!(add, Tuple!(int, int))).text);
 }
 
 
