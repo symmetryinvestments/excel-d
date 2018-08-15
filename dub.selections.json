@@ -2,6 +2,6 @@
 	"fileVersion": 1,
 	"versions": {
 		"nogc": "0.0.1",
-		"unit-threaded": "0.7.47"
+		"unit-threaded": "0.7.49"
 	}
 }
