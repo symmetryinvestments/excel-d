@@ -76,7 +76,7 @@ parameters WILL be reused and might cause crashes.
 There is support to fail at compile-time if user-written D functions attempt to escape their
 arguments but unfortunately given the current D defaults requires user intervention. Annotate
 all D code to be called by Excel with `@safe` and compile with `-dip1000` - all parameters will
-then need to be `scope` or the code will compile.
+then need to be `scope` or the code will not compile.
 
 It is *strongly* advised to compile with `-dip1000` and to make all your functions `@safe`,
 or your add-ins could cause Excel to crash.
