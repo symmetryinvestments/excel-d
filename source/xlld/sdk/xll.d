@@ -170,28 +170,36 @@ extern(Windows) LPXLOPER12 xlAddInManagerInfo12(LPXLOPER12 xAction) {
     return &xInfo;
 }
 
+
 version(Windows) {
-    extern(Windows) void OutputDebugStringW(const wchar* fmt) nothrow @nogc;
+    extern(Windows) void OutputDebugStringW(const wchar* fmt) @nogc nothrow;
+}
 
-    const(wchar)* toWStringz(in wstring str) @safe nothrow {
-        return &(str ~ '\0')[0];
-    }
 
-    void log(T...)(T args) {
-        import std.conv: text, to;
-        try
-            () @trusted { OutputDebugStringW(text(args).to!wstring.toWStringz); }();
-        catch(Exception)
-            () @trusted { OutputDebugStringW("[DataServer] outputDebug itself failed"w.toWStringz); }();
-    }
-} else version(unittest) {
-    void log(T...)(T args) {
-    }
-  } else {
-    void log(T...)(T args) {
-        import std.experimental.logger: trace;
-        try
+/**
+   Polymorphic logging function.
+   Prints to the console when unit testing and on Linux,
+   otherwise uses the system logger on Windows.
+ */
+void log(A...)(auto ref A args) @trusted {
+    try {
+        version(unittest) {
+            version(Have_unit_threaded) {
+                import unit_threaded: writelnUt;
+                writelnUt(args);
+            } else {
+                import std.stdio: writeln;
+                writeln(args);
+            }
+        } else version(Windows) {
+            import nogc.conv: text, toWStringz;
+            OutputDebugStringW(text(args).toWStringz);
+        } else {
+            import std.experimental.logger: trace;
             trace(args);
-        catch(Exception ex) {}
+        }
+    } catch(Exception e) {
+        import core.stdc.stdio: printf;
+        printf("Error - could not log\n");
     }
 }
