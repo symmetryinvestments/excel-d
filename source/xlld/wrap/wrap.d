@@ -238,8 +238,8 @@ XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
     scope(exit) freeDArgs(allocator, dArgs);
 
     try {
-        // Tuple.opAssign is not @safe
         auto ret = toDArgs!wrappedFunc(allocator, args);
+        // Tuple.opAssign is not @safe
         () @trusted { dArgs = ret; }();
     } catch(Exception e)
         throw conversionException;
@@ -430,7 +430,7 @@ XLOPER12 excelRet(T)(T wrappedRet) {
     import xlld.sdk.xlcall: XlType;
     import std.traits: isArray;
 
-    static if(isArray!(typeof(wrappedRet))) {
+    static if(isArray!T) {
 
         // Excel crashes if it's returned an empty array, so stop that from happening
         if(wrappedRet.length == 0) {
