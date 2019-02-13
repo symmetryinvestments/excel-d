@@ -1,10 +1,10 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"automem": "0.4.4",
-		"nogc": "0.0.1",
+		"automem": "0.4.6",
+		"nogc": "0.1.1",
 		"stdx-allocator": "2.77.5",
-		"test_allocator": "0.2.5",
+		"test_allocator": "0.3.1",
 		"unit-threaded": "0.7.55"
 	}
 }

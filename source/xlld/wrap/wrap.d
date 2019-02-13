@@ -407,12 +407,12 @@ version(DIP1000) {
 /**
    Return an autofreeable XLOPER12 from a string to return to Excel.
  */
-XLOPER12 stringAutoFreeOper(in string msg) @safe @nogc nothrow {
+XLOPER12 stringAutoFreeOper(T)(in T msg) @safe @nogc nothrow {
     import xlld.conv: toAutoFreeOper;
     import xlld.sdk.xlcall: XlType;
 
     try
-        return () @trusted { return msg.toAutoFreeOper; }();
+        return () @trusted { return msg[].toAutoFreeOper; }();
     catch(Exception _) {
         XLOPER12 ret;
         ret.xltype = XlType.xltypeErr;

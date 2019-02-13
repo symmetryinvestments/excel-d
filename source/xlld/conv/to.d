@@ -132,7 +132,6 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator, in string file = __FILE__, in 
 {
     import xlld.sdk.framework: Excel12f;
     import xlld.sdk.xlcall: xlfDate, xlfTime, xlretSuccess;
-    import nogc.conv: text;
 
     XLOPER12 ret, date, time;
 
@@ -141,15 +140,15 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator, in string file = __FILE__, in 
     auto day = value.day.toXlOper(allocator);
 
     () @trusted {
-        assert(year.xltype == XlType.xltypeInt, text("year is not int but ", year.xltype));
-        assert(month.xltype == XlType.xltypeInt, text("month is not int but ", month.xltype));
-        assert(day.xltype == XlType.xltypeInt, text("day is not int but ", day.xltype));
+        assert(year.xltype == XlType.xltypeInt);
+        assert(month.xltype == XlType.xltypeInt);
+        assert(day.xltype == XlType.xltypeInt);
     }();
 
     const dateCode = () @trusted { return Excel12f(xlfDate, &date, &year, &month, &day); }();
     if(dateCode != xlretSuccess)
         throw new Exception("Error calling xlfDate", file, line);
-    () @trusted { assert(date.xltype == XlType.xltypeNum, text("date is not xltypeNum but ", date.xltype)); }();
+    () @trusted { assert(date.xltype == XlType.xltypeNum); }();
 
     auto hour = value.hour.toXlOper(allocator);
     auto minute = value.minute.toXlOper(allocator);
@@ -159,7 +158,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator, in string file = __FILE__, in 
     if(timeCode != xlretSuccess)
         throw new Exception("Error calling xlfTime", file, line);
 
-    () @trusted { assert(time.xltype == XlType.xltypeNum, text("time is not xltypeNum but ", time.xltype)); }();
+    () @trusted { assert(time.xltype == XlType.xltypeNum); }();
 
     ret.xltype = XlType.xltypeNum;
     ret.val.num = date.val.num + time.val.num;
