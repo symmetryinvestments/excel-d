@@ -8,6 +8,7 @@ import xlld.from;
 ///
 template isUserStruct(T) {
     import xlld.any: Any;
+    import xlld.sdk.xlcall: XLOPER12;
     import std.datetime: DateTime;
     import std.typecons: Tuple;
     import std.traits: Unqual;
@@ -16,7 +17,8 @@ template isUserStruct(T) {
         is(T == struct) &&
         !is(Unqual!T == Any) &&
         !is(Unqual!T == DateTime) &&
-        !is(Unqual!T: Tuple!A, A...)
+        !is(Unqual!T: Tuple!A, A...) &&
+        !is(Unqual!T == XLOPER12)
         ;
 }
 

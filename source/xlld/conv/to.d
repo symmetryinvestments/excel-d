@@ -265,6 +265,12 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator)
 }
 
 
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == XLOPER12))
+{
+    return value;
+}
+
+
 /**
   creates an XLOPER12 that can be returned to Excel which
   will be freed by Excel itself

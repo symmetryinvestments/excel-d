@@ -638,3 +638,11 @@ unittest {
     auto oper = wrapModuleFunctionImpl!Twice(gTempAllocator, argPtr);
     oper.shouldEqualDlang(6);
 }
+
+
+@("oper")
+@safe unittest {
+    auto arg = (3.3).toXlOper(theGC);
+    scope argPtr = &arg;
+    FuncOper(argPtr).shouldEqualDlang(6.6);
+}
