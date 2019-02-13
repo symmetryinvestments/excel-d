@@ -646,3 +646,11 @@ unittest {
     scope argPtr = &arg;
     FuncOper(argPtr).shouldEqualDlang(6.6);
 }
+
+
+@("vector")
+@safe unittest {
+    auto arg = 7.toXlOper(theGC);
+    scope argPtr = &arg;
+    FuncVector(argPtr).shouldEqualDlang([0, 1, 2, 3, 4, 5, 6]);
+}

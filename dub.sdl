@@ -5,16 +5,19 @@ copyright "Copyright © 2016-2018 Kaleidic Associates Advisory Limited"
 license "BSD"
 dependency "nogc" version="*"
 
+
 configuration "default" {
     targetType "sourceLibrary"
 }
+
 
 configuration "testLibrary" {
     // FIXME: static constructors don't get run if the targetType is "library"
     targetType "sourceLibrary"
     versions "testLibraryExcelD"
-    dependency "unit-threaded" version="~>0.7.0"
+    dependency "unit-threaded" version="*"
 }
+
 
 configuration "unittest" {
     targetType "executable"
@@ -23,19 +26,10 @@ configuration "unittest" {
     importPaths "source" "tests"
     sourcePaths "source" "tests"
     mainSourceFile "tests/ut_main.d"
-    dependency "unit-threaded" version="~>0.7.0"
+
     versions "testingExcelD" "testLibraryExcelD"
     dflags "-dip1000" "-dip25"
-}
 
-configuration "utl" {
-    targetType "executable"
-    targetName "utl"
-    targetPath "bin"
-    importPaths "source" "tests"
-    sourcePaths "source" "tests"
-    mainSourceFile "tests/ut_main.d"
-    dependency "unit-threaded" version="~>0.7.0"
-    versions "unitThreadedLight" "testingExcelD" "testLibraryExcelD"
-    dflags "-dip1000" "-dip25"
+    dependency "unit-threaded" version="*"
+    dependency "automem" version="*"
 }

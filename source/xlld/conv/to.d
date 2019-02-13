@@ -4,7 +4,7 @@
 module xlld.conv.to;
 
 import xlld.from;
-import xlld.conv.misc: isUserStruct;
+import xlld.conv.misc: isUserStruct, isVector;
 import xlld.sdk.xlcall: XLOPER12, XlType;
 import xlld.any: Any;
 import xlld.wrap.wrap: isWantedType;
@@ -277,6 +277,10 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == XLOPER12))
     return value;
 }
 
+
+XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(isVector!T) {
+    return value[].toXlOper(allocator);
+}
 
 /**
   creates an XLOPER12 that can be returned to Excel which

@@ -18,8 +18,18 @@ template isUserStruct(T) {
         !is(Unqual!T == Any) &&
         !is(Unqual!T == DateTime) &&
         !is(Unqual!T: Tuple!A, A...) &&
-        !is(Unqual!T == XLOPER12)
+        !is(Unqual!T == XLOPER12) &&
+        !isVector!T;
         ;
+}
+
+template isVector(T) {
+    version(Have_automem) {
+        import automem.vector: Vector;
+        import std.traits: Unqual;
+        enum isVector = is(Unqual!T == Vector!(E,  A), E, A);
+    } else
+        enum isVector = false;
 }
 
 

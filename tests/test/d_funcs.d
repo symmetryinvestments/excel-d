@@ -341,3 +341,12 @@ XLOPER12 FuncOper(double d) {
     import std.experimental.allocator.gc_allocator: GCAllocator;
     return (d * 2).toXlOper(GCAllocator.instance);
 }
+
+
+auto FuncVector(int i) @safe @nogc {
+    import automem.vector: vector;
+    import std.range: iota;
+    import std.experimental.allocator.mallocator: Mallocator;
+
+    return vector!Mallocator(i.iota);
+}

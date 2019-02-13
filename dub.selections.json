@@ -5,6 +5,6 @@
 		"nogc": "0.1.1",
 		"stdx-allocator": "2.77.5",
 		"test_allocator": "0.3.1",
-		"unit-threaded": "0.7.55"
+		"unit-threaded": "0.8.0"
 	}
 }
