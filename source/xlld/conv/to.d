@@ -18,6 +18,13 @@ shared from!"core.sync.mutex".Mutex gFromEnumMutex;
 
 
 ///
+XLOPER12 toXlOper(T)(T val) {
+    import std.experimental.allocator: theAllocator;
+    return toXlOper(val, theAllocator);
+}
+
+
+///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator) if(isIntegral!T) {
     import xlld.sdk.xlcall: XlType;
 
