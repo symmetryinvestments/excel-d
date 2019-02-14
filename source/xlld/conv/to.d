@@ -60,8 +60,8 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
     import std.utf: byWchar;
 
     const numBytes = numOperStringBytes(val);
-    auto wval = () @trusted { return cast(wchar[])allocator.allocate(numBytes); }();
-    if(wval is null)
+    auto wval = () @trusted { return cast(wchar[]) allocator.allocate(numBytes); }();
+    if(&wval[0] is null)
         throw toXlOperMemoryException;
 
     int i = 1;
@@ -111,8 +111,8 @@ XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     if(!values.all!(a => a.length == values[0].length))
        throw toXlOperShapeException;
 
-    const rows = cast(int)values.length;
-    const cols = values.length ? cast(int)values[0].length : 0;
+    const rows = cast(int) values.length;
+    const cols = values.length ? cast(int) values[0].length : 0;
     auto ret = multi(rows, cols, allocator);
     auto opers = () @trusted { return ret.val.array.lparray[0 .. rows*cols]; }();
 
@@ -279,7 +279,23 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == XLOPER12))
 
 
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(isVector!T) {
-    return value[].toXlOper(allocator);
+    import std.experimental.allocator: makeArray, dispose;
+
+    static if(isVector!(typeof(value[0]))) {
+        // 2D vector
+        alias E = typeof(value[0][0]);
+        auto arr = allocator.makeArray!(E[])(value.length);
+        scope(exit) allocator.dispose(arr);
+
+        foreach(i; 0 .. value.length) {
+            arr[i] = value[i][];
+        }
+
+        return arr.toXlOper(allocator);
+
+    } else {
+        return value[].toXlOper(allocator);
+    }
 }
 
 /**

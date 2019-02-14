@@ -648,9 +648,17 @@ unittest {
 }
 
 
-@("vector")
+@("vector.1d")
 @safe unittest {
     auto arg = 7.toXlOper(theGC);
     scope argPtr = &arg;
     FuncVector(argPtr).shouldEqualDlang([0, 1, 2, 3, 4, 5, 6]);
+}
+
+
+@("vector.2d")
+@safe unittest {
+    auto arg = 7.toXlOper(theGC);
+    scope argPtr = &arg;
+    FuncVector2D(argPtr).shouldEqualDlang([[7, 7, 7], [8, 8, 8]]);
 }

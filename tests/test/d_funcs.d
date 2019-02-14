@@ -350,3 +350,13 @@ auto FuncVector(int i) @safe @nogc {
 
     return vector!Mallocator(i.iota);
 }
+
+
+auto FuncVector2D(int i) @safe @nogc {
+    import automem.vector: vector;
+    import std.range: iota;
+    import std.experimental.allocator.mallocator: Mallocator;
+
+    return vector!Mallocator(vector!Mallocator(i, i, i),
+                             vector!Mallocator(i + 1, i + 1, i + 1));
+}
