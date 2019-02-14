@@ -144,6 +144,7 @@ template isOneOf(T, A...) {
         enum isOneOf = is(T == A[0]) || isOneOf!(T, A[1..$]);
 }
 
+@("isOneOf")
 @safe pure unittest {
     static assert(isOneOf!(int, int, int));
     static assert(!isOneOf!(int, double, string));

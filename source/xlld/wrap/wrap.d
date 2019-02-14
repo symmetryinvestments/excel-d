@@ -248,6 +248,7 @@ XLOPER12* wrapModuleFunctionImpl(alias wrappedFunc, A, T...)
 }
 
 version(testingExcelD) {
+    @("hasFunctionAttributes")
     @safe pure unittest {
         import xlld.test.util: gTestAllocator;
         import std.traits: hasFunctionAttributes, functionAttributes;
