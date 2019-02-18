@@ -57,6 +57,8 @@ struct WorksheetFunction {
                 shortcutText.value, helpTopic.value, functionHelp.value
             ] ~ argumentHelp.value;
     }
+
+    const bool opEquals(const WorksheetFunction rhs) @safe pure { return optional == rhs.optional; }
 }
 
 // helper template to type-check variadic template constructor below
