@@ -284,11 +284,12 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(isVector!T) {
     static if(isVector!(typeof(value[0]))) {
         // 2D vector
         alias E = typeof(value[0][0]);
-        auto arr = allocator.makeArray!(E[])(value.length);
+        assert(value.length <= size_t.sizeof);
+        auto arr = allocator.makeArray!(E[])(cast(size_t) value.length);
         scope(exit) allocator.dispose(arr);
 
         foreach(i; 0 .. value.length) {
-            arr[i] = value[i][];
+            arr[cast(size_t) i] = value[i][];
         }
 
         return arr.toXlOper(allocator);
