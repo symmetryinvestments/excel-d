@@ -3,7 +3,7 @@ description "Excel bindings for D"
 authors "Laeeth Isharc" "Stefan Koch" "Atila Neves"
 copyright "Copyright © 2016-2019 Kaleidic Associates Advisory Limited"
 license "BSD"
-dependency "nogc" version="*"
+dependency "nogc" version="~>0.2.0"
 
 
 configuration "default" {
