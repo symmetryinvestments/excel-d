@@ -193,7 +193,9 @@ void log(A...)(auto ref A args) @trusted {
             }
         } else version(Windows) {
             import nogc.conv: text, toWStringz;
-            OutputDebugStringW(text(args).toWStringz);
+            scope txt = text(args);
+            scope wtxt = txt[].toWStringz;
+            OutputDebugStringW(wtxt.ptr);
         } else {
             import std.experimental.logger: trace;
             trace(args);
