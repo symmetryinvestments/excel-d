@@ -461,6 +461,7 @@ unittest {
     }
 }
 
+
 @("2D array wrong size")
 unittest {
     import xlld.memorymanager: allocatorContext;
@@ -471,10 +472,30 @@ unittest {
         [[any("x"), any(2)], [any("y"), any(3)], [any("z"), any(4)], [any("w"), any(5)]].toFrom!Foo.
             shouldThrowWithMessage("2D array must be 2x3 or 3x2 for Foo");
     }
-
 }
 
-///
+
+@("PriceBar[]")
+@system /*allocatorContext*/ unittest {
+
+    import xlld.memorymanager: allocatorContext;
+
+    static struct PriceBar {
+        double open, high, low, close;
+    }
+
+    with(allocatorContext(theGC)) {
+        auto array =
+        [
+            [any("open"), any("high"), any("low"), any("close")],
+            [any(1.1),    any(2.2),    any(3.3),   any(4.4)],
+        ];
+
+        array.toFrom!PriceBar.should == PriceBar(1.1, 2.2, 3.3, 4.4);
+    }
+}
+
+
 @("fromXlOperCoerce")
 unittest {
     double[][] doubles = [[1, 2, 3, 4], [11, 12, 13, 14]];
