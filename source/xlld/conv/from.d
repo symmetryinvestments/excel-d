@@ -16,6 +16,14 @@ package __gshared ToEnumConversionFunction[string] gToEnumConversions;
 shared from!"core.sync.mutex".Mutex gToEnumMutex;
 
 
+// FIXME - why is this not the same as isUserStruct?
+template isRegularStruct(T) {
+    import xlld.any: Any;
+    import std.traits: Unqual;
+    import std.datetime: DateTime;
+    enum isRegularStruct = is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime);
+}
+
 ///
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
     return (&val).fromXlOper!T(allocator);
@@ -140,7 +148,8 @@ private enum Dimensions {
     Two,
 }
 
-///
+
+/// 2D slices
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator)
     if(is(T: E[][], E) &&
        !(is(Unqual!T == string[])) &&
@@ -205,25 +214,45 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
 
     assert(rows > 0 && cols > 0, "Multi opers may not have 0 rows or columns");
 
-    static if(dim == Dimensions.Two) {
-        auto ret = allocator.makeArray2D!T(*val);
-    } else static if(dim == Dimensions.One) {
-        auto ret = allocator.makeArray!T(rows * cols);
-    } else
-        static assert(0, "Unknown number of dimensions in fromXlOperMulti");
+    // This case has to be handled differently since we're converting to a 1D array
+    // of structs from a 2D array in Excel.
+    static if(isRegularStruct!T) {
 
-    if(&ret[0] is null)
-        throw fromXlOperMultiMemoryException;
+        static assert(dim == Dimensions.One);
+        auto ret = allocator.makeArray!T(rows - 1);
 
-    (*val).apply!(T, (shouldConvert, row, col, cellVal) {
+        auto values = val.val.array.lparray[0 .. (rows * cols)];
 
-        auto value = shouldConvert ? cellVal.fromXlOper!T(allocator) : T.init;
+        foreach(r; 1 .. rows) {
+            static foreach(c; 0 .. T.tupleof.length) {{
+                auto cell = &values[r * T.tupleof.length + c];
+                ret[r - 1].tupleof[c] = cell.fromXlOper!(typeof(T.tupleof[c]))(allocator);
+            }}
+        }
 
-        static if(dim == Dimensions.Two)
-            ret[row][col] = value;
-        else
-            ret[row * cols + col] = value;
-    });
+    } else {
+
+        static if(dim == Dimensions.Two) {
+            auto ret = allocator.makeArray2D!T(*val);
+        } else static if(dim == Dimensions.One) {
+            auto ret = allocator.makeArray!T(rows * cols);
+        } else
+            static assert(0, "Unknown number of dimensions in fromXlOperMulti");
+
+        if(&ret[0] is null)
+            throw fromXlOperMultiMemoryException;
+
+
+        (*val).apply!(T, (shouldConvert, row, col, cellVal) {
+
+            auto value = shouldConvert ? cellVal.fromXlOper!T(allocator) : T.init;
+
+            static if(dim == Dimensions.Two)
+                ret[row][col] = value;
+            else
+                ret[row * cols + col] = value;
+        });
+    }
 
     return ret;
 }
@@ -338,11 +367,13 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
 }
 
 
+// convert a user-defined struct
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
-    if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
+    if(isRegularStruct!T)
 {
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.sdk.xlcall: XlType;
+    import nogc: enforce;
     import std.conv: text;
     import std.exception: enforce;
 
@@ -354,13 +385,12 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
 
     if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
         enforce(length == T.tupleof.length,
-               text("1D array length must match number of members in ", T.stringof,
-                    ". Expected ", T.tupleof.length, ", got ", length));
+               "1D array length must match number of members in ", T.stringof,
+                ". Expected ", T.tupleof.length, ", got ", length);
     else
         enforce((oper.val.array.rows == 2 && oper.val.array.columns == T.tupleof.length) ||
                (oper.val.array.rows == T.tupleof.length && oper.val.array.columns == 2),
-               text("2D array must be 2x", T.tupleof.length, " or ", T.tupleof.length, "x2 for ", T.stringof));
-
+               "2D array must be 2x", T.tupleof.length, " or ", T.tupleof.length, "x2 for ", T.stringof);
     T ret;
 
     size_t ptrIndex(size_t i) {
