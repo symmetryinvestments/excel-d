@@ -16,6 +16,14 @@ package __gshared ToEnumConversionFunction[string] gToEnumConversions;
 shared from!"core.sync.mutex".Mutex gToEnumMutex;
 
 
+// FIXME - why is this not the same as isUserStruct?
+template isRegularStruct(T) {
+    import xlld.any: Any;
+    import std.traits: Unqual;
+    import std.datetime: DateTime;
+    enum isRegularStruct = is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime);
+}
+
 ///
 auto fromXlOper(T, A)(ref XLOPER12 val, ref A allocator) {
     return (&val).fromXlOper!T(allocator);
@@ -140,7 +148,8 @@ private enum Dimensions {
     Two,
 }
 
-///
+
+/// 2D slices
 auto fromXlOper(T, A)(XLOPER12* val, ref A allocator)
     if(is(T: E[][], E) &&
        !(is(Unqual!T == string[])) &&
@@ -167,10 +176,7 @@ __gshared immutable fromXlOperMultiMemoryException = new Exception("fromXlOper: 
 
 private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
     import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.func.xl: coerce, free;
-    import xlld.memorymanager: makeArray2D;
     import xlld.sdk.xlcall: XlType;
-    import std.experimental.allocator: makeArray;
 
     if(stripMemoryBitmask(val.xltype) == XlType.xltypeNil) {
         static if(dim == Dimensions.Two)
@@ -183,36 +189,56 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
 
     // See ut.wrap.wrap.xltypeNum can convert to array
     if(stripMemoryBitmask(val.xltype) == XlType.xltypeNum) {
-        static if(dim == Dimensions.Two) {
-            import std.experimental.allocator: makeMultidimensionalArray;
-            auto ret = allocator.makeMultidimensionalArray!T(1, 1);
-            ret[0][0] = val.fromXlOper!T(allocator);
-            return ret;
-        } else static if(dim == Dimensions.One) {
-            auto ret = allocator.makeArray!T(1);
-            ret[0] = val.fromXlOper!T(allocator);
-            return ret;
-        } else
-            static assert(0, "Unknown number of dimensions in fromXlOperMulti");
+        return fromXlOperMultiNumber!(dim, T)(val, allocator);
     }
 
-    if(!isMulti(*val)) {
-        throw fromXlOperMultiOperException;
-    }
+    if(!isMulti(*val)) throw fromXlOperMultiOperException;
+
+    assert(val.val.array.rows > 0 && val.val.array.columns > 0,
+           "Multi opers may not have 0 rows or columns");
+
+    // This case has to be handled differently since we're converting to a 1D array
+    // of structs from a 2D array in Excel.
+    static if(isRegularStruct!T)
+        return fromXlOperMultiStruct!(dim, T)(val, allocator);
+    else
+        return fromXlOperMultiStandard!(dim, T)(val, allocator);
+}
+
+
+// convert a number to an array
+private auto fromXlOperMultiNumber(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
+
+    static if(dim == Dimensions.Two) {
+        import std.experimental.allocator: makeMultidimensionalArray;
+        auto ret = allocator.makeMultidimensionalArray!T(1, 1);
+        ret[0][0] = val.fromXlOper!T(allocator);
+        return ret;
+    } else static if(dim == Dimensions.One) {
+        import std.experimental.allocator: makeArray;
+        auto ret = allocator.makeArray!T(1);
+        ret[0] = val.fromXlOper!T(allocator);
+        return ret;
+    } else
+        static assert(0, "Unknown number of dimensions in fromXlOperMulti");
+}
+
+// no-frills fromXlOperMulti
+private auto fromXlOperMultiStandard(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
+    import xlld.memorymanager: makeArray2D;
+    import std.experimental.allocator: makeArray;
 
     const rows = val.val.array.rows;
     const cols = val.val.array.columns;
 
-    assert(rows > 0 && cols > 0, "Multi opers may not have 0 rows or columns");
-
-    static if(dim == Dimensions.Two) {
+    static if(dim == Dimensions.Two)
         auto ret = allocator.makeArray2D!T(*val);
-    } else static if(dim == Dimensions.One) {
+    else static if(dim == Dimensions.One)
         auto ret = allocator.makeArray!T(rows * cols);
-    } else
+    else
         static assert(0, "Unknown number of dimensions in fromXlOperMulti");
 
-    if(&ret[0] is null)
+    if(() @trusted { return ret.ptr; }() is null)
         throw fromXlOperMultiMemoryException;
 
     (*val).apply!(T, (shouldConvert, row, col, cellVal) {
@@ -228,6 +254,30 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
     return ret;
 }
 
+// return an array of structs
+private auto fromXlOperMultiStruct(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
+    import xlld.sdk.xlcall: XlType;
+    import std.experimental.allocator: makeArray;
+
+    static assert(dim == Dimensions.One, "Only 1D struct arrays are supported");
+
+    const rows = () @trusted { return val.val.array.rows; }();
+    // The length of the struct array has -1 because the first row are names
+    auto ret = allocator.makeArray!T(rows - 1);
+    if(() @trusted { return ret.ptr; }() is null)
+        throw fromXlOperMultiMemoryException;
+
+    foreach(r, ref elt; ret) {
+        XLOPER12 array1d;
+        array1d.xltype = XlType.xltypeMulti;
+        array1d.val.array.rows = 1;
+        array1d.val.array.columns = T.tupleof.length;
+        array1d.val.array.lparray = val.val.array.lparray + (r + 1) * T.tupleof.length;
+        elt = array1d.fromXlOper!T(allocator);
+    }
+
+    return ret;
+}
 
 // apply a function to an oper of type xltypeMulti
 // the function must take a boolean value indicating if the cell value
@@ -338,29 +388,28 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
 }
 
 
+// convert a user-defined struct
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
-    if(is(T == struct) && !is(Unqual!T == Any) && !is(Unqual!T == DateTime))
+    if(isRegularStruct!T)
 {
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.sdk.xlcall: XlType;
-    import std.conv: text;
-    import std.exception: enforce;
+    import nogc: enforce;
 
     static immutable multiException = new Exception("Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
     if(oper.xltype.stripMemoryBitmask != XlType.xltypeMulti)
         throw multiException;
 
-    const length =  oper.val.array.rows * oper.val.array.columns;
+    const length = oper.val.array.rows * oper.val.array.columns;
 
     if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
         enforce(length == T.tupleof.length,
-               text("1D array length must match number of members in ", T.stringof,
-                    ". Expected ", T.tupleof.length, ", got ", length));
+               "1D array length must match number of members in ", T.stringof,
+                ". Expected ", T.tupleof.length, ", got ", length);
     else
         enforce((oper.val.array.rows == 2 && oper.val.array.columns == T.tupleof.length) ||
                (oper.val.array.rows == T.tupleof.length && oper.val.array.columns == 2),
-               text("2D array must be 2x", T.tupleof.length, " or ", T.tupleof.length, "x2 for ", T.stringof));
-
+               "2D array must be 2x", T.tupleof.length, " or ", T.tupleof.length, "x2 for ", T.stringof);
     T ret;
 
     size_t ptrIndex(size_t i) {
@@ -368,9 +417,11 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
         if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
             return i;
 
+        // ignore column headers
         if(oper.val.array.rows == 2)
             return i + oper.val.array.columns;
 
+        // ignore row headers (+ 1)
         if(oper.val.array.columns == 2)
             return i * 2 + 1;
 

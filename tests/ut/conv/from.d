@@ -489,9 +489,13 @@ unittest {
         [
             [any("open"), any("high"), any("low"), any("close")],
             [any(1.1),    any(2.2),    any(3.3),   any(4.4)],
+            [any(2.1),    any(3.2),    any(4.3),   any(5.4)],
         ];
 
-        array.toFrom!PriceBar.should == PriceBar(1.1, 2.2, 3.3, 4.4);
+        array.toFrom!(PriceBar[]).should == [
+            PriceBar(1.1, 2.2, 3.3, 4.4),
+            PriceBar(2.1, 3.2, 4.3, 5.4),
+        ];
     }
 }
 
