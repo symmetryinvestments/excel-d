@@ -218,8 +218,12 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
     // of structs from a 2D array in Excel.
     static if(isRegularStruct!T) {
 
-        static assert(dim == Dimensions.One);
+        static assert(dim == Dimensions.One, "Only 1D struct arrays are supported");
+
+        // The length of the struct array has -1 because the first row are names
         auto ret = allocator.makeArray!T(rows - 1);
+        if(() @trusted { return ret.ptr; }() is null)
+            throw fromXlOperMultiMemoryException;
 
         auto values = val.val.array.lparray[0 .. (rows * cols)];
 
@@ -232,16 +236,15 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
 
     } else {
 
-        static if(dim == Dimensions.Two) {
+        static if(dim == Dimensions.Two)
             auto ret = allocator.makeArray2D!T(*val);
-        } else static if(dim == Dimensions.One) {
+        else static if(dim == Dimensions.One)
             auto ret = allocator.makeArray!T(rows * cols);
-        } else
+        else
             static assert(0, "Unknown number of dimensions in fromXlOperMulti");
 
-        if(&ret[0] is null)
+        if(() @trusted { return ret.ptr; }() is null)
             throw fromXlOperMultiMemoryException;
-
 
         (*val).apply!(T, (shouldConvert, row, col, cellVal) {
 
@@ -374,8 +377,6 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.sdk.xlcall: XlType;
     import nogc: enforce;
-    import std.conv: text;
-    import std.exception: enforce;
 
     static immutable multiException = new Exception("Can only convert arrays to structs. Must be either 1xN, Nx1, 2xN or Nx2");
     if(oper.xltype.stripMemoryBitmask != XlType.xltypeMulti)
