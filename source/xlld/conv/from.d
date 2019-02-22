@@ -222,16 +222,17 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
 
         // The length of the struct array has -1 because the first row are names
         auto ret = allocator.makeArray!T(rows - 1);
+
         if(() @trusted { return ret.ptr; }() is null)
             throw fromXlOperMultiMemoryException;
 
-        auto values = val.val.array.lparray[0 .. (rows * cols)];
-
-        foreach(r; 1 .. rows) {
-            static foreach(c; 0 .. T.tupleof.length) {{
-                auto cell = &values[r * T.tupleof.length + c];
-                ret[r - 1].tupleof[c] = cell.fromXlOper!(typeof(T.tupleof[c]))(allocator);
-            }}
+        foreach(r, ref elt; ret) {
+            XLOPER12 array1d;
+            array1d.xltype = XlType.xltypeMulti;
+            array1d.val.array.rows = 1;
+            array1d.val.array.columns = T.tupleof.length;
+            array1d.val.array.lparray = val.val.array.lparray + (r + 1) * T.tupleof.length;
+            elt = array1d.fromXlOper!T(allocator);
         }
 
     } else {
@@ -382,7 +383,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     if(oper.xltype.stripMemoryBitmask != XlType.xltypeMulti)
         throw multiException;
 
-    const length =  oper.val.array.rows * oper.val.array.columns;
+    const length = oper.val.array.rows * oper.val.array.columns;
 
     if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
         enforce(length == T.tupleof.length,
@@ -399,9 +400,11 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
         if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
             return i;
 
+        // ignore column headers
         if(oper.val.array.rows == 2)
             return i + oper.val.array.columns;
 
+        // ignore row headers (+ 1)
         if(oper.val.array.columns == 2)
             return i * 2 + 1;
 
