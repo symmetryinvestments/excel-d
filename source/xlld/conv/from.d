@@ -176,10 +176,7 @@ __gshared immutable fromXlOperMultiMemoryException = new Exception("fromXlOper: 
 
 private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
     import xlld.conv.misc: stripMemoryBitmask;
-    import xlld.func.xl: coerce, free;
-    import xlld.memorymanager: makeArray2D;
     import xlld.sdk.xlcall: XlType;
-    import std.experimental.allocator: makeArray;
 
     if(stripMemoryBitmask(val.xltype) == XlType.xltypeNil) {
         static if(dim == Dimensions.Two)
@@ -192,75 +189,95 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
 
     // See ut.wrap.wrap.xltypeNum can convert to array
     if(stripMemoryBitmask(val.xltype) == XlType.xltypeNum) {
-        static if(dim == Dimensions.Two) {
-            import std.experimental.allocator: makeMultidimensionalArray;
-            auto ret = allocator.makeMultidimensionalArray!T(1, 1);
-            ret[0][0] = val.fromXlOper!T(allocator);
-            return ret;
-        } else static if(dim == Dimensions.One) {
-            auto ret = allocator.makeArray!T(1);
-            ret[0] = val.fromXlOper!T(allocator);
-            return ret;
-        } else
-            static assert(0, "Unknown number of dimensions in fromXlOperMulti");
+        return fromXlOperMultiNumber!(dim, T)(val, allocator);
     }
 
-    if(!isMulti(*val)) {
-        throw fromXlOperMultiOperException;
-    }
+    if(!isMulti(*val)) throw fromXlOperMultiOperException;
+
+    assert(val.val.array.rows > 0 && val.val.array.columns > 0,
+           "Multi opers may not have 0 rows or columns");
+
+    // This case has to be handled differently since we're converting to a 1D array
+    // of structs from a 2D array in Excel.
+    static if(isRegularStruct!T)
+        return fromXlOperMultiStruct!(dim, T)(val, allocator);
+    else
+        return fromXlOperMultiStandard!(dim, T)(val, allocator);
+}
+
+
+// convert a number to an array
+private auto fromXlOperMultiNumber(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
+
+    static if(dim == Dimensions.Two) {
+        import std.experimental.allocator: makeMultidimensionalArray;
+        auto ret = allocator.makeMultidimensionalArray!T(1, 1);
+        ret[0][0] = val.fromXlOper!T(allocator);
+        return ret;
+    } else static if(dim == Dimensions.One) {
+        import std.experimental.allocator: makeArray;
+        auto ret = allocator.makeArray!T(1);
+        ret[0] = val.fromXlOper!T(allocator);
+        return ret;
+    } else
+        static assert(0, "Unknown number of dimensions in fromXlOperMulti");
+}
+
+// no-frills fromXlOperMulti
+private auto fromXlOperMultiStandard(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
+    import xlld.memorymanager: makeArray2D;
+    import std.experimental.allocator: makeArray;
 
     const rows = val.val.array.rows;
     const cols = val.val.array.columns;
 
-    assert(rows > 0 && cols > 0, "Multi opers may not have 0 rows or columns");
+    static if(dim == Dimensions.Two)
+        auto ret = allocator.makeArray2D!T(*val);
+    else static if(dim == Dimensions.One)
+        auto ret = allocator.makeArray!T(rows * cols);
+    else
+        static assert(0, "Unknown number of dimensions in fromXlOperMulti");
 
-    // This case has to be handled differently since we're converting to a 1D array
-    // of structs from a 2D array in Excel.
-    static if(isRegularStruct!T) {
+    if(() @trusted { return ret.ptr; }() is null)
+        throw fromXlOperMultiMemoryException;
 
-        static assert(dim == Dimensions.One, "Only 1D struct arrays are supported");
+    (*val).apply!(T, (shouldConvert, row, col, cellVal) {
 
-        // The length of the struct array has -1 because the first row are names
-        auto ret = allocator.makeArray!T(rows - 1);
-
-        if(() @trusted { return ret.ptr; }() is null)
-            throw fromXlOperMultiMemoryException;
-
-        foreach(r, ref elt; ret) {
-            XLOPER12 array1d;
-            array1d.xltype = XlType.xltypeMulti;
-            array1d.val.array.rows = 1;
-            array1d.val.array.columns = T.tupleof.length;
-            array1d.val.array.lparray = val.val.array.lparray + (r + 1) * T.tupleof.length;
-            elt = array1d.fromXlOper!T(allocator);
-        }
-
-    } else {
+        auto value = shouldConvert ? cellVal.fromXlOper!T(allocator) : T.init;
 
         static if(dim == Dimensions.Two)
-            auto ret = allocator.makeArray2D!T(*val);
-        else static if(dim == Dimensions.One)
-            auto ret = allocator.makeArray!T(rows * cols);
+            ret[row][col] = value;
         else
-            static assert(0, "Unknown number of dimensions in fromXlOperMulti");
-
-        if(() @trusted { return ret.ptr; }() is null)
-            throw fromXlOperMultiMemoryException;
-
-        (*val).apply!(T, (shouldConvert, row, col, cellVal) {
-
-            auto value = shouldConvert ? cellVal.fromXlOper!T(allocator) : T.init;
-
-            static if(dim == Dimensions.Two)
-                ret[row][col] = value;
-            else
-                ret[row * cols + col] = value;
-        });
-    }
+            ret[row * cols + col] = value;
+    });
 
     return ret;
 }
 
+// return an array of structs
+private auto fromXlOperMultiStruct(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
+    import xlld.sdk.xlcall: XlType;
+    import std.experimental.allocator: makeArray;
+
+    static assert(dim == Dimensions.One, "Only 1D struct arrays are supported");
+
+    const rows = () @trusted { return val.val.array.rows; }();
+    // The length of the struct array has -1 because the first row are names
+    auto ret = allocator.makeArray!T(rows - 1);
+    if(() @trusted { return ret.ptr; }() is null)
+        throw fromXlOperMultiMemoryException;
+
+    foreach(r, ref elt; ret) {
+        XLOPER12 array1d;
+        array1d.xltype = XlType.xltypeMulti;
+        array1d.val.array.rows = 1;
+        array1d.val.array.columns = T.tupleof.length;
+        array1d.val.array.lparray = val.val.array.lparray + (r + 1) * T.tupleof.length;
+        elt = array1d.fromXlOper!T(allocator);
+    }
+
+    return ret;
+}
 
 // apply a function to an oper of type xltypeMulti
 // the function must take a boolean value indicating if the cell value
