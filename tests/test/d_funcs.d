@@ -302,7 +302,7 @@ Point FuncPointRet(int x, int y) @safe {
     return Point(x, y);
 }
 
-auto FuncSimpleTupleRet(int i, string s) @safe {
+auto FuncSimpleTupleRet(int i, scope string s) @safe {
     import std.typecons: tuple;
     return tuple(i, s);
 }
