@@ -535,3 +535,12 @@ private auto toFrom(R, T)(T val) {
         .fromXlOper!(Tuple!(int, int, int))(theGC)
         .shouldEqual(tuple(1, 2, 3));
 }
+
+
+@("double[].fromXlOper!int[]")
+@system unittest {
+    [1.0, 2.0]
+        .toXlOper(theGC)
+        .fromXlOper!(int[])(theGC)
+        .should == [1, 2];
+}

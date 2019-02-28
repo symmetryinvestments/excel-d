@@ -308,12 +308,13 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
                 version(unittest) --gNumXlFree;
             }
 
-            // try to convert doubles to string if trying to convert everything to an
-            // array of strings
-            const shouldConvert =
-                (cellVal.xltype == dlangToXlOperType!T.Type) ||
-                (cellVal.xltype == XlType.xltypeNum && dlangToXlOperType!T.Type == XlType.xltypeStr) ||
-                is(Unqual!T == Any);
+            const isExpectedType = cellVal.xltype == dlangToXlOperType!T.Type;
+            const isConvertibleToDouble =
+                cellVal.xltype == XlType.xltypeNum &&
+                (dlangToXlOperType!T.Type == XlType.xltypeStr || dlangToXlOperType!T.Type == XlType.xltypeInt);
+            const isAny = is(Unqual!T == Any);
+
+            const shouldConvert = isExpectedType || isConvertibleToDouble || isAny;
 
             F(shouldConvert, row, col, cellVal);
         }

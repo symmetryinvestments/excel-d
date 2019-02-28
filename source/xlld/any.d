@@ -82,7 +82,7 @@ struct Any {
                     auto oper = () @trusted { return _impl.val.array.lparray[i++]; }();
                     ret ~= text(Any(cast(XLOPER12)oper), `, `);
                 }
-                ret ~= `]`;
+                ret ~= `], `;
             }
             ret ~= `]`;
             break;
