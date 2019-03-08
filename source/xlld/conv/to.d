@@ -11,6 +11,7 @@ import xlld.wrap.wrap: isWantedType;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
 import std.typecons: Tuple;
+import std.range.primitives: isInputRange;
 
 
 alias FromEnumConversionFunction = string delegate(int) @safe;
@@ -131,13 +132,13 @@ XLOPER12 toXlOper(T, A)(T range, ref A allocator)
     import std.algorithm: any;
 
     static __gshared immutable shapeException = new Exception("# of columns must all be the same and aren't");
-    const rows = cast(int) range.save.walkLength;
-    const frontLength = range.front.save.walkLength;
+    const rows = cast(int) range.rangeLength;
+    const frontLength = range.front.rangeLength;
 
-    if(range.save.any!(r => r.save.walkLength != frontLength))
+    if(range.save.any!(r => r.rangeLength != frontLength))
         throw shapeException;
 
-    const cols = cast(int) range.front.save.walkLength;
+    const cols = cast(int) range.front.rangeLength;
     auto ret = multi(rows, cols, allocator);
     auto opers = () @trusted { return ret.val.array.lparray[0 .. rows*cols]; }();
 
@@ -149,6 +150,21 @@ XLOPER12 toXlOper(T, A)(T range, ref A allocator)
     }
 
     return ret;
+}
+
+
+private auto rangeLength(R)(auto ref R range)
+    if(isInputRange!R)
+{
+    import std.range.primitives: hasLength, isForwardRange;
+
+    static if(hasLength!R)
+        return range.length;
+    else static if(isForwardRange!R) {
+        import std.array: save;
+        return range.save.walkLength;
+    } else
+        static assert(false, "Can't get length for " ~ R.stringof);
 }
 
 
