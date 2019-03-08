@@ -4,7 +4,7 @@
 module xlld.conv.to;
 
 import xlld.from;
-import xlld.conv.misc: isUserStruct, isVector;
+import xlld.conv.misc: isUserStruct;
 import xlld.sdk.xlcall: XLOPER12, XlType;
 import xlld.any: Any;
 import xlld.wrap.wrap: isWantedType;
@@ -112,7 +112,6 @@ private template isRange1D(T) {
     enum isRange1D =
         isLengthRange!T
         && (!isLengthRange!(ElementType!T) || isSomeString!(ElementType!T))
-        //&& !isVector!T
         && !isSomeString!T
         ;
 }
