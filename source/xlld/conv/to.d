@@ -11,7 +11,7 @@ import xlld.wrap.wrap: isWantedType;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
 import std.typecons: Tuple;
-import std.range.primitives: isForwardRange;
+import std.range.primitives: isForwardRange, ElementType;
 
 
 alias FromEnumConversionFunction = string delegate(int) @safe;
@@ -90,7 +90,7 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
 }
 
 XLOPER12 toXlOper(T, A)(T range, ref A allocator)
-    if(isForwardRange!T && !is(T: E[], E) && !isVector!T)
+    if(isForwardRange!T && !isForwardRange!(ElementType!T) && !is(T: E[], E) && !isVector!T)
 {
     import xlld.conv.misc: multi;
     import std.range: walkLength;
@@ -107,6 +107,28 @@ XLOPER12 toXlOper(T, A)(T range, ref A allocator)
 
     return ret;
 }
+
+XLOPER12 toXlOper(T, A)(T range, ref A allocator)
+    if(isForwardRange!T && isForwardRange!(ElementType!T) && !is(T: E[], E) && !isVector!T)
+{
+    import xlld.conv.misc: multi;
+    import std.range: walkLength;
+
+    const rows = cast(int) range.save.walkLength;
+    const cols = cast(int) range.front.save.walkLength;
+    auto ret = multi(rows, cols, allocator);
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. rows*cols]; }();
+
+    int i = 0;
+    foreach(ref subRange; range) {
+        foreach(ref elt; subRange) {
+            opers[i++] = elt.toXlOper(allocator);
+        }
+    }
+
+    return ret;
+}
+
 
 /// Convert a 1D slice to XLOPER12
 XLOPER12 toXlOper(T, A)(T[] values, ref A allocator)

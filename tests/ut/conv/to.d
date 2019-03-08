@@ -377,7 +377,23 @@ unittest {
 @system unittest {
     import std.range: iota;
     import std.experimental.allocator.mallocator: Mallocator;
+
     auto range = 5.iota;
     auto oper = () @nogc { return range.toXlOper(Mallocator.instance); }();
     oper.shouldEqualDlang([0, 1, 2, 3, 4]);
+}
+
+
+@("range.2d.int")
+@system unittest {
+    import std.range: iota, enumerate, repeat, take;
+    import std.algorithm: map;
+    import std.experimental.allocator.mallocator: Mallocator;
+
+    auto range = 3
+        .iota
+        .map!(i => i.repeat.take(2))
+        ;
+    auto oper = () @nogc { return range.toXlOper(Mallocator.instance); }();
+    oper.shouldEqualDlang([[0, 0], [1, 1], [2, 2]]);
 }
