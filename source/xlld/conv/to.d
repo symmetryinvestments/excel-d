@@ -11,7 +11,6 @@ import xlld.wrap.wrap: isWantedType;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
 import std.typecons: Tuple;
-import std.range.primitives: isForwardRange, ElementType;
 
 
 alias FromEnumConversionFunction = string delegate(int) @safe;
@@ -89,8 +88,21 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
     return (str.length + 1) * wchar.sizeof;
 }
 
+
+private template isRange1D(T) {
+    import std.range.primitives: isForwardRange, ElementType;
+    enum isRange1D = isForwardRange!T && !isForwardRange!(ElementType!T) && !isVector!T;
+}
+
+
+private template isRange2D(T) {
+    import std.range.primitives: isForwardRange, ElementType;
+    enum isRange2D = isForwardRange!T && isForwardRange!(ElementType!T) && !isVector!T;
+}
+
+
 XLOPER12 toXlOper(T, A)(T range, ref A allocator)
-    if(isForwardRange!T && !isForwardRange!(ElementType!T) && !is(T: E[], E) && !isVector!T)
+    if(isRange1D!T && !is(T: E[], E))
 {
     import xlld.conv.misc: multi;
     import std.range: walkLength;
@@ -109,7 +121,7 @@ XLOPER12 toXlOper(T, A)(T range, ref A allocator)
 }
 
 XLOPER12 toXlOper(T, A)(T range, ref A allocator)
-    if(isForwardRange!T && isForwardRange!(ElementType!T) && !is(T: E[], E) && !isVector!T)
+    if(isRange2D!T && !is(T: E[], E))
 {
     import xlld.conv.misc: multi;
     import std.range: walkLength;
