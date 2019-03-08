@@ -176,6 +176,7 @@ private auto rangeLength(R)(auto ref R range)
     static if(hasLength!R)
         return range.length;
     else static if(isForwardRange!R) {
+        import std.range.primitives: walkLength;
         import std.array: save;
         return range.save.walkLength;
     } else
