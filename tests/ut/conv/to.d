@@ -371,3 +371,11 @@ unittest {
     import std.datetime: DateTime;
     auto oper = [DateAndString(DateTime(2017, 1, 2), "foobar")].toXlOper(theGC);
 }
+
+
+@ShouldFail
+@("range.1d.int")
+@safe unittest {
+    import std.range: iota;
+    5.iota.toXlOper(theGC).shouldEqualDlang([0, 1, 2, 3, 4]);
+}
