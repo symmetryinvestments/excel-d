@@ -90,9 +90,14 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
 }
 
 
+private template hasLength(R) {
+    enum hasLength = is(typeof({ size_t l = R.init.length; }));
+}
+
 /// If we can get the length of R and R is an input range
 private template isLengthRange(R) {
-    import std.range.primitives: hasLength, isInputRange, isForwardRange;
+    import std.range.primitives: isInputRange, isForwardRange;
+
     enum isLengthRange =
         isForwardRange!R
         || (isInputRange!R && hasLength!R)
@@ -107,10 +112,11 @@ private template isRange1D(T) {
     enum isRange1D =
         isLengthRange!T
         && (!isLengthRange!(ElementType!T) || isSomeString!(ElementType!T))
-        && !isVector!T
+        //&& !isVector!T
         && !isSomeString!T
         ;
 }
+
 
 ///If it's a 2D range
 private template isRange2D(T) {
@@ -135,12 +141,18 @@ XLOPER12 toXlOper(T, A)(T range, ref A allocator)
     import std.range: walkLength;
     import std.array: save, front;
     import std.algorithm: any;
+    import std.range.primitives: isForwardRange;
 
     static __gshared immutable shapeException = new Exception("# of columns must all be the same and aren't");
     const rows = cast(int) range.rangeLength;
     const frontLength = range.front.rangeLength;
 
-    if(range.save.any!(r => r.rangeLength != frontLength))
+    static if(isForwardRange!T)
+        auto checkRange = range.save;
+    else
+        alias checkRange = range;
+
+    if(checkRange.any!(r => r.rangeLength != frontLength))
         throw shapeException;
 
     const cols = cast(int) range.front.rangeLength;
@@ -157,11 +169,10 @@ XLOPER12 toXlOper(T, A)(T range, ref A allocator)
     return ret;
 }
 
-
 private auto rangeLength(R)(auto ref R range)
     if(isInputRange!R)
 {
-    import std.range.primitives: hasLength, isForwardRange;
+    import std.range.primitives: isForwardRange;
 
     static if(hasLength!R)
         return range.length;
@@ -172,31 +183,6 @@ private auto rangeLength(R)(auto ref R range)
         static assert(false, "Can't get length for " ~ R.stringof);
 }
 
-
-XLOPER12 toXlOper(T, A)(T value, ref A allocator)
-    if(isVector!T)
-{
-    import std.experimental.allocator: makeArray, dispose;
-
-    enum is2D = isVector!(typeof(value[0]));
-
-    static if(is2D) {
-        alias E = typeof(value[0][0]);
-        assert(value.length <= size_t.sizeof);
-
-        auto arr = allocator.makeArray!(E[])(cast(size_t) value.length);
-        scope(exit) allocator.dispose(arr);
-
-        foreach(i; 0 .. value.length) {
-            arr[cast(size_t) i] = value[i][];
-        }
-
-        return arr.toXlOper(allocator);
-
-    } else {
-        return value[].toXlOper(allocator);
-    }
-}
 
 ///
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any)) {
