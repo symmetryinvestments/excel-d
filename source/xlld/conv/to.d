@@ -11,6 +11,8 @@ import xlld.wrap.wrap: isWantedType;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
 import std.typecons: Tuple;
+import std.range.primitives: isInputRange;
+
 
 alias FromEnumConversionFunction = string delegate(int) @safe;
 package __gshared FromEnumConversionFunction[string] gFromEnumConversions;
@@ -87,8 +89,14 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
     return (str.length + 1) * wchar.sizeof;
 }
 
+XLOPER12 toXlOper(T, A)(T range, ref A allocator)
+    if(isInputRange!T && !is(T: E[], E) && !isVector!T)
+{
+    import std.array: array;
+    return range.array.toXlOper(allocator);
+}
 
-///
+/// Convert a 1D slice to XLOPER12
 XLOPER12 toXlOper(T, A)(T[] values, ref A allocator)
     if(isWantedType!T && (!is(T: E[], E) || is(Unqual!T == string)))
 {
@@ -97,16 +105,15 @@ XLOPER12 toXlOper(T, A)(T[] values, ref A allocator)
 }
 
 
-///
-__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
-
-///
+/// Convert a 2D slice to XLOPER12
 XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
     if(isWantedType!T && (!is(T: E[], E) || is(Unqual!T == string)))
 {
     import xlld.conv.misc: multi;
     import std.algorithm: map, all;
     import std.array: array;
+
+    static __gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
 
     if(!values.all!(a => a.length == values[0].length))
        throw toXlOperShapeException;

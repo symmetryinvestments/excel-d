@@ -131,13 +131,13 @@ unittest {
 }
 
 @("array.double.2d.allocator.fail")
-@safe unittest {
+@system unittest {
     auto allocator = FailingAllocator();
     [33.3].toXlOper(allocator).shouldThrowWithMessage("Failed to allocate memory for multi oper");
 }
 
 @("array.double.2d.wrong shape")
-@safe unittest {
+@system unittest {
     [[33.3], [1.0, 2.0]].toXlOper(theGC).shouldThrowWithMessage("# of columns must all be the same and aren't");
 }
 
@@ -366,16 +366,15 @@ unittest {
 }
 
 @("struct.array")
-unittest {
+@system unittest {
     import test.d_funcs: DateAndString;
     import std.datetime: DateTime;
     auto oper = [DateAndString(DateTime(2017, 1, 2), "foobar")].toXlOper(theGC);
 }
 
 
-@ShouldFail
 @("range.1d.int")
-@safe unittest {
+@system unittest {
     import std.range: iota;
     5.iota.toXlOper(theGC).shouldEqualDlang([0, 1, 2, 3, 4]);
 }

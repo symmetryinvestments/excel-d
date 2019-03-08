@@ -12,14 +12,16 @@ template isUserStruct(T) {
     import std.datetime: DateTime;
     import std.typecons: Tuple;
     import std.traits: Unqual;
+    import std.range.primitives: isInputRange;
 
     enum isUserStruct =
-        is(T == struct) &&
-        !is(Unqual!T == Any) &&
-        !is(Unqual!T == DateTime) &&
-        !is(Unqual!T: Tuple!A, A...) &&
-        !is(Unqual!T == XLOPER12) &&
-        !isVector!T;
+        is(T == struct)
+        && !is(Unqual!T == Any)
+        && !is(Unqual!T == DateTime)
+        && !is(Unqual!T: Tuple!A, A...)
+        && !is(Unqual!T == XLOPER12)
+        && !isVector!T
+        && !isInputRange!T
         ;
 }
 
