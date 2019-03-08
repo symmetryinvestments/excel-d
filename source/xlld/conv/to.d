@@ -152,6 +152,31 @@ XLOPER12 toXlOper(T, A)(T range, ref A allocator)
 }
 
 
+XLOPER12 toXlOper(T, A)(T value, ref A allocator)
+    if(isVector!T)
+{
+    import std.experimental.allocator: makeArray, dispose;
+
+    enum is2D = isVector!(typeof(value[0]));
+
+    static if(is2D) {
+        alias E = typeof(value[0][0]);
+        assert(value.length <= size_t.sizeof);
+
+        auto arr = allocator.makeArray!(E[])(cast(size_t) value.length);
+        scope(exit) allocator.dispose(arr);
+
+        foreach(i; 0 .. value.length) {
+            arr[cast(size_t) i] = value[i][];
+        }
+
+        return arr.toXlOper(allocator);
+
+    } else {
+        return value[].toXlOper(allocator);
+    }
+}
+
 ///
 XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == Any)) {
     import xlld.conv.misc: dup;
@@ -302,27 +327,6 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == XLOPER12))
     return value;
 }
 
-
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(isVector!T) {
-    import std.experimental.allocator: makeArray, dispose;
-
-    static if(isVector!(typeof(value[0]))) {
-        // 2D vector
-        alias E = typeof(value[0][0]);
-        assert(value.length <= size_t.sizeof);
-        auto arr = allocator.makeArray!(E[])(cast(size_t) value.length);
-        scope(exit) allocator.dispose(arr);
-
-        foreach(i; 0 .. value.length) {
-            arr[cast(size_t) i] = value[i][];
-        }
-
-        return arr.toXlOper(allocator);
-
-    } else {
-        return value[].toXlOper(allocator);
-    }
-}
 
 /**
   creates an XLOPER12 that can be returned to Excel which
