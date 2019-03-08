@@ -101,23 +101,11 @@ private template isRange2D(T) {
 }
 
 
-XLOPER12 toXlOper(T, A)(T range, ref A allocator)
+XLOPER12 toXlOper(T, A)(T range, ref A allocator) @nogc
     if(isRange1D!T && !is(T: E[], E))
 {
-    import xlld.conv.misc: multi;
-    import std.range: walkLength;
-
-    const rows = cast(int) range.save.walkLength;
-    const cols = 1;
-    auto ret = multi(rows, cols, allocator);
-    auto opers = () @trusted { return ret.val.array.lparray[0 .. rows*cols]; }();
-
-    int i = 0;
-    foreach(ref elt; range) {
-        opers[i++] = elt.toXlOper(allocator);
-    }
-
-    return ret;
+    import std.range: only;
+    return only(range).toXlOper(allocator);
 }
 
 XLOPER12 toXlOper(T, A)(T range, ref A allocator)
