@@ -107,12 +107,7 @@ private template isRange2D(T) {
     import std.traits: isSomeString;
     import std.range.primitives: isForwardRange, ElementType;
 
-    enum isRange2D =
-        isForwardRange!T
-        && isForwardRange!(ElementType!T)
-        && !isVector!T
-        && !isSomeString!(ElementType!T)
-        ;
+    enum isRange2D = isForwardRange!T && isRange1D!(ElementType!T);
 }
 
 
