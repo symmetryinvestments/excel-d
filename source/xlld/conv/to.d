@@ -90,31 +90,53 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
 
 
 private template isRange1D(T) {
+    import std.traits: isSomeString;
     import std.range.primitives: isForwardRange, ElementType;
-    enum isRange1D = isForwardRange!T && !isForwardRange!(ElementType!T) && !isVector!T;
+
+    enum isRange1D =
+        isForwardRange!T
+        && (!isForwardRange!(ElementType!T) || isSomeString!(ElementType!T))
+        && !isVector!T
+        && !isSomeString!T
+        ;
 }
 
 
 private template isRange2D(T) {
+    import std.traits: isSomeString;
     import std.range.primitives: isForwardRange, ElementType;
-    enum isRange2D = isForwardRange!T && isForwardRange!(ElementType!T) && !isVector!T;
+
+    enum isRange2D =
+        isForwardRange!T
+        && isForwardRange!(ElementType!T)
+        && !isVector!T
+        && !isSomeString!(ElementType!T)
+        ;
 }
 
 
-XLOPER12 toXlOper(T, A)(T range, ref A allocator) @nogc
-    if(isRange1D!T && !is(T: E[], E))
+XLOPER12 toXlOper(T, A)(T range, ref A allocator)
+    if(isRange1D!T)
 {
     import std.range: only;
     return only(range).toXlOper(allocator);
 }
 
 XLOPER12 toXlOper(T, A)(T range, ref A allocator)
-    if(isRange2D!T && !is(T: E[], E))
+    if(isRange2D!T)
 {
     import xlld.conv.misc: multi;
     import std.range: walkLength;
+    import std.array: save, front;
+    import std.algorithm: any;
 
+    static __gshared immutable shapeException = new Exception("# of columns must all be the same and aren't");
     const rows = cast(int) range.save.walkLength;
+    const frontLength = range.front.save.walkLength;
+
+    if(range.save.any!(r => r.save.walkLength != frontLength))
+        throw shapeException;
+
     const cols = cast(int) range.front.save.walkLength;
     auto ret = multi(rows, cols, allocator);
     auto opers = () @trusted { return ret.val.array.lparray[0 .. rows*cols]; }();
@@ -123,43 +145,6 @@ XLOPER12 toXlOper(T, A)(T range, ref A allocator)
     foreach(ref subRange; range) {
         foreach(ref elt; subRange) {
             opers[i++] = elt.toXlOper(allocator);
-        }
-    }
-
-    return ret;
-}
-
-
-/// Convert a 1D slice to XLOPER12
-XLOPER12 toXlOper(T, A)(T[] values, ref A allocator)
-    if(isWantedType!T && (!is(T: E[], E) || is(Unqual!T == string)))
-{
-    T[][1] realValues = [values];
-    return realValues[].toXlOper(allocator);
-}
-
-
-/// Convert a 2D slice to XLOPER12
-XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
-    if(isWantedType!T && (!is(T: E[], E) || is(Unqual!T == string)))
-{
-    import xlld.conv.misc: multi;
-    import std.algorithm: map, all;
-
-    static __gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
-
-    if(!values.all!(a => a.length == values[0].length))
-       throw toXlOperShapeException;
-
-    const rows = cast(int) values.length;
-    const cols = values.length ? cast(int) values[0].length : 0;
-    auto ret = multi(rows, cols, allocator);
-    auto opers = () @trusted { return ret.val.array.lparray[0 .. rows*cols]; }();
-
-    int i = 0;
-    foreach(ref row; values) {
-        foreach(ref val; row) {
-            opers[i++] = val.toXlOper(allocator);
         }
     }
 
