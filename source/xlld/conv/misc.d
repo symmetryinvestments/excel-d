@@ -170,16 +170,21 @@ string toString(in from!"xlld.sdk.xlcall".XLOPER12 oper) @safe {
 ///
 __gshared immutable multiMemoryException = new Exception("Failed to allocate memory for multi oper");
 
+/// Returns an array XLOPER12
 from!"xlld.sdk.xlcall".XLOPER12 multi(A)(int rows, int cols, ref A allocator) @trusted {
     import xlld.sdk.xlcall: XLOPER12, XlType;
 
     auto ret = XLOPER12();
 
     ret.xltype = XlType.xltypeMulti;
-    ret.val.array.rows = rows;
-    ret.val.array.columns = cols;
+    () @trusted {
+        ret.val.array.rows = rows;
+        ret.val.array.columns = cols;
+    }();
 
-    ret.val.array.lparray = cast(XLOPER12*)allocator.allocate(rows * cols * ret.sizeof).ptr;
+    auto slice = allocator.allocate(rows * cols * ret.sizeof);
+    ret.val.array.lparray = () @trusted { return cast(XLOPER12*) slice.ptr; }();
+
     if(ret.val.array.lparray is null)
         throw multiMemoryException;
 

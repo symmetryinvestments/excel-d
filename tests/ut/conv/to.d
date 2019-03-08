@@ -376,5 +376,8 @@ unittest {
 @("range.1d.int")
 @system unittest {
     import std.range: iota;
-    5.iota.toXlOper(theGC).shouldEqualDlang([0, 1, 2, 3, 4]);
+    import std.experimental.allocator.mallocator: Mallocator;
+    auto range = 5.iota;
+    auto oper = () @nogc { return range.toXlOper(Mallocator.instance); }();
+    oper.shouldEqualDlang([0, 1, 2, 3, 4]);
 }
