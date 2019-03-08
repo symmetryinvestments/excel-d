@@ -90,24 +90,34 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
 }
 
 
+/// If we can get the length of R and R is an input range
+private template isLengthRange(R) {
+    import std.range.primitives: hasLength, isInputRange, isForwardRange;
+    enum isLengthRange =
+        isForwardRange!R
+        || (isInputRange!R && hasLength!R)
+        ;
+}
+
+/// If it's a 1D range
 private template isRange1D(T) {
     import std.traits: isSomeString;
-    import std.range.primitives: isForwardRange, ElementType;
+    import std.range.primitives: ElementType;
 
     enum isRange1D =
-        isForwardRange!T
-        && (!isForwardRange!(ElementType!T) || isSomeString!(ElementType!T))
+        isLengthRange!T
+        && (!isLengthRange!(ElementType!T) || isSomeString!(ElementType!T))
         && !isVector!T
         && !isSomeString!T
         ;
 }
 
-
+///If it's a 2D range
 private template isRange2D(T) {
     import std.traits: isSomeString;
-    import std.range.primitives: isForwardRange, ElementType;
+    import std.range.primitives: ElementType;
 
-    enum isRange2D = isForwardRange!T && isRange1D!(ElementType!T);
+    enum isRange2D = isLengthRange!T && isRange1D!(ElementType!T);
 }
 
 
