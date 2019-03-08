@@ -1,3 +1,6 @@
+/**
+   Tests for converting from XLOPER12 to D types.
+ */
 module ut.conv.from;
 
 import test;

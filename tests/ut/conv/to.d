@@ -1,3 +1,6 @@
+/**
+   Tests for converting from D types to XLOPER12
+ */
 module ut.conv.to;
 
 import test;
@@ -5,7 +8,7 @@ import xlld.conv.to;
 
 
 ///
-@("toExcelOper!int")
+@("int")
 unittest {
     auto oper = 42.toXlOper(theGC);
     oper.xltype.shouldEqual(XlType.xltypeInt);
@@ -14,7 +17,7 @@ unittest {
 
 
 ///
-@("toExcelOper!double")
+@("double")
 unittest {
     auto oper = (42.0).toXlOper(theGC);
     oper.xltype.shouldEqual(XlType.xltypeNum);
@@ -22,7 +25,7 @@ unittest {
 }
 
 ///
-@("toXlOper!string utf8")
+@("string.utf8")
 @system unittest {
     import xlld.memorymanager: allocator;
     import xlld.sdk.framework: freeXLOper;
@@ -39,7 +42,7 @@ unittest {
 
 
 ///
-@("toXlOper!string utf16")
+@("string.utf16")
 @system unittest {
     import xlld.memorymanager: allocator;
     import xlld.sdk.framework: freeXLOper;
@@ -54,7 +57,7 @@ unittest {
 }
 
 ///
-@("toXlOper!string TestAllocator")
+@("string.TestAllocator")
 @system unittest {
     import xlld.sdk.framework: freeXLOper;
 
@@ -65,7 +68,7 @@ unittest {
 }
 
 ///
-@("toXlOper!string unicode")
+@("string.unicode")
 @system unittest {
     import std.utf: byWchar;
     import std.array: array;
@@ -78,7 +81,7 @@ unittest {
     length.shouldEqual("é"w.length);
 }
 
-@("toXlOper!string failing allocator")
+@("string.allocator.fail")
 @safe unittest {
     import xlld.conv.misc: dup;
     auto allocator = FailingAllocator();
@@ -87,7 +90,7 @@ unittest {
 
 
 ///
-@("toXlOper string[][]")
+@("array.string.2d")
 @system unittest {
     import xlld.memorymanager: allocator;
     import xlld.sdk.framework: freeXLOper;
@@ -106,7 +109,7 @@ unittest {
 }
 
 ///
-@("toXlOper string[][] TestAllocator")
+@("array.string.2d.TestAllocator")
 @system unittest {
     import xlld.sdk.framework: freeXLOper;
 
@@ -117,7 +120,7 @@ unittest {
 }
 
 ///
-@("toXlOper double[][]")
+@("array.double.2d")
 @system unittest {
     import xlld.sdk.framework: freeXLOper;
 
@@ -127,19 +130,19 @@ unittest {
     freeXLOper(&oper, allocator);
 }
 
-@("toXlOper!double[][] failing allocation")
+@("array.double.2d.allocator.fail")
 @safe unittest {
     auto allocator = FailingAllocator();
     [33.3].toXlOper(allocator).shouldThrowWithMessage("Failed to allocate memory for multi oper");
 }
 
-@("toXlOper!double[][] wrong shape")
+@("array.double.2d.wrong shape")
 @safe unittest {
     [[33.3], [1.0, 2.0]].toXlOper(theGC).shouldThrowWithMessage("# of columns must all be the same and aren't");
 }
 
 ///
-@("toXlOper string[]")
+@("array.string.1d")
 @system unittest {
     import xlld.sdk.framework: freeXLOper;
 
@@ -150,26 +153,26 @@ unittest {
 }
 
 ///
-@("toXlOper any double")
+@("any.double")
 unittest {
     any(5.0, theGC).toXlOper(theGC).shouldEqualDlang(5.0);
 }
 
 ///
-@("toXlOper any string")
+@("any.string")
 unittest {
     any("foo", theGC).toXlOper(theGC).shouldEqualDlang("foo");
 }
 
 ///
-@("toXlOper any double[][]")
+@("array.array.double.2d")
 unittest {
     any([[1.0, 2.0], [3.0, 4.0]], theGC)
         .toXlOper(theGC).shouldEqualDlang([[1.0, 2.0], [3.0, 4.0]]);
 }
 
 ///
-@("toXlOper any string[][]")
+@("any.array.string.2d")
 unittest {
     any([["foo", "bar"], ["quux", "toto"]], theGC)
         .toXlOper(theGC).shouldEqualDlang([["foo", "bar"], ["quux", "toto"]]);
@@ -177,7 +180,7 @@ unittest {
 
 
 ///
-@("toXlOper any[]")
+@("any.array.1d.0")
 unittest {
     import xlld.memorymanager: allocatorContext;
 
@@ -191,7 +194,7 @@ unittest {
 
 
 ///
-@("toXlOper mixed 1D array of any")
+@("any.array.1d.1")
 unittest {
     const a = any([any(1.0, theGC), any("foo", theGC)],
                   theGC);
@@ -206,7 +209,7 @@ unittest {
 }
 
 ///
-@("toXlOper any[][]")
+@("any.array.2d.0")
 unittest {
     import xlld.memorymanager: allocatorContext;
 
@@ -226,7 +229,7 @@ unittest {
 
 
 ///
-@("toXlOper mixed 2D array of any")
+@("any.array.2d.1")
 unittest {
     const a = any([
                      [any(1.0, theGC), any(2.0, theGC)],
@@ -245,7 +248,7 @@ unittest {
     opers[3].shouldEqualDlang("bar");
 }
 
-@("toXlOper!DateTime")
+@("DateTime")
 @safe unittest {
 
     import xlld.sdk.xlcall: xlfDate, xlfTime;
@@ -273,7 +276,7 @@ unittest {
 }
 
 ///
-@("toXlOper!bool when bool")
+@("bool")
 @system unittest {
     import xlld.sdk.xlcall: XlType;
     {
@@ -289,7 +292,7 @@ unittest {
     }
 }
 
-@("toXlOper!enum")
+@("enum")
 @safe unittest {
 
     enum Enum {
@@ -302,20 +305,20 @@ unittest {
 }
 
 
-@("toXlOper!struct")
+@("struct")
 @safe unittest {
     static struct Foo { int x, y; }
     Foo(2, 3).toXlOper(theGC).shouldEqualDlang("Foo(2, 3)");
 }
 
-@("toXlOper!Tuple!(int, int)")
+@("Tuple!(int, int)")
 @safe unittest {
     import std.typecons: tuple;
     auto oper = tuple(42, 33).toXlOper(theGC);
     oper.shouldEqualDlang([42, 33]);
 }
 
-@("toXlOper!(Tuple!(DateTime, double)[])")
+@("Tuple!(DateTime, double)[]")
 @system unittest {
     import xlld.conv.misc: stripMemoryBitmask;
     import xlld.test.util: MockDates;
@@ -362,7 +365,7 @@ unittest {
     elts[2].val.array.lparray[1].fromXlOper!double(theGC).shouldEqual(33.3);
 }
 
-@("toXlOper array of user structs")
+@("struct.array")
 unittest {
     import test.d_funcs: DateAndString;
     import std.datetime: DateTime;
