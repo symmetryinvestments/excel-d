@@ -11,6 +11,8 @@ import xlld.wrap.wrap: isWantedType;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
 import std.typecons: Tuple;
+import std.range.primitives: isInputRange;
+
 
 alias FromEnumConversionFunction = string delegate(int) @safe;
 package __gshared FromEnumConversionFunction[string] gFromEnumConversions;
@@ -88,42 +90,97 @@ package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(U
 }
 
 
-///
-XLOPER12 toXlOper(T, A)(T[] values, ref A allocator)
-    if(isWantedType!T && (!is(T: E[], E) || is(Unqual!T == string)))
-{
-    T[][1] realValues = [values];
-    return realValues[].toXlOper(allocator);
+private template hasLength(R) {
+    enum hasLength = is(typeof({ size_t l = R.init.length; }));
+}
+
+/// If we can get the length of R and R is an input range
+private template isLengthRange(R) {
+    import std.range.primitives: isInputRange, isForwardRange;
+
+    enum isLengthRange =
+        isForwardRange!R
+        || (isInputRange!R && hasLength!R)
+        ;
+}
+
+/// If it's a 1D range
+private template isRange1D(T) {
+    import std.traits: isSomeString;
+    import std.range.primitives: ElementType;
+
+    enum isRange1D =
+        isLengthRange!T
+        && (!isLengthRange!(ElementType!T) || isSomeString!(ElementType!T))
+        //&& !isVector!T
+        && !isSomeString!T
+        ;
 }
 
 
-///
-__gshared immutable toXlOperShapeException = new Exception("# of columns must all be the same and aren't");
+///If it's a 2D range
+private template isRange2D(T) {
+    import std.traits: isSomeString;
+    import std.range.primitives: ElementType;
 
-///
-XLOPER12 toXlOper(T, A)(T[][] values, ref A allocator)
-    if(isWantedType!T && (!is(T: E[], E) || is(Unqual!T == string)))
+    enum isRange2D = isLengthRange!T && isRange1D!(ElementType!T);
+}
+
+
+XLOPER12 toXlOper(T, A)(T range, ref A allocator)
+    if(isRange1D!T)
+{
+    import std.range: only;
+    return only(range).toXlOper(allocator);
+}
+
+XLOPER12 toXlOper(T, A)(T range, ref A allocator)
+    if(isRange2D!T)
 {
     import xlld.conv.misc: multi;
-    import std.algorithm: map, all;
-    import std.array: array;
+    import std.range: walkLength;
+    import std.array: save, front;
+    import std.algorithm: any;
+    import std.range.primitives: isForwardRange;
 
-    if(!values.all!(a => a.length == values[0].length))
-       throw toXlOperShapeException;
+    static __gshared immutable shapeException = new Exception("# of columns must all be the same and aren't");
+    const rows = cast(int) range.rangeLength;
+    const frontLength = range.front.rangeLength;
 
-    const rows = cast(int) values.length;
-    const cols = values.length ? cast(int) values[0].length : 0;
+    static if(isForwardRange!T)
+        auto checkRange = range.save;
+    else
+        alias checkRange = range;
+
+    if(checkRange.any!(r => r.rangeLength != frontLength))
+        throw shapeException;
+
+    const cols = cast(int) range.front.rangeLength;
     auto ret = multi(rows, cols, allocator);
     auto opers = () @trusted { return ret.val.array.lparray[0 .. rows*cols]; }();
 
-    int i;
-    foreach(ref row; values) {
-        foreach(ref val; row) {
-            opers[i++] = val.toXlOper(allocator);
+    int i = 0;
+    foreach(ref subRange; range) {
+        foreach(ref elt; subRange) {
+            opers[i++] = elt.toXlOper(allocator);
         }
     }
 
     return ret;
+}
+
+private auto rangeLength(R)(auto ref R range)
+    if(isInputRange!R)
+{
+    import std.range.primitives: isForwardRange;
+
+    static if(hasLength!R)
+        return range.length;
+    else static if(isForwardRange!R) {
+        import std.array: save;
+        return range.save.walkLength;
+    } else
+        static assert(false, "Can't get length for " ~ R.stringof);
 }
 
 
@@ -277,27 +334,6 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(is(Unqual!T == XLOPER12))
     return value;
 }
 
-
-XLOPER12 toXlOper(T, A)(T value, ref A allocator) if(isVector!T) {
-    import std.experimental.allocator: makeArray, dispose;
-
-    static if(isVector!(typeof(value[0]))) {
-        // 2D vector
-        alias E = typeof(value[0][0]);
-        assert(value.length <= size_t.sizeof);
-        auto arr = allocator.makeArray!(E[])(cast(size_t) value.length);
-        scope(exit) allocator.dispose(arr);
-
-        foreach(i; 0 .. value.length) {
-            arr[cast(size_t) i] = value[i][];
-        }
-
-        return arr.toXlOper(allocator);
-
-    } else {
-        return value[].toXlOper(allocator);
-    }
-}
 
 /**
   creates an XLOPER12 that can be returned to Excel which
