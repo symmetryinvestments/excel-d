@@ -547,3 +547,11 @@ private auto toFrom(R, T)(T val) {
         .fromXlOper!(int[])(theGC)
         .should == [1, 2];
 }
+
+
+@ShouldFail
+@("autoFreeOper")
+@system unittest {
+    import xlld.conv.to: toAutoFreeOper;
+    [42].toAutoFreeOper.fromXlOper!(double[])(theGC).should == [42];
+}
