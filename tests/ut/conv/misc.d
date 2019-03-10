@@ -77,3 +77,11 @@ unittest {
     auto allocator = FailingAllocator();
     multi(2, 3, allocator).shouldThrowWithMessage("Failed to allocate memory for multi oper");
 }
+
+
+@ShouldFail
+@("string.autofree.dup")
+@system unittest {
+    import xlld.conv.to: toAutoFreeOper;
+    "foo".toAutoFreeOper.dup(theGC).shouldEqualDlang("foo");
+}
