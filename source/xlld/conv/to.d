@@ -56,7 +56,7 @@ __gshared immutable toXlOperMemoryException = new Exception("Failed to allocate 
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
-    if(is(Unqual!T == string) || is(Unqual!T == wstring))
+    if(from!"std.traits".isSomeString!T)
 {
     import xlld.sdk.xlcall: XCHAR;
     import std.utf: byWchar;
@@ -83,7 +83,9 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
 
 
 /// the number of bytes required to store `str` as an XLOPER12 string
-package size_t numOperStringBytes(T)(in T str) if(is(Unqual!T == string) || is(Unqual!T == wstring)) {
+package size_t numOperStringBytes(T)(in T str)
+    if(from!"std.traits".isSomeString!T)
+{
     // XLOPER12 strings are wide strings where index 0 is the length
     // and [1 .. $] is the actual string
     return (str.length + 1) * wchar.sizeof;

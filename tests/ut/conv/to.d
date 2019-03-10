@@ -397,3 +397,10 @@ unittest {
     auto oper = () @nogc { return range.toXlOper(Mallocator.instance); }();
     oper.shouldEqualDlang([[0, 0], [1, 1], [2, 2]]);
 }
+
+
+@("const(char)[]")
+@system unittest {
+    const(char)[] str = "foo";
+    str.toXlOper(theGC).shouldEqualDlang("foo");
+}
