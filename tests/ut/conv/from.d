@@ -549,9 +549,9 @@ private auto toFrom(R, T)(T val) {
 }
 
 
-@ShouldFail
 @("autoFreeOper")
 @system unittest {
     import xlld.conv.to: toAutoFreeOper;
-    [42].toAutoFreeOper.fromXlOper!(double[])(theGC).should == [42];
+    [42.0].toAutoFreeOper.fromXlOper!(double[])(theGC).should == [42.0];
+    [42].toAutoFreeOper.fromXlOper!(int[])(theGC).should == [42];
 }

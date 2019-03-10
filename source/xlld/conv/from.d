@@ -287,6 +287,7 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
     import xlld.sdk.xlcall: XlType;
     import xlld.func.xl: coerce, free;
     import xlld.any: Any;
+    import xlld.conv.misc: stripMemoryBitmask;
     version(unittest) import xlld.test.util: gNumXlAllocated, gNumXlFree;
 
     const rows = oper.val.array.rows;
@@ -308,7 +309,7 @@ private void apply(T, alias F)(ref XLOPER12 oper) {
                 version(unittest) --gNumXlFree;
             }
 
-            const isExpectedType = cellVal.xltype == dlangToXlOperType!T.Type;
+            const isExpectedType = cellVal.xltype.stripMemoryBitmask == dlangToXlOperType!T.Type;
             const isConvertibleToDouble =
                 cellVal.xltype == XlType.xltypeNum &&
                 (dlangToXlOperType!T.Type == XlType.xltypeStr || dlangToXlOperType!T.Type == XlType.xltypeInt);
