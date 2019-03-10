@@ -79,7 +79,6 @@ unittest {
 }
 
 
-@ShouldFail
 @("string.autofree.dup")
 @system unittest {
     import xlld.conv.to: toAutoFreeOper;
