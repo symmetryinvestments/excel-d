@@ -19,7 +19,15 @@ struct Any {
         switch(_impl.xltype) {
 
         default:
-            return _impl == other._impl;
+            import xlld.conv.misc: stripMemoryBitmask;
+
+            if(_impl.xltype.stripMemoryBitmask != other._impl.xltype.stripMemoryBitmask)
+                return false;
+
+            XLOPER12 comp = _impl;
+            comp.xltype = other._impl.xltype;
+
+            return comp == other._impl;
 
         case XlType.xltypeStr:
 
