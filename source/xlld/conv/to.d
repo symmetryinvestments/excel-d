@@ -93,7 +93,12 @@ package size_t numOperStringBytes(T)(in T str)
 
 
 private template hasLength(R) {
-    enum hasLength = is(typeof({ size_t l = R.init.length; }));
+    enum hasLength = is(typeof(
+    {
+        import std.traits: isIntegral;
+        auto l = R.init.length;
+        static assert(isIntegral!(typeof(l)));
+    }));
 }
 
 /// If we can get the length of R and R is an input range
