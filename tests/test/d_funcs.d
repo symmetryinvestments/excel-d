@@ -351,6 +351,12 @@ auto FuncVector(int i) @safe @nogc {
     return vector!Mallocator(i.iota);
 }
 
+auto FuncStringVector(int i) @safe @nogc {
+    import automem.vector: vector;
+    import std.experimental.allocator.mallocator: Mallocator;
+
+    return vector!Mallocator("hi");
+}
 
 auto FuncVector2D(int i) @safe @nogc {
     import automem.vector: vector;
