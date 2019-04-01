@@ -3,8 +3,9 @@
  */
 module xlld.conv.to;
 
+
 import xlld.from;
-import xlld.conv.misc: isUserStruct;
+import xlld.conv.misc: isUserStruct, isVector, isSomeString;
 import xlld.sdk.xlcall: XLOPER12, XlType;
 import xlld.any: Any;
 import xlld.wrap.wrap: isWantedType;
@@ -56,7 +57,7 @@ __gshared immutable toXlOperMemoryException = new Exception("Failed to allocate 
 
 ///
 XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
-    if(from!"std.traits".isSomeString!T)
+    if(isSomeString!T)
 {
     import xlld.sdk.xlcall: XCHAR;
     import std.utf: byWchar;
@@ -67,7 +68,13 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
         throw toXlOperMemoryException;
 
     int i = 1;
-    foreach(ch; val.byWchar) {
+
+    static if(__traits(compiles, val.range))
+        auto range = val.range;
+    else
+        alias range = val;
+
+    foreach(ch; range.byWchar) {
         wval[i++] = ch;
     }
 
@@ -84,7 +91,7 @@ XLOPER12 toXlOper(T, A)(in T val, ref A allocator)
 
 /// the number of bytes required to store `str` as an XLOPER12 string
 package size_t numOperStringBytes(T)(in T str)
-    if(from!"std.traits".isSomeString!T)
+    if(isSomeString!T)
 {
     // XLOPER12 strings are wide strings where index 0 is the length
     // and [1 .. $] is the actual string
@@ -103,33 +110,41 @@ private template hasLength(R) {
 
 /// If we can get the length of R and R is an input range
 private template isLengthRange(R) {
+    import xlld.conv.misc: isVector;
     import std.range.primitives: isInputRange, isForwardRange;
 
     enum isLengthRange =
         isForwardRange!R
         || (isInputRange!R && hasLength!R)
+        // Vector is no longer a range itself, but we pretend it is
+        || (isVector!R)
         ;
 }
 
 /// If it's a 1D range
 private template isRange1D(T) {
-    import std.traits: isSomeString;
     import std.range.primitives: ElementType;
 
     enum isRange1D =
         isLengthRange!T
+        // the element type has to itself not be a range, which in our case
+        // means a "proper" scalar or a string of some sort
         && (!isLengthRange!(ElementType!T) || isSomeString!(ElementType!T))
         && !isSomeString!T
         ;
 }
 
-
 ///If it's a 2D range
 private template isRange2D(T) {
-    import std.traits: isSomeString;
     import std.range.primitives: ElementType;
-
     enum isRange2D = isLengthRange!T && isRange1D!(ElementType!T);
+}
+
+
+XLOPER12 toXlOper(T, A)(auto ref T vector, ref A allocator)
+    if(isVector!T && !(is(Unqual!(typeof(vector[0])) == char)))
+{
+    return vector.range.toXlOper(allocator);
 }
 
 
@@ -176,7 +191,7 @@ XLOPER12 toXlOper(T, A)(T range, ref A allocator)
 }
 
 private auto rangeLength(R)(auto ref R range)
-    if(isInputRange!R)
+    if(isInputRange!R || isVector!R)
 {
     import std.range.primitives: isForwardRange;
 

@@ -35,6 +35,15 @@ template isVector(T) {
 }
 
 
+template isSomeString(T) {
+    import std.traits: isSomeString_ = isSomeString, Unqual;
+    enum isSomeString =
+        isSomeString_!T
+        || (isVector!T && is(Unqual!(typeof(T.init[0])) == char))
+        ;
+}
+
+
 ///
 __gshared immutable gDupMemoryException = new Exception("Failed to allocate memory in dup");
 
@@ -105,7 +114,7 @@ ushort operStringLength(T)(in T value) {
     enforce(value.xltype.stripMemoryBitmask == XlType.xltypeStr,
             "Cannot calculate string length for oper of type ", cast(int) value.xltype);
 
-    return cast(ushort)value.val.str[0];
+    return cast(ushort) value.val.str[0];
 }
 
 

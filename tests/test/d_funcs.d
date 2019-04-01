@@ -360,3 +360,11 @@ auto FuncVector2D(int i) @safe @nogc {
     return vector!Mallocator(vector!Mallocator(i, i, i),
                              vector!Mallocator(i + 1, i + 1, i + 1));
 }
+
+
+auto FuncStringVector(int i) @safe @nogc {
+    import automem.vector: vector;
+    import std.experimental.allocator.mallocator: Mallocator;
+
+    return vector!Mallocator("hi");
+}
