@@ -53,7 +53,7 @@ template isTuple(T) {
 
 template isSequence(T) {
     import std.traits: isArray;
-    enum isSequence = isArray!T || isTuple!T;
+    enum isSequence = isArray!T || isTuple!T || isVector!T;
 }
 
 ///
