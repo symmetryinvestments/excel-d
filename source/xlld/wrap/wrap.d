@@ -281,8 +281,6 @@ auto toDArgs(alias wrappedFunc, A, T...)
     import xlld.conv.from: fromXlOper;
     import std.traits: Parameters, ParameterDefaults;
 
-    static XLOPER12 ret;
-
     scope XLOPER12[T.length] coercedOperArgs;
     // must 1st convert each argument to the "real" type.
     // 2D arrays are passed in as SRefs, for instance
@@ -302,7 +300,7 @@ auto toDArgs(alias wrappedFunc, A, T...)
         }
     }
 
-    // the D types to pass to the wrapped function
+    // the D types/values to pass to the wrapped function
     DArgsTupleType!wrappedFunc dArgs;
 
     // convert all Excel types to D types
@@ -330,7 +328,7 @@ private template DArgsTupleType(alias wrappedFunc) {
 }
 
 
-// Takes a tuple returned by `toDArgs`, calls the wrapped function and returns
+// Takes a tuple returned by `toDArgs`, calls the wrapped D function and returns
 // the XLOPER12 result
 private XLOPER12* callWrapped(alias wrappedFunc, T)(scope T dArgs)
 {
@@ -427,11 +425,11 @@ XLOPER12 stringAutoFreeOper(T)(in T msg) @safe @nogc nothrow {
 XLOPER12 excelRet(T)(T wrappedRet) {
 
     import xlld.conv: toAutoFreeOper;
-    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.conv.misc: stripMemoryBitmask, isSequence;
     import xlld.sdk.xlcall: XlType;
     import std.traits: isArray;
 
-    static if(isArray!T) {
+    static if(isSequence!T) {
 
         // Excel crashes if it's returned an empty array, so stop that from happening
         if(wrappedRet.length == 0) {
@@ -450,8 +448,8 @@ XLOPER12 excelRet(T)(T wrappedRet) {
     auto ret = () @trusted { return toAutoFreeOper(wrappedRet); }();
 
     // convert 1D arrays called from a column into a column instead of the default row
-    static if(isArray!(typeof(wrappedRet))) {
-        static if(!isArray!(typeof(wrappedRet[0]))) { // 1D array
+    static if(isSequence!(typeof(wrappedRet))) {
+        static if(!isSequence!(typeof(wrappedRet[0]))) {  // 1D sequence
             import xlld.func.xlf: xlfCaller = caller;
             import std.algorithm: swap;
 

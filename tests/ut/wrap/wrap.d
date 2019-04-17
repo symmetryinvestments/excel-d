@@ -104,7 +104,6 @@ unittest {
     }
 }
 
-@ShouldFail("tuples being treated differently from arrays")
 @("excelRet!tuple from column caller")
 unittest {
     import xlld.sdk.xlcall: XlType, xlfCaller;
