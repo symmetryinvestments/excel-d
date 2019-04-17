@@ -44,6 +44,18 @@ template isSomeString(T) {
 }
 
 
+template isTuple(T) {
+    import std.typecons: Tuple;
+    import std.traits: Unqual;
+    enum isTuple = is(Unqual!T: Tuple!A, A...);
+}
+
+
+template isSequence(T) {
+    import std.traits: isArray;
+    enum isSequence = isArray!T || isTuple!T || isVector!T;
+}
+
 ///
 __gshared immutable gDupMemoryException = new Exception("Failed to allocate memory in dup");
 

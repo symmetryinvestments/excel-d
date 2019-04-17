@@ -104,6 +104,60 @@ unittest {
     }
 }
 
+
+@("excelRet!tuple from column caller")
+unittest {
+    import xlld.sdk.xlcall: XlType, xlfCaller;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.memorymanager: autoFree;
+    import std.typecons: tuple;
+
+    XLOPER12 caller;
+    caller.xltype = XlType.xltypeSRef;
+    caller.val.sref.ref_.rwFirst = 1;
+    caller.val.sref.ref_.rwLast = 4;
+    caller.val.sref.ref_.colFirst = 5;
+    caller.val.sref.ref_.colLast = 5;
+
+    with(MockXlFunction(xlfCaller, caller)) {
+        auto doubles = tuple(1.0, 2.0, 3.0, 4.0);
+        auto oper = excelRet(doubles);
+        scope(exit) autoFree(&oper);
+
+        oper.shouldEqualDlang(doubles);
+        oper.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeMulti);
+        oper.val.array.rows.shouldEqual(4);
+        oper.val.array.columns.shouldEqual(1);
+    }
+}
+
+@("excelRet!vector from column caller")
+unittest {
+    import xlld.sdk.xlcall: XlType, xlfCaller;
+    import xlld.conv.misc: stripMemoryBitmask;
+    import xlld.memorymanager: autoFree;
+    import automem.vector: vector;
+
+    XLOPER12 caller;
+    caller.xltype = XlType.xltypeSRef;
+    caller.val.sref.ref_.rwFirst = 1;
+    caller.val.sref.ref_.rwLast = 4;
+    caller.val.sref.ref_.colFirst = 5;
+    caller.val.sref.ref_.colLast = 5;
+
+    with(MockXlFunction(xlfCaller, caller)) {
+        auto doubles = vector(1.0, 2.0, 3.0, 4.0);
+        auto oper = excelRet(doubles);
+        scope(exit) autoFree(&oper);
+
+        oper.shouldEqualDlang(doubles[]);
+        oper.xltype.stripMemoryBitmask.shouldEqual(XlType.xltypeMulti);
+        oper.val.array.rows.shouldEqual(4);
+        oper.val.array.columns.shouldEqual(1);
+    }
+}
+
+
 @("excelRet!double[] from other caller")
 unittest {
     import xlld.sdk.xlcall: XlType, xlfCaller;
