@@ -5,13 +5,12 @@ module xlld.conv.to;
 
 
 import xlld.from;
-import xlld.conv.misc: isUserStruct, isVector, isSomeString;
+import xlld.conv.misc: isUserStruct, isVector, isSomeString, isTuple;
 import xlld.sdk.xlcall: XLOPER12, XlType;
 import xlld.any: Any;
 import xlld.wrap.wrap: isWantedType;
 import std.traits: isIntegral, Unqual;
 import std.datetime: DateTime;
-import std.typecons: Tuple;
 import std.range.primitives: isInputRange;
 
 
@@ -165,6 +164,7 @@ XLOPER12 toXlOper(T, A)(T range, ref A allocator)
     import std.range.primitives: isForwardRange;
 
     static __gshared immutable shapeException = new Exception("# of columns must all be the same and aren't");
+
     const rows = cast(int) range.rangeLength;
     const frontLength = range.front.rangeLength;
 
@@ -331,23 +331,22 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator)
 }
 
 XLOPER12 toXlOper(T, A)(T value, ref A allocator)
-    @trusted
-    if(is(T: Tuple!A, A...))
+    if(isTuple!T)
 {
+    import xlld.conv.misc: multi;
     import std.experimental.allocator: makeArray;
 
-    XLOPER12 oper;
+    const rows = 1;
+    const cols = value.length;
 
-    oper.xltype = XlType.xltypeMulti;
-    oper.val.array.rows = 1;
-    oper.val.array.columns = value.length;
-    oper.val.array.lparray = allocator.makeArray!XLOPER12(T.length).ptr;
+    auto ret = multi(rows, cols, allocator);
+    auto opers = () @trusted { return ret.val.array.lparray[0 .. rows*cols]; }();
 
-    static foreach(i; 0 .. T.length) {
-        oper.val.array.lparray[i] = value[i].toXlOper(allocator);
+    static foreach(i; 0 .. value.length) {
+        opers[i] = value[i].toXlOper(allocator);
     }
 
-    return oper;
+    return ret;
 }
 
 
