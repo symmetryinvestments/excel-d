@@ -95,16 +95,21 @@ string wrapModuleMember(string moduleName, string moduleMemberStr)
     alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
 
     static if(isWorksheetFunction!moduleMember) {
+
         enum numOverloads = __traits(getOverloads, mixin(moduleName), moduleMemberStr).length;
         static if(numOverloads == 1) {
+
             // if onlyExports is true, then only functions that are "export" are allowed
             // Otherwise, any function will do as long as they're visible (i.e. public)
-            const shouldWrap = onlyExports ? __traits(getProtection, moduleMember) == "export" : true;
-            if(shouldWrap)
-                ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
+            static if(__traits(getProtection, moduleMember) != "private") {
+                const shouldWrap = onlyExports ? __traits(getProtection, moduleMember) == "export" : true;
+
+                if(shouldWrap)
+                    ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
+            }
         } else
             pragma(msg, "excel-d WARNING: Not wrapping ", moduleMemberStr, " due to it having ",
-                   cast(int)numOverloads, " overloads");
+                   cast(int) numOverloads, " overloads");
     } else {
         /// trying to get a pointer to something is a good way of making sure we can
         /// attempt to evaluate `isSomeFunction` - it's not always possible
@@ -602,7 +607,9 @@ version(testingExcelD) {
         // the line below checks that the code still compiles even with a private function
         // it might stop compiling in a future version when the deprecation rules for
         // visibility kick in
-        static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
+        static if(__traits(compiles, isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem))) {
+            static assert(!isWorksheetFunction!(test.d_funcs.shouldNotBeAProblem));
+        }
         static assert( isWorksheetFunction!(test.d_funcs.FuncThrows));
         static assert( isWorksheetFunction!(test.d_funcs.DoubleArrayToAnyArray));
         static assert( isWorksheetFunction!(test.d_funcs.Twice));
