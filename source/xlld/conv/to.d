@@ -94,7 +94,7 @@ package size_t numOperStringBytes(T)(in T str)
 {
     // XLOPER12 strings are wide strings where index 0 is the length
     // and [1 .. $] is the actual string
-    return (str.length + 1) * wchar.sizeof;
+    return cast(typeof(return)) ((str.length + 1) * wchar.sizeof);
 }
 
 
