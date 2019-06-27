@@ -1,8 +1,10 @@
 module ut.conv.misc;
 
+
 import test;
 import xlld.conv.misc;
 import xlld.conv.to: toXlOper;
+
 
 @("isUserStruct")
 @safe pure unittest {
@@ -48,11 +50,13 @@ import xlld.conv.to: toXlOper;
     );
 }
 
+
 @("dup string allocator fails")
 @safe unittest {
     auto allocator = FailingAllocator();
     "foo".toXlOper(theGC).dup(allocator).shouldThrowWithMessage("Failed to allocate memory in dup");
 }
+
 
 @("dup multi allocator fails")
 @safe unittest {
@@ -61,10 +65,10 @@ import xlld.conv.to: toXlOper;
     oper.dup(allocator).shouldThrowWithMessage("Failed to allocate memory in dup");
 }
 
+
 ///
 @("operStringLength")
-unittest {
-    import std.experimental.allocator.mallocator: Mallocator;
+@safe unittest {
     auto oper = "foobar".toXlOper(theGC);
     const length = () @nogc { return operStringLength(oper); }();
     length.shouldEqual(6);
