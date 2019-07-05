@@ -123,10 +123,14 @@ ushort operStringLength(T)(in T value) {
     import xlld.sdk.xlcall: XlType;
     import nogc.exception: enforce;
 
-    enforce(value.xltype.stripMemoryBitmask == XlType.xltypeStr,
-            "Cannot calculate string length for oper of type ", cast(int) value.xltype);
+    // nogc.enforce is @system
+    () @trusted {
+        enforce(value.xltype.stripMemoryBitmask == XlType.xltypeStr,
+                "Cannot calculate string length for oper of type ", cast(int) value.xltype);
+    }();
 
-    return cast(ushort) value.val.str[0];
+    // @trusted because of the `enforce` above
+    return () @trusted { return cast(ushort) value.val.str[0]; }();
 }
 
 

@@ -194,7 +194,8 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
 
     if(!isMulti(*val)) throw fromXlOperMultiOperException;
 
-    assert(val.val.array.rows > 0 && val.val.array.columns > 0,
+    assert(() @trusted { return val.val.array.rows; }() > 0 &&
+           () @trusted { return val.val.array.columns; }() > 0,
            "Multi opers may not have 0 rows or columns");
 
     // This case has to be handled differently since we're converting to a 1D array
@@ -207,7 +208,8 @@ private auto fromXlOperMulti(Dimensions dim, T, A)(XLOPER12* val, ref A allocato
 
 
 // convert a number to an array
-private auto fromXlOperMultiNumber(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
+private auto fromXlOperMultiNumber(Dimensions dim, T, A)(XLOPER12* val, ref A allocator)
+{
 
     static if(dim == Dimensions.Two) {
         import std.experimental.allocator: makeMultidimensionalArray;
@@ -224,12 +226,17 @@ private auto fromXlOperMultiNumber(Dimensions dim, T, A)(XLOPER12* val, ref A al
 }
 
 // no-frills fromXlOperMulti
-private auto fromXlOperMultiStandard(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
+private auto fromXlOperMultiStandard(Dimensions dim, T, A)
+                                    (XLOPER12* val, ref A allocator)
+    in(from!"xlld.conv.misc".stripMemoryBitmask(val.xltype) ==
+       from!"xlld.sdk.xlcall".XlType.xltypeMulti)
+{
     import xlld.memorymanager: makeArray2D;
     import std.experimental.allocator: makeArray;
 
-    const rows = val.val.array.rows;
-    const cols = val.val.array.columns;
+    // @trusted because of the `in` contract
+    const rows = () @trusted { return val.val.array.rows; }();
+    const cols = () @trusted { return val.val.array.columns; }();
 
     static if(dim == Dimensions.Two)
         auto ret = allocator.makeArray2D!T(*val);
@@ -255,7 +262,10 @@ private auto fromXlOperMultiStandard(Dimensions dim, T, A)(XLOPER12* val, ref A 
 }
 
 // return an array of structs
-private auto fromXlOperMultiStruct(Dimensions dim, T, A)(XLOPER12* val, ref A allocator) {
+private auto fromXlOperMultiStruct(Dimensions dim, T, A)(XLOPER12* val, ref A allocator)
+    in(from!"xlld.conv.misc".stripMemoryBitmask(val.xltype) ==
+       from!"xlld.sdk.xlcall".XlType.xltypeMulti)
+{
     import xlld.sdk.xlcall: XlType;
     import std.experimental.allocator: makeArray;
 
@@ -270,9 +280,11 @@ private auto fromXlOperMultiStruct(Dimensions dim, T, A)(XLOPER12* val, ref A al
     foreach(r, ref elt; ret) {
         XLOPER12 array1d;
         array1d.xltype = XlType.xltypeMulti;
-        array1d.val.array.rows = 1;
-        array1d.val.array.columns = T.tupleof.length;
-        array1d.val.array.lparray = val.val.array.lparray + (r + 1) * T.tupleof.length;
+        () @trusted {
+            array1d.val.array.rows = 1;
+            array1d.val.array.columns = T.tupleof.length;
+            array1d.val.array.lparray = val.val.array.lparray + (r + 1) * T.tupleof.length;
+        }();
         elt = array1d.fromXlOper!T(allocator);
     }
 
@@ -283,16 +295,20 @@ private auto fromXlOperMultiStruct(Dimensions dim, T, A)(XLOPER12* val, ref A al
 // the function must take a boolean value indicating if the cell value
 // is to be converted or not, the row index, the column index,
 // and a reference to the cell value itself
-private void apply(T, alias F)(ref XLOPER12 oper) {
+private void apply(T, alias F)(ref XLOPER12 oper)
+    in(from!"xlld.conv.misc".stripMemoryBitmask(oper.xltype) ==
+       from!"xlld.sdk.xlcall".XlType.xltypeMulti)
+{
     import xlld.sdk.xlcall: XlType;
     import xlld.func.xl: coerce, free;
     import xlld.any: Any;
     import xlld.conv.misc: stripMemoryBitmask;
     version(unittest) import xlld.test.util: gNumXlAllocated, gNumXlFree;
 
-    const rows = oper.val.array.rows;
-    const cols = oper.val.array.columns;
-    auto values = oper.val.array.lparray[0 .. (rows * cols)];
+    // @trusted due to the contract
+    const rows = () @trusted { return oper.val.array.rows; }();
+    const cols = () @trusted { return oper.val.array.columns; }();
+    auto values = () @trusted { return oper.val.array.lparray[0 .. (rows * cols)]; }();
 
     foreach(const row; 0 .. rows) {
         foreach(const col; 0 .. cols) {
@@ -392,6 +408,7 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
 
 // convert a user-defined struct
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
+    @safe
     if(isRegularStruct!T)
 {
     import xlld.conv.misc: stripMemoryBitmask;
@@ -402,29 +419,32 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     if(oper.xltype.stripMemoryBitmask != XlType.xltypeMulti)
         throw multiException;
 
-    const length = oper.val.array.rows * oper.val.array.columns;
+    // @trusted due to check above
+    const rows = () @trusted { return oper.val.array.rows; }();
+    const cols = () @trusted { return oper.val.array.columns; }();
+    const length = rows * cols;
 
-    if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
+    if(rows == 1 || cols == 1)
         enforce(length == T.tupleof.length,
                "1D array length must match number of members in ", T.stringof,
                 ". Expected ", T.tupleof.length, ", got ", length);
     else
-        enforce((oper.val.array.rows == 2 && oper.val.array.columns == T.tupleof.length) ||
-               (oper.val.array.rows == T.tupleof.length && oper.val.array.columns == 2),
+        enforce((rows == 2 && cols == T.tupleof.length) ||
+               (rows == T.tupleof.length && cols == 2),
                "2D array must be 2x", T.tupleof.length, " or ", T.tupleof.length, "x2 for ", T.stringof);
     T ret;
 
     size_t ptrIndex(size_t i) {
 
-        if(oper.val.array.rows == 1 || oper.val.array.columns == 1)
+        if(rows == 1 || cols == 1)
             return i;
 
         // ignore column headers
-        if(oper.val.array.rows == 2)
-            return i + oper.val.array.columns;
+        if(rows == 2)
+            return i + cols;
 
         // ignore row headers (+ 1)
-        if(oper.val.array.columns == 2)
+        if(cols == 2)
             return i * 2 + 1;
 
         assert(0);
@@ -433,9 +453,10 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
     static immutable wrongTypeException = new Exception("Wrong type converting oper to " ~ T.stringof);
 
     foreach(i, ref member; ret.tupleof) {
-        try
-            member = oper.val.array.lparray[ptrIndex(i)].fromXlOper!(typeof(member))(allocator);
-        catch(Exception _)
+        try {
+            auto elt = () @trusted { return oper.val.array.lparray[ptrIndex(i)]; }();
+            member = elt.fromXlOper!(typeof(member))(allocator);
+        } catch(Exception _)
             throw wrongTypeException;
     }
 
