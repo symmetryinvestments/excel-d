@@ -425,12 +425,14 @@ unittest {
 @("1D array to struct with wrong length")
 @system unittest {
 
+    import nogc: NoGcException;
+
     static struct Foo { int x, y; }
 
-    [2, 3, 4].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
+    [2, 3, 4].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage!NoGcException(
         "1D array length must match number of members in Foo. Expected 2, got 3");
 
-    [2].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage(
+    [2].toXlOper(theGC).fromXlOper!Foo(theGC).shouldThrowWithMessage!NoGcException(
         "1D array length must match number of members in Foo. Expected 2, got 1");
 }
 
@@ -468,12 +470,13 @@ unittest {
 @("2D array wrong size")
 unittest {
     import xlld.memorymanager: allocatorContext;
+    import nogc: NoGcException;
 
     static struct Foo { int x, y, z; }
 
     with(allocatorContext(theGC)) {
         [[any("x"), any(2)], [any("y"), any(3)], [any("z"), any(4)], [any("w"), any(5)]].toFrom!Foo.
-            shouldThrowWithMessage("2D array must be 2x3 or 3x2 for Foo");
+            shouldThrowWithMessage!NoGcException("2D array must be 2x3 or 3x2 for Foo");
     }
 }
 
