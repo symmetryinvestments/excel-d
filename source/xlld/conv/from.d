@@ -408,7 +408,6 @@ T fromXlOper(T, A)(XLOPER12* oper, ref A allocator) if(is(T == enum)) {
 
 // convert a user-defined struct
 T fromXlOper(T, A)(XLOPER12* oper, ref A allocator)
-    @safe
     if(isRegularStruct!T)
 {
     import xlld.conv.misc: stripMemoryBitmask;
