@@ -32,7 +32,7 @@ double[][] dlookup(string[][] haystack, string[] needles, double columnNumberD) 
     }
 }
 @Register(ArgumentText("Array to add"),
-          HelpTopic("Adds all cells in an array"),
+          HelpTopic("https://github.com/symmetryinvestments/excel-d!0"),
           FunctionHelp("Adds all cells in an array"),
           ArgumentHelp(["The array to add"]))
 double FuncAddEverything(double[][] args) nothrow @nogc {
