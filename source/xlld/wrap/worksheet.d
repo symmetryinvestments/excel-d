@@ -14,6 +14,8 @@ private mixin template ST(string name, T = wstring) {
     mixin(`struct ` ~ name ~ `{ T value; }`);
 }
 
+// see: https://docs.microsoft.com/en-us/office/client-developer/excel/xlfregister-form-1
+
 ///
 struct Procedure {
     wstring value;
@@ -24,14 +26,61 @@ struct Procedure {
 }
 
 mixin ST!"TypeText";
+/++
+	Function name as it will appear in the Function Wizard.
++/
 mixin ST!"FunctionText";
+/++
+	Names of the arguments, semicolon separated. For example:
+
+	foo;bar
++/
 mixin ST!"ArgumentText";
 mixin ST!"MacroType";
+/++
+	Category name it appears in in the wizard. Must be picked
+	from the list of existing categories in Excel.
++/
 mixin ST!"Category";
+/++
+	One-character, case-sensitive key. "A" assigns this command
+	to ctrl+shift+A. Used only for commands.
++/
 mixin ST!"ShortcutText";
+/++
+	Reference to the help file to display when the user clicks help.
+	Form of `filepath!HelpContextID` or `URL!0`.
+
+	The !0 is required if you provide a web link.
++/
 mixin ST!"HelpTopic";
+/++
+	Describes your function in the Function Wizard.
+++/
 mixin ST!"FunctionHelp";
-mixin ST!("ArgumentHelp", wstring[]);
+/++
+	Array of text strings displayed in the function dialog
+	in Excel to describe each arg.
++/
+struct ArgumentHelp {
+	wstring[] value;
+	// allow @ArgumentHelp(x, y, x) too
+	this(wstring[] txt...) pure nothrow @safe {
+		// this is fine because below it is all copied
+		// into GC memory anyway.
+		this(txt[]);
+	}
+	this(scope wstring[] txt) pure nothrow @safe {
+		// Excel has a bug that chops off the last
+		// character of this, so adding a space here
+		// works around that.
+		//
+		// Doing it here instead of below, at
+		// registration time, means it is also CTFE'd
+		foreach(t; txt)
+			value ~= t ~ " ";
+	}
+}
 
 
 /**
