@@ -1,5 +1,7 @@
 language: d
 sudo: false
+dist: bionic
+
 install:
   - mkdir bin
 
