@@ -6,3 +6,4 @@ bin
 *.xll
 *.lib
 *.a
+*.lst
