@@ -192,20 +192,22 @@ WorksheetFunction[] getModuleWorksheetFunctions(string moduleName)
 
     foreach(moduleMemberStr; __traits(allMembers, module_)) {
 
-        alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
+        static if(__traits(compiles, Identity!(__traits(getMember, module_, moduleMemberStr)))) {
+            alias moduleMember = Identity!(__traits(getMember, module_, moduleMemberStr));
 
-        static if(isWorksheetFunction!moduleMember) {
-            try {
-                const shouldWrap = onlyExports ? __traits(getProtection, moduleMember) == "export" : true;
-                if(shouldWrap)
-                    ret ~= getWorksheetFunction!(moduleMember);
-            } catch(Exception ex)
-                assert(0); //can't happen
-        } else static if(isWorksheetFunctionModuloLinkage!moduleMember) {
-            import std.traits: functionLinkage;
-            pragma(msg, "!!!!! excel-d warning: function " ~ __traits(identifier, moduleMember) ~
-                   " has the right types to be callable from Excel but isn't due to having " ~
-                   functionLinkage!moduleMember ~ " linkage instead of the required 'Windows'");
+            static if(isWorksheetFunction!moduleMember) {
+                try {
+                    const shouldWrap = onlyExports ? __traits(getProtection, moduleMember) == "export" : true;
+                    if(shouldWrap)
+                        ret ~= getWorksheetFunction!(moduleMember);
+                } catch(Exception ex)
+                    assert(0); //can't happen
+            } else static if(isWorksheetFunctionModuloLinkage!moduleMember) {
+                import std.traits: functionLinkage;
+                pragma(msg, "!!!!! excel-d warning: function " ~ __traits(identifier, moduleMember) ~
+                       " has the right types to be callable from Excel but isn't due to having " ~
+                       functionLinkage!moduleMember ~ " linkage instead of the required 'Windows'");
+            }
         }
     }
 
