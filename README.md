@@ -12,6 +12,7 @@ This dub package contains D declarations for the [Excel SDK](https://msdn.micros
 Motivation and background for the project can be found [here](https://dlang.org/blog/2017/05/31/project-highlight-excel-d/).
 See also the [DConf 2017 lightning talk](https://youtu.be/xJy6ifCekCE?list=PL3jwVPmk_PRxo23yyoc0Ip_cP3-rCm7eB) about excel-d.
 
+Run makedocs.sh to generate the documentation
 Generated documentation - a work in progress - is available at
 [dpldocs](http://excel-d.dpldocs.info/index.html).
 
