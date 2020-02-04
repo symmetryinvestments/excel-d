@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>xlld.conv.to (xlld.conv.to)</title>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <link href="style.css" rel="stylesheet" />
+    <script src="script.js" type="text/javascript"></script>
+
+    
+    <link href="search-results.html" rel="prefetch" />
+  </head>
+  <body>
+    <div id="page-header">
+      <div id="logotype">
+        <span>Documentation</span>
+        <nav>
+          <a href="http://excel-d.code.kaleidic.io/">Kaleidic Associates Open Source - Excel-D</a>
+          <a href="https://github.com/kaleidicassociates/excel-d/">Github - excel-d</a>
+        </nav>
+      </div>
+
+      <form action="search-docs.html" id="search">
+        <input name="searchTerm" placeholder="Find a symbol name..." type="search" />
+        <input type="submit" value="Go" />
+      </form>
+    </div>
+    <div id="page-body">
+      <div id="page-content">
+      <h1>xlld.conv.to</h1><div class="breadcrumbs"><a class="breadcrumb" href="xlld.html">xlld</a><a class="breadcrumb" href="xlld.conv.html">conv</a></div><div><div class="documentation-comment synopsis"><div><p>Conversions from D types to XLOPER12</p></div></div></div><div class="annotated-prototype"></div><h2 id="members"><a class="header-anchor" href="#members">Members</a></h2><h3 class="member-list-header hide-from-toc" id="function"><a class="header-anchor" href="#function">Functions</a></h3><dl class="member-list native"><dt><a href="xlld.conv.to.numOperStringBytes.html">numOperStringBytes</a><div class="simplified-prototype" style="max-width: 38ch;"><tt class="highlighted"><span class="hid">size_t</span></tt> <span class="name">numOperStringBytes</span><tt class="highlighted">(<span class="kwrd">in</span> <span class="hid">T</span> <span class="hid">str</span>)</tt></div></dt><dd><div><p>the number of bytes required to store <tt class="inline-code">str</tt> as an XLOPER12 string</p></div></dd><dt><a href="xlld.conv.to.registerConversionFrom.html">registerConversionFrom</a><div class="simplified-prototype" style="max-width: 66ch;"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">registerConversionFrom</span><tt class="highlighted">(<span class="hid">FromEnumConversionFunction</span> <span class="hid">func</span>)</tt></div></dt><dd><div><p>Register a custom conversion from enum (going through integer) to a string.
+   This function will be called to convert enum return values from wrapped
+   D functions into strings in Excel.</p></div></dd><dt><a href="xlld.conv.to.toAutoFreeOper.html">toAutoFreeOper</a><div class="simplified-prototype" style="max-width: 35ch;"><tt class="highlighted"><span class="hid">XLOPER12</span></tt> <span class="name">toAutoFreeOper</span><tt class="highlighted">(<span class="hid">T</span> <span class="hid">value</span>)</tt></div></dt><dd><div><p>creates an XLOPER12 that can be returned to Excel which
+  will be freed by Excel itself</p></div></dd><dt><a href="xlld.conv.to.toXlOper.1.html">toXlOper</a><div class="simplified-prototype" style="max-width: 26ch;"><tt class="highlighted"><span class="hid">XLOPER12</span></tt> <span class="name">toXlOper</span><tt class="highlighted">(<span class="hid">T</span> <span class="hid">val</span>)</tt></div></dt><dd><div></div></dd><dt><a href="xlld.conv.to.toXlOper.2.html">toXlOper</a><div class="simplified-prototype" style="max-width: 48ch;"><tt class="highlighted"><span class="hid">XLOPER12</span></tt> <span class="name">toXlOper</span><tt class="highlighted">(<span class="kwrd">in</span> <span class="hid">T</span> <span class="hid">val</span>, <span class="kwrd">ref</span> <span class="hid">A</span> <span class="hid">allocator</span>)</tt></div></dt><dd><div></div></dd><dt><a href="xlld.conv.to.toXlOper.3.html">toXlOper</a><div class="simplified-prototype" style="max-width: 48ch;"><tt class="highlighted"><span class="hid">XLOPER12</span></tt> <span class="name">toXlOper</span><tt class="highlighted">(<span class="kwrd">in</span> <span class="hid">T</span> <span class="hid">val</span>, <span class="kwrd">ref</span> <span class="hid">A</span> <span class="hid">allocator</span>)</tt></div></dt><dd><div></div></dd><dt><a href="xlld.conv.to.toXlOper.4.html">toXlOper</a><div class="simplified-prototype" style="max-width: 48ch;"><tt class="highlighted"><span class="hid">XLOPER12</span></tt> <span class="name">toXlOper</span><tt class="highlighted">(<span class="kwrd">in</span> <span class="hid">T</span> <span class="hid">val</span>, <span class="kwrd">ref</span> <span class="hid">A</span> <span class="hid">allocator</span>)</tt></div></dt><dd><div></div></dd><dt><a href="xlld.conv.to.toXlOper.5.html">toXlOper</a><div class="simplified-prototype" style="max-width: 47ch;"><tt class="highlighted"><span class="hid">XLOPER12</span></tt> <span class="name">toXlOper</span><tt class="highlighted">(<span class="hid">T</span> <span class="hid">value</span>, <span class="kwrd">ref</span> <span class="hid">A</span> <span class="hid">allocator</span>)</tt></div></dt><dd><div></div></dd></dl><h3 class="member-list-header hide-from-toc" id="static variable"><a class="header-anchor" href="#static variable">Static variables</a></h3><dl class="member-list native"><dt><a href="xlld.conv.to.toXlOperMemoryException.html">toXlOperMemoryException</a><div class="simplified-prototype" style="max-width: 31ch;"><span class="builtin-type">auto</span> <span class="name">toXlOperMemoryException</span>;</div></dt><dd><div></div></dd></dl><div></div></div>
+      <div id="page-nav"><a class="parent" href="xlld.html">xlld</a><a class="parent" href="xlld.conv.html">conv</a>
+      <span class="type-separator">modules</span><ul><li><a class="module" href="xlld.conv.from.html">from</a></li><li><a class="module" href="xlld.conv.misc.html">misc</a></li><li><a class="module current" href="xlld.conv.to.html">to</a></li></ul></div>
+    </div>
+    <div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+  </body>
+</html>

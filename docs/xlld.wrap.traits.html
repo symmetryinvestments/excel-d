@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>xlld.wrap.traits (xlld.wrap.traits)</title>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <link href="style.css" rel="stylesheet" />
+    <script src="script.js" type="text/javascript"></script>
+
+    
+    <link href="search-results.html" rel="prefetch" />
+  </head>
+  <body>
+    <div id="page-header">
+      <div id="logotype">
+        <span>Documentation</span>
+        <nav>
+          <a href="http://excel-d.code.kaleidic.io/">Kaleidic Associates Open Source - Excel-D</a>
+          <a href="https://github.com/kaleidicassociates/excel-d/">Github - excel-d</a>
+        </nav>
+      </div>
+
+      <form action="search-docs.html" id="search">
+        <input name="searchTerm" placeholder="Find a symbol name..." type="search" />
+        <input type="submit" value="Go" />
+      </form>
+    </div>
+    <div id="page-body">
+      <div id="page-content">
+      <h1>xlld.wrap.traits</h1><div class="breadcrumbs"><a class="breadcrumb" href="xlld.html">xlld</a><a class="breadcrumb" href="xlld.wrap.html">wrap</a></div><div><div class="documentation-comment synopsis"><div><p>This module implements the compile-time reflection machinery to
+ automatically register all D functions that are eligible in a
+ compile-time define list of modules to be called from Excel.</p><p>Import this module from any module from your XLL build and:</p><pre class="d_code highlighted"><span class="kwrd">import</span> <span class="hid">xlld</span>;
+
+<span class="kwrd">mixin</span>(<span class="hid">implGetWorksheetFunctionsString</span>!(<span class="str">&quot;module1&quot;</span>, <span class="str">&quot;module2&quot;</span>, <span class="str">&quot;module3&quot;</span>));</pre><p>All eligible functions in the 3 example modules above will automagically
+ be accessible from Excel (assuming the built XLL is loaded as an add-in).</p></div></div></div><div class="annotated-prototype"></div><h2 id="members"><a class="header-anchor" href="#members">Members</a></h2><h3 class="member-list-header hide-from-toc" id="enum"><a class="header-anchor" href="#enum">Enums</a></h3><dl class="member-list native"><dt><a href="xlld.wrap.traits.Async.html">Async</a><div class="simplified-prototype" style="max-width: 11ch;"><span class="builtin-type">enum</span> <span class="name">Async</span></div></dt><dd><div><p>UDA for functions to be executed asynchronously</p></div></dd></dl><h3 class="member-list-header hide-from-toc" id="function"><a class="header-anchor" href="#function">Functions</a></h3><dl class="member-list native"><dt><a href="xlld.wrap.traits.dllDefFile.html">dllDefFile</a><div class="simplified-prototype" style="max-width: 116ch;"><tt class="highlighted"><span class="hid">DllDefFile</span></tt> <span class="name">dllDefFile</span><tt class="highlighted">(<span class="type">string</span> <span class="hid">libName</span>, <span class="type">string</span> <span class="hid">description</span>, <span class="hid">Flag</span>!<span class="str">&quot;onlyExports&quot;</span> <span class="hid">onlyExports</span> = <span class="hid">No</span>.<span class="hid">onlyExports</span>)</tt></div></dt><dd><div><p>Returns a structure descripting a Windows .def file.
+   This allows the tests to not care about the specific formatting
+   used when writing the information out.
+   This encapsulates all the functions to be exported by the DLL/XLL.</p></div></dd><dt><a href="xlld.wrap.traits.generateDllDef.html">generateDllDef</a><div class="simplified-prototype" style="max-width: 37ch;"><tt class="highlighted"><span class="type">void</span></tt> <span class="name">generateDllDef</span><tt class="highlighted">(<span class="type">string</span>[] <span class="hid">args</span>)</tt></div></dt><dd><div></div></dd><dt><a href="xlld.wrap.traits.getAllWorksheetFunctions.html">getAllWorksheetFunctions</a><div class="simplified-prototype" style="max-width: 102ch;"><tt class="highlighted"><span class="hid">WorksheetFunction</span>[]</tt> <span class="name">getAllWorksheetFunctions</span><tt class="highlighted">(<span class="hid">Flag</span>!<span class="str">&quot;onlyExports&quot;</span> <span class="hid">onlyExports</span> = <span class="hid">No</span>.<span class="hid">onlyExports</span>)</tt></div></dt><dd><div><p>Gets all Excel-callable functions from the given modules</p></div></dd><dt><a href="xlld.wrap.traits.getModuleWorksheetFunctions.html">getModuleWorksheetFunctions</a><div class="simplified-prototype" style="max-width: 105ch;"><tt class="highlighted"><span class="hid">WorksheetFunction</span>[]</tt> <span class="name">getModuleWorksheetFunctions</span><tt class="highlighted">(<span class="hid">Flag</span>!<span class="str">&quot;onlyExports&quot;</span> <span class="hid">onlyExports</span> = <span class="hid">No</span>.<span class="hid">onlyExports</span>)</tt></div></dt><dd><div><p>Gets all Excel-callable functions in a given module</p></div></dd><dt><a href="xlld.wrap.traits.getWorksheetFunction.html">getWorksheetFunction</a><div class="simplified-prototype" style="max-width: 44ch;"><tt class="highlighted"><span class="hid">WorksheetFunction</span></tt> <span class="name">getWorksheetFunction</span><tt class="highlighted">()</tt></div></dt><dd><div><p>Take a D function as a compile-time parameter and returns a
+ WorksheetFunction struct with the fields filled in accordingly.</p></div></dd><dt><a href="xlld.wrap.traits.implGetWorksheetFunctionsString.html">implGetWorksheetFunctionsString</a><div class="simplified-prototype" style="max-width: 44ch;"><tt class="highlighted"><span class="type">string</span></tt> <span class="name">implGetWorksheetFunctionsString</span><tt class="highlighted">()</tt></div></dt><dd><div><p>Implements the getWorksheetFunctions function needed by xlld.sdk.xll in
+ order to register the Excel-callable functions at runtime
+ This used to be a template mixin but even using a string mixin inside
+ fails to actually make it an extern(C) function.</p></div></dd></dl><h3 class="member-list-header hide-from-toc" id="mixin template"><a class="header-anchor" href="#mixin template">Mixin templates</a></h3><dl class="member-list native"><dt><a href="xlld.wrap.traits.GenerateDllDef.html">GenerateDllDef</a><div class="simplified-prototype" style="max-width: 62ch;"><span class="builtin-type">mixintemplate</span> <span class="name">GenerateDllDef</span><span class="template-params">(string module_ = __MODULE__)</span></div></dt><dd><div></div></dd></dl><h3 class="member-list-header hide-from-toc" id="struct"><a class="header-anchor" href="#struct">Structs</a></h3><dl class="member-list native"><dt><a href="xlld.wrap.traits.DllDefFile.html">DllDefFile</a><div class="simplified-prototype" style="max-width: 18ch;"><span class="builtin-type">struct</span> <span class="name">DllDefFile</span></div></dt><dd><div></div></dd><dt><a href="xlld.wrap.traits.Statement.html">Statement</a><div class="simplified-prototype" style="max-width: 17ch;"><span class="builtin-type">struct</span> <span class="name">Statement</span></div></dt><dd><div></div></dd></dl><h3 class="member-list-header hide-from-toc" id="template"><a class="header-anchor" href="#template">Templates</a></h3><dl class="member-list native"><dt><a href="xlld.wrap.traits.isCallableFunction.html">isCallableFunction</a><div class="simplified-prototype" style="max-width: 39ch;"><span class="builtin-type">template</span> <span class="name">isCallableFunction</span><span class="template-params">(alias F)</span></div></dt><dd><div></div></dd><dt><a href="xlld.wrap.traits.isSupportedFunction.html">isSupportedFunction</a><div class="simplified-prototype" style="max-width: 72ch;"><span class="builtin-type">template</span> <span class="name">isSupportedFunction</span><span class="template-params">(alias F, alias functionTypePredicate)</span></div></dt><dd><div><p>Is true if F is a callable function and functionTypePredicate is true
+   for the return type and all parameter types of F.</p></div></dd><dt><a href="xlld.wrap.traits.isWorksheetFunctionModuloLinkage.html">isWorksheetFunctionModuloLinkage</a><div class="simplified-prototype" style="max-width: 55ch;"><span class="builtin-type">template</span> <span class="name">isWorksheetFunctionModuloLinkage</span><span class="template-params">(alias F)</span></div></dt><dd><div><p>if the types match for a worksheet function but without checking the linkage</p></div></dd></dl><div></div></div>
+      <div id="page-nav"><a class="parent" href="xlld.html">xlld</a><a class="parent" href="xlld.wrap.html">wrap</a>
+      <span class="type-separator">modules</span><ul><li><a class="module current" href="xlld.wrap.traits.html">traits</a></li><li><a class="module" href="xlld.wrap.worksheet.html">worksheet</a></li><li><a class="module" href="xlld.wrap.wrap.html">wrap</a></li></ul></div>
+    </div>
+    <div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+  </body>
+</html>

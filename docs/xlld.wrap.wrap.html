@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>xlld.wrap.wrap (xlld.wrap.wrap)</title>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <link href="style.css" rel="stylesheet" />
+    <script src="script.js" type="text/javascript"></script>
+
+    
+    <link href="search-results.html" rel="prefetch" />
+  </head>
+  <body>
+    <div id="page-header">
+      <div id="logotype">
+        <span>Documentation</span>
+        <nav>
+          <a href="http://excel-d.code.kaleidic.io/">Kaleidic Associates Open Source - Excel-D</a>
+          <a href="https://github.com/kaleidicassociates/excel-d/">Github - excel-d</a>
+        </nav>
+      </div>
+
+      <form action="search-docs.html" id="search">
+        <input name="searchTerm" placeholder="Find a symbol name..." type="search" />
+        <input type="submit" value="Go" />
+      </form>
+    </div>
+    <div id="page-body">
+      <div id="page-content">
+      <h1>xlld.wrap.wrap</h1><div class="breadcrumbs"><a class="breadcrumb" href="xlld.html">xlld</a><a class="breadcrumb" href="xlld.wrap.html">wrap</a></div><div><div class="documentation-comment synopsis"><div><p>Wrapper module for Excel. This module contains the functionality that autowraps
+    D code for use within Excel.</p></div></div></div><div class="annotated-prototype"></div><h2 id="members"><a class="header-anchor" href="#members">Members</a></h2><h3 class="member-list-header hide-from-toc" id="function"><a class="header-anchor" href="#function">Functions</a></h3><dl class="member-list native"><dt><a href="xlld.wrap.wrap.stringAutoFreeOper.html">stringAutoFreeOper</a><div class="simplified-prototype" style="max-width: 40ch;"><tt class="highlighted"><span class="hid">XLOPER12</span></tt> <span class="name">stringAutoFreeOper</span><tt class="highlighted">(<span class="kwrd">in</span> <span class="hid">T</span> <span class="hid">msg</span>)</tt></div></dt><dd><div><p>Return an autofreeable XLOPER12 from a string to return to Excel.</p></div></dd><dt><a href="xlld.wrap.wrap.toDArgs.html">toDArgs</a><div class="simplified-prototype" style="max-width: 41ch;"><span class="lang-feature">auto</span>  <span class="name">toDArgs</span><tt class="highlighted">(<span class="kwrd">ref</span> <span class="hid">A</span> <span class="hid">allocator</span>, <span class="hid">T</span> <span class="hid">args</span>)</tt></div></dt><dd><div><p>Converts a variadic number of XLOPER12* to their equivalent D types
+   and returns a tuple</p></div></dd><dt><a href="xlld.wrap.wrap.wrapAll.html">wrapAll</a><div class="simplified-prototype" style="max-width: 107ch;"><tt class="highlighted"><span class="type">string</span></tt> <span class="name">wrapAll</span><tt class="highlighted">(<span class="hid">Flag</span>!<span class="str">&quot;onlyExports&quot;</span> <span class="hid">onlyExports</span> = <span class="hid">No</span>.<span class="hid">onlyExports</span>, <span class="kwrd">in</span> <span class="type">string</span> <span class="hid">mainModule</span> = <span class="kwrd">__MODULE__</span>)</tt></div></dt><dd><div><p>Wrap all modules given as strings.
+   Also deals with some necessary boilerplate.</p></div></dd><dt><a href="xlld.wrap.wrap.wrapModuleFunctionImpl.html">wrapModuleFunctionImpl</a><div class="simplified-prototype" style="max-width: 62ch;"><tt class="highlighted"><span class="hid">XLOPER12</span>*</tt> <span class="name">wrapModuleFunctionImpl</span><tt class="highlighted">(<span class="kwrd">ref</span> <span class="hid">A</span> <span class="hid">allocator</span>, <span class="hid">T</span> <span class="hid">args</span>)</tt></div></dt><dd><div><p>Implement a wrapper for a regular D function</p></div></dd><dt><a href="xlld.wrap.wrap.wrapModuleFunctionStr.html">wrapModuleFunctionStr</a><div class="simplified-prototype" style="max-width: 72ch;"><tt class="highlighted"><span class="type">string</span></tt> <span class="name">wrapModuleFunctionStr</span><tt class="highlighted">(<span class="kwrd">in</span> <span class="type">string</span> <span class="hid">callingModule</span> = <span class="kwrd">__MODULE__</span>)</tt></div></dt><dd><div><p>A string to use with <tt class="inline-code">mixin</tt> that wraps a D function</p></div></dd><dt><a href="xlld.wrap.wrap.wrapModuleWorksheetFunctionsString.html">wrapModuleWorksheetFunctionsString</a><div class="simplified-prototype" style="max-width: 137ch;"><tt class="highlighted"><span class="type">string</span></tt> <span class="name">wrapModuleWorksheetFunctionsString</span><tt class="highlighted">(<span class="hid">Flag</span>!<span class="str">&quot;onlyExports&quot;</span> <span class="hid">onlyExports</span> = <span class="hid">No</span>.<span class="hid">onlyExports</span>, <span class="type">string</span> <span class="hid">callingModule</span> = <span class="kwrd">__MODULE__</span>)</tt></div></dt><dd><div><p>A string to mixin that wraps all eligible functions in the
+   given module.</p></div></dd><dt><a href="xlld.wrap.wrap.wrapWorksheetFunctionsString.html">wrapWorksheetFunctionsString</a><div class="simplified-prototype" style="max-width: 130ch;"><tt class="highlighted"><span class="type">string</span></tt> <span class="name">wrapWorksheetFunctionsString</span><tt class="highlighted">(<span class="hid">Flag</span>!<span class="str">&quot;onlyExports&quot;</span> <span class="hid">onlyExports</span> = <span class="hid">No</span>.<span class="hid">onlyExports</span>, <span class="type">string</span> <span class="hid">callingModule</span> = <span class="kwrd">__MODULE__</span>)</tt></div></dt><dd><div><p>Wrap all modules given as strings.</p></div></dd></dl><div></div></div>
+      <div id="page-nav"><a class="parent" href="xlld.html">xlld</a><a class="parent" href="xlld.wrap.html">wrap</a>
+      <span class="type-separator">modules</span><ul><li><a class="module" href="xlld.wrap.traits.html">traits</a></li><li><a class="module" href="xlld.wrap.worksheet.html">worksheet</a></li><li><a class="module current" href="xlld.wrap.wrap.html">wrap</a></li></ul></div>
+    </div>
+    <div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+  </body>
+</html>

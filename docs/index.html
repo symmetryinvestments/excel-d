@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>xlld (xlld)</title>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <link href="style.css" rel="stylesheet" />
+    <script src="script.js" type="text/javascript"></script>
+
+    
+    <link href="search-results.html" rel="prefetch" />
+  </head>
+  <body>
+    <div id="page-header">
+      <div id="logotype">
+        <span>Documentation</span>
+        <nav>
+          <a href="http://excel-d.code.kaleidic.io/">Kaleidic Associates Open Source - Excel-D</a>
+          <a href="https://github.com/kaleidicassociates/excel-d/">Github - excel-d</a>
+        </nav>
+      </div>
+
+      <form action="search-docs.html" id="search">
+        <input name="searchTerm" placeholder="Find a symbol name..." type="search" />
+        <input type="submit" value="Go" />
+      </form>
+    </div>
+    <div id="page-body">
+      <div id="page-content">
+      <h1>xlld</h1><div class="breadcrumbs"></div><div><div class="documentation-comment synopsis"><div><p>Autowrapping of D functions to be made available to call from Excel, plus
+   helper functions for accessing Excel functionality.</p><p>For most users, xlld.wrap will be enough.</p></div></div></div><div class="annotated-prototype"></div><h2 id="modules"><a class="header-anchor" href="#modules">Modules</a></h2><dl class="member-list native"><dt><a href="xlld.any.html">any</a><div class="simplified-prototype" style="max-width: 16ch;"><span class="builtin-type">module</span> <span class="name">xlld.any</span></div></dt><dd><div><p>Any type</p></div></dd><dt><a href="xlld.conv.html">conv</a><div class="simplified-prototype" style="max-width: 17ch;"><span class="builtin-type">module</span> <span class="name">xlld.conv</span></div></dt><dd><div><p>Conversions from/to D types and XLOPER12</p></div></dd><dt><a href="xlld.dummy.html">dummy</a><div class="simplified-prototype" style="max-width: 18ch;"><span class="builtin-type">module</span> <span class="name">xlld.dummy</span></div></dt><dd><div><p>Deals with linking issues such as on Windows without having to link to the
+ real implementations or dependent packages' unittest builds.
+ Only for testing.</p></div></dd><dt><a href="xlld.from.from.html">from</a><div class="simplified-prototype" style="max-width: 17ch;"><span class="builtin-type">module</span> <span class="name">xlld.from</span></div></dt><dd><div><p>Utility to avoid top-level imports</p></div></dd><dt><a href="xlld.func.html">func</a><div class="simplified-prototype" style="max-width: 17ch;"><span class="builtin-type">module</span> <span class="name">xlld.func</span></div></dt><dd><div></div></dd><dt><a href="xlld.memorymanager.html">memorymanager</a><div class="simplified-prototype" style="max-width: 27ch;"><span class="builtin-type">module</span> <span class="name">xlld.memorymanager</span></div></dt><dd><div><p>MemoryManager.D</p></div></dd><dt><a href="xlld.sdk.html">sdk</a><div class="simplified-prototype" style="max-width: 16ch;"><span class="builtin-type">module</span> <span class="name">xlld.sdk</span></div></dt><dd><div></div></dd><dt><a href="xlld.static_.html">static_</a><div class="simplified-prototype" style="max-width: 20ch;"><span class="builtin-type">module</span> <span class="name">xlld.static_</span></div></dt><dd><div><p>To avoid cyclic dependencies with module constructors</p></div></dd><dt><a href="xlld.test.util.html">test</a><div class="simplified-prototype" style="max-width: 17ch;"><span class="builtin-type">module</span> <span class="name">xlld.test</span></div></dt><dd><div></div></dd><dt><a href="xlld.wrap.html">wrap</a><div class="simplified-prototype" style="max-width: 17ch;"><span class="builtin-type">module</span> <span class="name">xlld.wrap</span></div></dt><dd><div><p>Autowrapping of D functions to be called from Excel. Generally this will be enough:</p></div></dd></dl><h2 id="public-imports"><a class="header-anchor" href="#public-imports">Public Imports</a></h2><div></div><dl class="member-list native"><dt><a href="xlld.sdk.xlcall.html">xlld.sdk.xlcall</a><div class="simplified-prototype" style="max-width: 34ch;"><span class="builtin-type">public</span> <tt class="highlighted">
+<span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">sdk</span>.<span class="hid">xlcall</span>;</tt></div></dt><dd><div></div></dd></dl><dl class="member-list native"><dt><a href="xlld.sdk.framework.html">xlld.sdk.framework</a><div class="simplified-prototype" style="max-width: 37ch;"><span class="builtin-type">public</span> <tt class="highlighted">
+<span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">sdk</span>.<span class="hid">framework</span>;</tt></div></dt><dd><div></div></dd></dl><dl class="member-list native"><dt><a href="xlld.wrap.html">xlld.wrap</a><div class="simplified-prototype" style="max-width: 27ch;"><span class="builtin-type">public</span> <tt class="highlighted">
+<span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">wrap</span>;</tt></div></dt><dd><div></div></dd></dl><dl class="member-list native"><dt><a href="xlld.conv.html">xlld.conv</a><div class="simplified-prototype" style="max-width: 27ch;"><span class="builtin-type">public</span> <tt class="highlighted">
+<span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">conv</span>;</tt></div></dt><dd><div></div></dd></dl><dl class="member-list native"><dt><a href="xlld.func.xlf.html">xlld.func.xlf</a><div class="simplified-prototype" style="max-width: 31ch;"><span class="builtin-type">public</span> <tt class="highlighted">
+<span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">func</span>.<span class="hid">xlf</span>;</tt></div></dt><dd><div></div></dd></dl><dl class="member-list native"><dt><a href="xlld.func.xl.html">xlld.func.xl</a><div class="simplified-prototype" style="max-width: 30ch;"><span class="builtin-type">public</span> <tt class="highlighted">
+<span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">func</span>.<span class="hid">xl</span>;</tt></div></dt><dd><div></div></dd></dl><dl class="member-list native"><dt><a href="xlld.func.framework.html">xlld.func.framework</a><div class="simplified-prototype" style="max-width: 38ch;"><span class="builtin-type">public</span> <tt class="highlighted">
+<span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">func</span>.<span class="hid">framework</span>;</tt></div></dt><dd><div></div></dd></dl><dl class="member-list native"><dt><a href="xlld.any.html">xlld.any</a><div class="simplified-prototype" style="max-width: 26ch;"><span class="builtin-type">public</span> <tt class="highlighted">
+<span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">any</span>;</tt></div></dt><dd><div></div></dd></dl><dl class="member-list native"><dt><a href="xlld.memorymanager.html">xlld.memorymanager</a><div class="simplified-prototype" style="max-width: 58ch;"><span class="builtin-type">public</span> <tt class="highlighted">
+<span class="kwrd">import</span> <span class="hid">xlld</span>.<span class="hid">memorymanager</span> : <span class="hid">allocatorContext</span>;</tt></div></dt><dd><div></div></dd></dl><div></div></div>
+      <div id="page-nav">
+      <span class="type-separator">modules</span><ul><li><a class="module current" href="xlld.html">xlld</a></li></ul></div>
+    </div>
+    <div id="page-footer">Page generated by <a href="https://github.com/adamdruppe/adrdox">adrdox</a></div>
+  </body>
+</html>
