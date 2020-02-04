@@ -107,7 +107,7 @@ struct WorksheetFunction {
             ] ~ argumentHelp.value;
     }
 
-    const bool opEquals(const WorksheetFunction rhs) @safe pure { return optional == rhs.optional; }
+    bool opEquals(const WorksheetFunction rhs) const @safe pure { return optional == rhs.optional; }
 }
 
 // helper template to type-check variadic template constructor below
