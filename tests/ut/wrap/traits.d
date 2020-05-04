@@ -20,7 +20,7 @@ WorksheetFunction makeWorksheetFunction(wstring name, wstring typeText) @safe pu
                 ShortcutText(""w),
                 HelpTopic(""w),
                 FunctionHelp(""w),
-                ArgumentHelp([]),
+                ArgumentHelp([""w]),
                 )
             );
 }
@@ -41,7 +41,9 @@ WorksheetFunction operToOperFunction(wstring name) @safe pure nothrow {
 }
 
 WorksheetFunction asyncFunction(wstring name) @safe pure nothrow {
-    return makeWorksheetFunction(name, ">UX"w);
+    auto ret = makeWorksheetFunction(name, ">UX"w);
+    ret.optional.argumentHelp.add("");  // FuncAsync has two parameters
+    return ret;
 }
 
 ///
@@ -87,6 +89,17 @@ WorksheetFunction asyncFunction(wstring name) @safe pure nothrow {
     expected.helpTopic = HelpTopic("I need somebody");
 
     getWorksheetFunction!foo.shouldEqual(expected);
+}
+
+
+@("getWorksheetFunction with @ExcelParameter")
+@safe pure unittest {
+    extern(Windows) double withParamUDA(@ExcelParameter("the double") double d) nothrow;
+
+    auto expected = doubleToDoubleFunction("withParamUDA");
+    expected.optional.argumentHelp = ArgumentHelp("the double");
+
+    getWorksheetFunction!withParamUDA.should == expected;
 }
 
 

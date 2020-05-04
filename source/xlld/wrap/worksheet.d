@@ -63,23 +63,25 @@ mixin ST!"FunctionHelp";
 	in Excel to describe each arg.
 +/
 struct ArgumentHelp {
-	wstring[] value;
-	// allow @ArgumentHelp(x, y, x) too
-	this(wstring[] txt...) pure nothrow @safe {
-		// this is fine because below it is all copied
-		// into GC memory anyway.
-		this(txt[]);
-	}
-	this(scope wstring[] txt) pure nothrow @safe {
-		// Excel has a bug that chops off the last
-		// character of this, so adding a space here
-		// works around that.
-		//
-		// Doing it here instead of below, at
-		// registration time, means it is also CTFE'd
-		foreach(t; txt)
-			value ~= t ~ " ";
-	}
+    wstring[] value;
+
+    // allow @ArgumentHelp(x, y, x) too
+    this(wstring[] txt...) pure nothrow @safe {
+        // this is fine because below it is all copied
+        // into GC memory anyway.
+        this(txt[]);
+    }
+
+    this(scope wstring[] txt) pure nothrow @safe {
+        foreach(t; txt) add(t);
+    }
+
+    void add(wstring txt) @safe pure nothrow {
+        // Excel has a bug that chops off the last
+        // character of this, so adding a space here
+        // works around that.
+        value ~= txt ~ " ";
+    }
 }
 
 
@@ -162,3 +164,6 @@ alias Excel = Optional;
 struct Dispose(alias function_) {
     alias dispose = function_;
 }
+
+/// Information about a function parameter. Meant to be used as a UDA.
+mixin ST!"ExcelParameter";
