@@ -12,19 +12,10 @@ import xlld;
 }
 
 
-@("89.0")
+@("89")
 @safe unittest {
-    import ut.wrap.wrapped_no_uppercase: appendFoo;
+    import ut.wrap.wrapped: appendFoo;
     import xlld.memorymanager: allocator;
     auto arg = toXlOper("quux", allocator);
     appendFoo(&arg).shouldEqualDlang("quux_foo");
-}
-
-
-@("89.1")
-@safe unittest {
-    import ut.wrap.wrapped: AppendFoo;
-    import xlld.memorymanager: allocator;
-    auto arg = toXlOper("quux", allocator);
-    AppendFoo(&arg).shouldEqualDlang("quux_foo");
 }

@@ -9,4 +9,6 @@ module ut.wrap.wrapped;
 
 import xlld.wrap;
 import xlld.wrap.traits: Async;
-mixin(wrapAll!"test.d_funcs");
+import std.typecons: No;
+
+mixin(wrapAll!"test.d_funcs"(No.onlyExports, No.pascalCase));
