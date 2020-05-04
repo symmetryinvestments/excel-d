@@ -33,8 +33,11 @@ version(testingExcelD) {
  */
 WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
     import xlld.wrap.wrap: pascalCase = toPascalCase;
-    import std.traits: ReturnType, Parameters, getUDAs;
+    import std.traits: ReturnType, Parameters, getUDAs, ParameterIdentifierTuple;
     import std.conv: text, to;
+    import std.meta: Filter;
+    import std.algorithm: among, map;
+    import std.array: join;
 
     alias R = ReturnType!F;
     alias T = Parameters!F;
@@ -59,9 +62,58 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
             ret.optional = registerAttrs[0];
         }
 
+        enum isExcelParam(alias T) = is(typeof(T) == ExcelParameter);
+
+        static foreach(i; 0 .. Parameters!F.length) {{
+            alias udas = getParamUDAs!(F, i);
+            static if(udas.length) {
+                enum excelParamUDAs = Filter!(isExcelParam, udas);
+                static assert(excelParamUDAs.length.among(0, 1), "Maxinum one @ExcelParameter allowed");
+                static if(excelParamUDAs.length)
+                    ret.optional.argumentHelp.add(excelParamUDAs[0].value);
+                else
+                    ret.optional.argumentHelp.add("");
+            } else
+                ret.optional.argumentHelp.add("");
+        }}
+
+        static if(Parameters!F.length) {
+            if(ret.optional.argumentText.value == ""w) {
+                ret.optional.argumentText = [ParameterIdentifierTuple!F]
+                    .map!(a => a.to!wstring)
+                    .join(";"w)
+                    .ArgumentText
+                    ;
+            }
+        }
+
         return ret;
     }
 }
+
+template getParamUDAs(alias fun, size_t paramIdx)
+{
+    alias P = BetterParams!fun[paramIdx .. paramIdx+1];
+    static if(__traits(compiles, __traits(getAttributes, P)))
+        alias getParamUDAs = __traits(getAttributes, P);
+    else {
+        import std.meta: AliasSeq;
+        alias getParamUDAs = AliasSeq!();
+    }
+}
+
+
+import std.traits: isCallable;
+template BetterParams(func...)
+if (func.length == 1 && isCallable!func)
+{
+    import std.traits : FunctionTypeOf;
+    static if (is(FunctionTypeOf!func P == __parameters))
+        alias BetterParams = P;
+    else
+        static assert(0, "argument has no parameters");
+}
+
 
 
 wstring getTypeText(alias F)() if(isSomeFunction!F) {

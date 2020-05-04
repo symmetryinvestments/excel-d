@@ -20,37 +20,46 @@ WorksheetFunction makeWorksheetFunction(wstring name, wstring typeText) @safe pu
                 ShortcutText(""w),
                 HelpTopic(""w),
                 FunctionHelp(""w),
-                ArgumentHelp([]),
+                ArgumentHelp([""w]),
                 )
             );
 }
 
 ///
 WorksheetFunction doubleToDoubleFunction(wstring name) @safe pure nothrow {
-    return makeWorksheetFunction(name, "BB"w);
+    auto ret = makeWorksheetFunction(name, "BB"w);
+    ret.optional.argumentText = ArgumentText("n");  // See test.xl_funcs.FuncMulByTwo
+    return ret;
 }
 
 ///
 WorksheetFunction FP12ToDoubleFunction(wstring name) @safe pure nothrow {
-    return makeWorksheetFunction(name, "BK%"w);
+    auto ret = makeWorksheetFunction(name, "BK%"w);
+    ret.optional.argumentText = ArgumentText("cells");  // See test.xl_funcs.FuncFP12
+    return ret;
 }
 
 ///
 WorksheetFunction operToOperFunction(wstring name) @safe pure nothrow {
-    return makeWorksheetFunction(name, "UU"w);
+    auto ret = makeWorksheetFunction(name, "UU"w);
+    ret.optional.argumentText = ArgumentText("n");  // See test.xl_funcs.FuncFib
+    return ret;
 }
 
 WorksheetFunction asyncFunction(wstring name) @safe pure nothrow {
-    return makeWorksheetFunction(name, ">UX"w);
+    auto ret = makeWorksheetFunction(name, ">UX"w);
+    ret.optional.argumentHelp.add("");  // FuncAsync has two parameters
+    ret.optional.argumentText = ArgumentText("n;asyncHandle");
+    return ret;
 }
 
 ///
 @("getWorksheetFunction for double -> double functions with no extra attributes")
 @safe pure unittest {
-    extern(Windows) double foo(double) nothrow @nogc { return 0; }
+    extern(Windows) double foo(double n) nothrow @nogc { return 0; }
     getWorksheetFunction!foo.shouldEqual(doubleToDoubleFunction("foo"));
 
-    extern(Windows) double bar(double) nothrow @nogc { return 0; }
+    extern(Windows) double bar(double n) nothrow @nogc { return 0; }
     getWorksheetFunction!bar.shouldEqual(doubleToDoubleFunction("bar"));
 }
 
@@ -87,6 +96,18 @@ WorksheetFunction asyncFunction(wstring name) @safe pure nothrow {
     expected.helpTopic = HelpTopic("I need somebody");
 
     getWorksheetFunction!foo.shouldEqual(expected);
+}
+
+
+@("getWorksheetFunction with @ExcelParameter")
+@safe pure unittest {
+    extern(Windows) double withParamUDA(@ExcelParameter("the double") double d) nothrow;
+
+    auto expected = doubleToDoubleFunction("withParamUDA");
+    expected.optional.argumentHelp = ArgumentHelp("the double");
+    expected.optional.argumentText = ArgumentText("d");
+
+    getWorksheetFunction!withParamUDA.should == expected;
 }
 
 
