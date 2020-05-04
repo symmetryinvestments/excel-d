@@ -33,10 +33,11 @@ version(testingExcelD) {
  */
 WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
     import xlld.wrap.wrap: pascalCase = toPascalCase;
-    import std.traits: ReturnType, Parameters, getUDAs;
+    import std.traits: ReturnType, Parameters, getUDAs, ParameterIdentifierTuple;
     import std.conv: text, to;
     import std.meta: Filter;
-    import std.algorithm: among;
+    import std.algorithm: among, map;
+    import std.array: join;
 
     alias R = ReturnType!F;
     alias T = Parameters!F;
@@ -75,6 +76,16 @@ WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
             } else
                 ret.optional.argumentHelp.add("");
         }}
+
+        static if(Parameters!F.length) {
+            if(ret.optional.argumentText.value == ""w) {
+                ret.optional.argumentText = [ParameterIdentifierTuple!F]
+                    .map!(a => a.to!wstring)
+                    .join(";"w)
+                    .ArgumentText
+                    ;
+            }
+        }
 
         return ret;
     }
