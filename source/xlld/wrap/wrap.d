@@ -7,7 +7,7 @@ module xlld.wrap.wrap;
 
 import xlld.wrap.worksheet;
 import xlld.sdk.xlcall: XLOPER12;
-import std.typecons: Flag, No;
+import std.typecons: Flag, No, Yes;
 
 
 /**
@@ -15,7 +15,8 @@ import std.typecons: Flag, No;
    Also deals with some necessary boilerplate.
  */
 string wrapAll(Modules...)
-              (Flag!"onlyExports" onlyExports = No.onlyExports,
+              (in Flag!"onlyExports" onlyExports = No.onlyExports,
+               in Flag!"pascalCase" pascalCase = Yes.pascalCase,
                in string mainModule = __MODULE__)
 {
 
@@ -27,7 +28,7 @@ string wrapAll(Modules...)
     return
         q{import xlld;} ~
         "\n" ~
-        wrapWorksheetFunctionsString!Modules(onlyExports, mainModule) ~
+        wrapWorksheetFunctionsString!Modules(onlyExports, pascalCase, mainModule) ~
         "\n" ~
         implGetWorksheetFunctionsString!(mainModule) ~
         "\n" ~
@@ -40,7 +41,9 @@ string wrapAll(Modules...)
    Wrap all modules given as strings.
  */
 string wrapWorksheetFunctionsString(Modules...)
-                                   (Flag!"onlyExports" onlyExports = No.onlyExports, string callingModule = __MODULE__)
+                                   (in Flag!"onlyExports" onlyExports = No.onlyExports,
+                                    in Flag!"pascalCase" pascalCase = Yes.pascalCase,
+                                    in string callingModule = __MODULE__)
 {
     if(!__ctfe) {
         return "";
@@ -48,7 +51,7 @@ string wrapWorksheetFunctionsString(Modules...)
 
     string ret;
     foreach(module_; Modules) {
-        ret ~= wrapModuleWorksheetFunctionsString!module_(onlyExports, callingModule);
+        ret ~= wrapModuleWorksheetFunctionsString!module_(onlyExports, pascalCase, callingModule);
     }
 
     return ret;
@@ -60,7 +63,9 @@ string wrapWorksheetFunctionsString(Modules...)
    given module.
  */
 string wrapModuleWorksheetFunctionsString(string moduleName)
-                                         (Flag!"onlyExports" onlyExports = No.onlyExports, string callingModule = __MODULE__)
+                                         (in Flag!"onlyExports" onlyExports = No.onlyExports,
+                                          in Flag!"pascalCase" pascalCase = Yes.pascalCase,
+                                          in string callingModule = __MODULE__)
 {
     if(!__ctfe) {
         return "";
@@ -74,13 +79,15 @@ string wrapModuleWorksheetFunctionsString(string moduleName)
     string ret;
 
     foreach(moduleMemberStr; __traits(allMembers, module_))
-        ret ~= wrapModuleMember!(moduleName, moduleMemberStr)(onlyExports, callingModule);
+        ret ~= wrapModuleMember!(moduleName, moduleMemberStr)(onlyExports, pascalCase, callingModule);
 
     return ret;
 }
 
 string wrapModuleMember(string moduleName, string moduleMemberStr)
-                       (Flag!"onlyExports" onlyExports = No.onlyExports, string callingModule = __MODULE__)
+                       (in Flag!"onlyExports" onlyExports = No.onlyExports,
+                        in Flag!"pascalCase" pascalCase = Yes.pascalCase,
+                        in string callingModule = __MODULE__)
 {
     if(!__ctfe) return "";
 
@@ -105,7 +112,7 @@ string wrapModuleMember(string moduleName, string moduleMemberStr)
                 const shouldWrap = onlyExports ? __traits(getProtection, moduleMember) == "export" : true;
 
                 if(shouldWrap)
-                    ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(callingModule);
+                    ret ~= wrapModuleFunctionStr!(moduleName, moduleMemberStr)(pascalCase, callingModule);
             }
         } else
             pragma(msg, "excel-d WARNING: Not wrapping ", moduleMemberStr, " due to it having ",
@@ -130,7 +137,8 @@ string wrapModuleMember(string moduleName, string moduleMemberStr)
  A string to use with `mixin` that wraps a D function
  */
 string wrapModuleFunctionStr(string moduleName, string funcName)
-                            (in string callingModule = __MODULE__)
+                            (in Flag!"pascalCase" pascalCase = Yes.pascalCase,
+                             in string callingModule = __MODULE__)
 {
     if(!__ctfe) {
         return "";
@@ -183,7 +191,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
 
     const returnType = hasUDA!(func, Async) ? "void" : "XLOPER12*";
     // The function name that Excel actually calls in the binary
-    const xlFuncName = pascalCase(funcName);
+    const xlFuncName = pascalCase ? toPascalCase(funcName) : funcName;
     const return_ = hasUDA!(func, Async) ? "" : "return ";
     const returnErrorRet = hasUDA!(func, Async) ? "" : "return &errorRet;";
     const wrap = hasUDA!(func, Async)
@@ -221,7 +229,7 @@ string wrapModuleFunctionStr(string moduleName, string funcName)
     ].join("\n");
 }
 
-string pascalCase(in string func) @safe pure {
+string toPascalCase(in string func) @safe pure {
     import std.uni: toUpper;
     import std.conv: to;
     return (func[0].toUpper ~ func[1..$].to!dstring).to!string;

@@ -32,7 +32,7 @@ version(testingExcelD) {
  WorksheetFunction struct with the fields filled in accordingly.
  */
 WorksheetFunction getWorksheetFunction(alias F)() if(isSomeFunction!F) {
-    import xlld.wrap.wrap: pascalCase;
+    import xlld.wrap.wrap: pascalCase = toPascalCase;
     import std.traits: ReturnType, Parameters, getUDAs;
     import std.conv: text, to;
 

@@ -368,3 +368,7 @@ auto FuncStringVector(int i) @safe @nogc {
 
     return vector!Mallocator("hi");
 }
+
+string appendFoo(string s) {
+    return s ~ "_foo";
+}
