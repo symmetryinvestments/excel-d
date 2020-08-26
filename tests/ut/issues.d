@@ -19,3 +19,9 @@ import xlld;
     auto arg = toXlOper("quux", allocator);
     appendFoo(&arg).shouldEqualDlang("quux_foo");
 }
+
+
+@("92")
+@safe pure unittest {
+    wrapModuleMember!("test.d_funcs", "core.stdc.stdio").should == "";
+}
