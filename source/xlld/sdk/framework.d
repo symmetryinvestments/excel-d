@@ -122,7 +122,7 @@ int Excel12f(int xlfn, LPXLOPER12 result, scope const(XLOPER12)[] args...) nothr
     scope(exit) Mallocator.instance.dispose(ptrArgs);
 
     foreach(i, ref arg; args)
-        ptrArgs[i] = (return scope ref const(XLOPER12) a) { return &a; }(arg);
+        ptrArgs[i] = &arg;
 
     return Excel12f(xlfn, result, ptrArgs);
 }
