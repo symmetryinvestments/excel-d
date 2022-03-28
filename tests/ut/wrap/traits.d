@@ -55,7 +55,7 @@ WorksheetFunction asyncFunction(wstring name) @safe pure nothrow {
 
 ///
 @("getWorksheetFunction for double -> double functions with no extra attributes")
-@safe pure unittest {
+@system pure unittest {
     extern(Windows) double foo(double n) nothrow @nogc { return 0; }
     getWorksheetFunction!foo.shouldEqual(doubleToDoubleFunction("foo"));
 
@@ -72,7 +72,7 @@ WorksheetFunction asyncFunction(wstring name) @safe pure nothrow {
 
 ///
 @("getworksheetFunction with @Register in order")
-@safe pure unittest {
+@system pure unittest {
 
     @Register(ArgumentText("my arg txt"), MacroType("macro"))
     extern(Windows) double foo(double) nothrow;
@@ -86,7 +86,7 @@ WorksheetFunction asyncFunction(wstring name) @safe pure nothrow {
 
 ///
 @("getworksheetFunction with @Register out of order")
-@safe pure unittest {
+@system pure unittest {
 
     @Register(HelpTopic("I need somebody"), ArgumentText("my arg txt"))
     extern(Windows) double foo(double) nothrow;
@@ -100,7 +100,7 @@ WorksheetFunction asyncFunction(wstring name) @safe pure nothrow {
 
 
 @("getWorksheetFunction with @ExcelParameter")
-@safe pure unittest {
+@system pure unittest {
     extern(Windows) double withParamUDA(@ExcelParameter("the double") double d) nothrow;
 
     auto expected = doubleToDoubleFunction("withParamUDA");
@@ -136,7 +136,7 @@ WorksheetFunction asyncFunction(wstring name) @safe pure nothrow {
 
 
 @("getWorksheetFunctions on test.xl_funcs")
-@safe pure unittest {
+@system pure unittest {
     getModuleWorksheetFunctions!"test.xl_funcs".shouldEqual(
         [
             doubleToDoubleFunction("FuncMulByTwo"),

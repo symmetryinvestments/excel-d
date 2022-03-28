@@ -322,7 +322,7 @@ XLOPER12 toXlOper(T, A)(T value, ref A allocator)
     import std.conv: text;
     import core.memory: GC;
 
-    scope str = text(value);
+    auto str = text(value);
 
     auto ret = str.toXlOper(allocator);
     () @trusted { GC.free(cast(void*)str.ptr); }();
