@@ -1,7 +1,6 @@
 # excel-d
 
-[![Build Status](https://travis-ci.org/kaleidicassociates/excel-d.png?branch=master)](https://travis-ci.org/kaleidicassociates/excel-d)
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/atilaneves/excel-d?branch=master&svg=true)](https://ci.appveyor.com/project/atilaneves/excel-d)
+[![Actions Status](https://github.com/symmetryinvestments/excel-d/workflows/CI/badge.svg)](https://github.com/symmetryinvestments/excel-d/actions)
 [![Coverage](https://codecov.io/gh/kaleidicassociates/excel-d/branch/master/graph/badge.svg)](https://codecov.io/gh/kaleidicassociates/excel-d)
 
 Excel API bindings and wrapper API for D
