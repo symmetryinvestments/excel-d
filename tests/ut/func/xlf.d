@@ -9,7 +9,10 @@ unittest {
     import xlld.conv.to: toXlOper;
 
     with(MockXlFunction(xlfCaller, "foobar".toXlOper(theGC))) {
-        callerCell.shouldThrowWithMessage("Caller not a cell");
+        try
+            callerCell;
+        catch (Exception e)
+            e.msg.should == "Caller not a cell";
     }
 }
 

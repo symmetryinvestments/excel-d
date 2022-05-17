@@ -3,7 +3,6 @@ module ut.misc;
 import test;
 import xlld.any;
 import xlld.sdk.xll;
-import unit_threaded: DontTest;
 
 @("opEquals str")
 unittest {
@@ -40,7 +39,6 @@ unittest {
 int gAutoCloseCounter;
 
 
-@DontTest
 void testAutoCloseFunc() nothrow {
     ++gAutoCloseCounter;
 }
