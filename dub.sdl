@@ -28,7 +28,7 @@ configuration "unittest" {
     mainSourceFile "tests/ut_main.d"
 
     versions "testingExcelD" "testLibraryExcelD"
-    dflags "-dip1000" "-dip25"
+    dflags "-preview=dip1000"
 
     dependency "unit-threaded" version="*"
     dependency "automem" version="*"
