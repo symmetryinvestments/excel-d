@@ -1,7 +1,7 @@
 # excel-d
 
 [![Actions Status](https://github.com/symmetryinvestments/excel-d/workflows/CI/badge.svg)](https://github.com/symmetryinvestments/excel-d/actions)
-[![Coverage](https://codecov.io/gh/kaleidicassociates/excel-d/branch/master/graph/badge.svg)](https://codecov.io/gh/kaleidicassociates/excel-d)
+[![Coverage](https://codecov.io/gh/symmetryinvestments/excel-d/branch/master/graph/badge.svg)](https://codecov.io/gh/symmetryinvestments/excel-d)
 
 Excel API bindings and wrapper API for D
 
