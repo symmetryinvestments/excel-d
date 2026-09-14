@@ -31,5 +31,5 @@ configuration "unittest" {
     dflags "-preview=dip1000"
 
     dependency "unit-threaded" version="*"
-    dependency "automem" version="*"
+    dependency "automem" version="~>0.6.11"
 }

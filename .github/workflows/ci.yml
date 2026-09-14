@@ -3,22 +3,24 @@ on: [push, pull_request]
 
 jobs:
   test:
-    name: Dub Test
+    name: Dub Test (${{ matrix.os }}, ${{ matrix.dc }})
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019]
-        dc: [dmd-2.091.0, ldc-1.20.1]
+        os: [ubuntu-22.04, windows-2022]
+        dc: [dmd-2.091.0, dmd-2.113.0, ldc-1.20.1, ldc-1.43.0]
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7.0.1
 
       - name: Install D compiler
-        uses: dlang-community/setup-dlang@v1.1.1
+        uses: dlang-community/setup-dlang@v1.4.0
         with:
           compiler: ${{ matrix.dc }}
 
       - name: Run tests
-        run: dub test -q --build=unittest-cov
+        shell: bash
+        run: dub test -q --build=unittest-cov --compiler="$DC"
 
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v7.0.0

@@ -1,7 +1,7 @@
 {
 	"fileVersion": 1,
 	"versions": {
-		"automem": "0.6.7",
+		"automem": "0.6.11",
 		"localimport": "1.3.0",
 		"nogc": "0.5.1",
 		"stdx-allocator": "2.77.5",
